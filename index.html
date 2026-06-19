@@ -78,7 +78,8 @@ textarea.fc{resize:vertical;min-height:70px}
 .progress-fill{height:100%;background:var(--acc);border-radius:3px}
 #toast{position:fixed;bottom:24px;right:24px;background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:11px 18px;font-size:13px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;max-width:300px}
 #toast.show{transform:translateY(0);opacity:1}
-.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;padding:24px}
+#retryBtn{margin-top:8px}
 .spinner{width:40px;height:40px;border:3px solid var(--bor);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .tab{flex:1;padding:8px;border-radius:8px;border:1px solid var(--bor);background:none;color:var(--t2);font-size:13px;cursor:pointer;font-weight:500}
@@ -100,8 +101,10 @@ textarea.fc{resize:vertical;min-height:70px}
 
 <!-- LOADING -->
 <div id="loadingScreen" class="loading-screen">
-  <div class="spinner"></div>
-  <div style="color:var(--t2);font-size:14px" id="loadingMsg">Connecting to database...</div>
+  <div class="spinner" id="loadingSpinner"></div>
+  <div style="color:var(--t2);font-size:14px;text-align:center;max-width:420px;padding:0 20px" id="loadingMsg">Connecting to database...</div>
+  <div id="loadingDetail" style="color:var(--t3);font-size:12px;text-align:center;max-width:460px;padding:0 20px;display:none;word-break:break-word"></div>
+  <button id="retryBtn" onclick="location.reload()" class="btn btn-p" style="display:none">🔄 Retry</button>
 </div>
 
 <!-- LOGIN -->
@@ -723,7 +726,14 @@ textarea.fc{resize:vertical;min-height:70px}
 // ===== SUPABASE INIT =====
 const SUPABASE_URL = 'https://mjqtnayqxllelmxveeto.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qcXRuYXlxeGxsZWxteHZlZXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NDI5MDUsImV4cCI6MjA5NzMxODkwNX0.u1H2ROuf2Xo4PF2_KhvgOwTXK7ufLcT2XQOFUdLMDTs';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let sb = null;
+let sbInitError = null;
+try {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch (e) {
+  sbInitError = e;
+  console.error('Failed to create Supabase client:', e);
+}
 
 // ===== STATE =====
 const ALL_MODULES = ['dashboard','invoices','estimates','pos','jobs','crm','analytics','settings'];
@@ -1375,18 +1385,77 @@ function updatePDFPreview(){const p={coName:document.getElementById('pdf-co-name
 async function savePDFSettings(){pdfSettings=Object.assign({},pdfSettings,{coName:document.getElementById('pdf-co-name').value||'B2B Print Hub',coTag:document.getElementById('pdf-co-tag').value,coAddr:document.getElementById('pdf-co-addr').value,coPhone:document.getElementById('pdf-co-phone').value,coEmail:document.getElementById('pdf-co-email').value,coWeb:document.getElementById('pdf-co-web').value,layout:document.getElementById('pdf-layout').value,fontSize:document.getElementById('pdf-font-size').value,showTax:document.getElementById('pdf-show-tax').value,invTitle:document.getElementById('pdf-inv-title').value||'INVOICE',terms:document.getElementById('pdf-terms').value,footer:document.getElementById('pdf-footer').value,payment:document.getElementById('pdf-payment').value});await saveSetting('pdf',pdfSettings);await logActivity('Update PDF Settings','Settings','PDF settings updated');toast('PDF settings saved!');}
 
 // ===== BOOT =====
-window.addEventListener('DOMContentLoaded', async () => {
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise(function(resolve, reject) {
+      setTimeout(function() {
+        reject(new Error('Timed out after ' + (ms/1000) + 's waiting for: ' + label));
+      }, ms);
+    })
+  ]);
+}
+
+function showBootError(title, detail) {
+  document.getElementById('loadingSpinner').style.display='none';
+  document.getElementById('loadingMsg').textContent=title;
+  var d=document.getElementById('loadingDetail');
+  d.textContent=detail||'';
+  d.style.display=detail?'block':'none';
+  document.getElementById('retryBtn').style.display='inline-flex';
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  bootApp();
+});
+
+async function bootApp() {
+  if (typeof supabase === 'undefined' || !supabase.createClient) {
+    showBootError(
+      'Could not load required library',
+      'The Supabase JS library failed to load from the CDN. Check your internet connection, disable any ad-blocker for this site, and retry.'
+    );
+    return;
+  }
+
+  if (sbInitError || !sb) {
+    showBootError('Failed to initialize database client', (sbInitError && sbInitError.message) || String(sbInitError));
+    return;
+  }
+
   try {
-    // Test connection
-    const {error} = await sb.from('roles').select('id').limit(1);
-    if(error) throw error;
+    document.getElementById('loadingMsg').textContent='Connecting to database...';
+    var result = await withTimeout(
+      sb.from('roles').select('id').limit(1),
+      8000,
+      'Supabase database response'
+    );
+    if (result.error) throw result.error;
+
     hideLoading();
     document.getElementById('loginScreen').style.display='flex';
-  } catch(e) {
-    document.getElementById('loadingMsg').textContent='⚠️ Cannot connect to database. Check your connection.';
-    console.error('Supabase connection error:',e);
+  } catch (e) {
+    console.error('Supabase connection error:', e);
+    var detail = (e && e.message) || String(e);
+    var title = 'Cannot connect to database';
+
+    if (/timed out/i.test(detail)) {
+      title = 'Connection timed out';
+      detail = 'No response from Supabase after 8 seconds. The project URL may be wrong, the Supabase project may be paused, or your network is blocking the request.';
+    } else if (/Failed to fetch|NetworkError|fetch/i.test(detail)) {
+      title = 'Network error reaching Supabase';
+      detail = 'Could not reach ' + SUPABASE_URL + '. This usually means: the Supabase project is paused, the URL is incorrect, or the request was blocked.';
+    } else if (/JWT|invalid|api key|apikey/i.test(detail)) {
+      title = 'Invalid API key';
+      detail = 'The anon key was rejected by Supabase. Re-check Settings -> API -> anon public key.';
+    } else if (/relation .* does not exist|42P01/i.test(detail)) {
+      title = 'Database tables not found';
+      detail = 'Connected to Supabase, but the "roles" table does not exist. Re-run the table-creation SQL script.';
+    }
+
+    showBootError(title, detail + ' | Technical: ' + ((e && e.message) || e));
   }
-});
+}
 </script>
 </body>
 </html>
