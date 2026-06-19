@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>B2B Print Hub</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f1117;--bg2:#1a1d2e;--bg3:#222539;--sur:#2a2d3e;--sur2:#323548;--bor:#3a3d52;--t1:#e8eaf6;--t2:#9ea3c0;--t3:#6b7099;--acc:#6c63ff;--ok:#4caf7d;--warn:#f59e0b;--err:#ef4444;--inf:#38bdf8}
+.light{--bg:#f5f6fa;--bg2:#fff;--bg3:#eef0f8;--sur:#fff;--sur2:#f0f2fc;--bor:#dde1f0;--t1:#1a1d2e;--t2:#4a4f6b;--t3:#9ea3c0;--acc:#6c63ff;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--inf:#0284c7}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;font-size:14px}
+/* LOGIN */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+.login-box{background:var(--bg2);border:1px solid var(--bor);border-radius:16px;padding:40px;width:100%;max-width:420px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo-icon{font-size:40px;margin-bottom:8px}
+.login-logo h1{font-size:22px;font-weight:700;color:var(--acc)}
+.login-logo p{font-size:13px;color:var(--t3);margin-top:4px}
+/* APP */
+.app-layout{display:flex;min-height:100vh}
+.sb{width:220px;min-height:100vh;background:var(--bg2);border-right:1px solid var(--bor);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--bor)}
+.sb-logo-t{font-size:15px;font-weight:700;color:var(--acc)}
+.sb-logo-s{font-size:11px;color:var(--t3);margin-top:2px}
+.sb-nav{flex:1;padding:12px 8px;overflow-y:auto}
+.nav-grp{margin-bottom:18px}
+.nav-lbl{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;padding:0 8px;margin-bottom:5px}
+.nav-i{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--t2);font-size:13px;border:none;background:none;width:100%;text-align:left;font-weight:500;transition:all .15s;margin-bottom:2px}
+.nav-i:hover{background:var(--bg3);color:var(--t1)}.nav-i.active{background:var(--acc);color:#fff}
+.sb-user{padding:12px;border-top:1px solid var(--bor);display:flex;align-items:center;gap:10px}
+.sb-user-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.sb-user-name{font-size:13px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-user-role{font-size:10px;color:var(--t3)}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--bor);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.page-ttl{font-size:18px;font-weight:600}
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-p{background:var(--acc);color:#fff}.btn-p:hover{opacity:.9}
+.btn-o{background:transparent;color:var(--t2);border:1px solid var(--bor)}.btn-o:hover{border-color:var(--acc);color:var(--acc)}
+.btn-ok{background:var(--ok);color:#fff}
+.btn-err{background:var(--err);color:#fff}
+.btn-sm{padding:5px 11px;font-size:12px}
+.content{padding:24px;flex:1}
+.page{display:none}.page.active{display:block}
+.card{background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:20px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.b-ok{background:rgba(76,175,125,.15);color:var(--ok)}.b-warn{background:rgba(245,158,11,.15);color:var(--warn)}
+.b-err{background:rgba(239,68,68,.15);color:var(--err)}.b-inf{background:rgba(56,189,248,.15);color:var(--inf)}.b-gray{background:var(--bg3);color:var(--t2)}
+.b-purple{background:rgba(108,99,255,.15);color:var(--acc)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;border-bottom:1px solid var(--bor)}
+td{padding:11px 14px;border-bottom:1px solid var(--bor);font-size:13px}
+tr:hover td{background:var(--bg3)}
+.fg{margin-bottom:14px}
+.fl{font-size:12px;font-weight:500;color:var(--t2);margin-bottom:5px;display:block}
+.fc{width:100%;padding:8px 11px;border:1px solid var(--bor);border-radius:8px;background:var(--bg3);color:var(--t1);font-size:13px;outline:none}
+.fc:focus{border-color:var(--acc)}
+textarea.fc{resize:vertical;min-height:70px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--bor);border-radius:14px;padding:24px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
+.modal-t{font-size:16px;font-weight:600;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
+.xbtn{background:none;border:none;color:var(--t3);cursor:pointer;font-size:22px;line-height:1}
+.li-table{width:100%;border-collapse:collapse;margin-bottom:8px}
+.li-table th{background:var(--bg3);padding:7px 8px;font-size:11px;color:var(--t3);text-align:left}
+.li-table td{padding:5px 6px;border:none}
+.li-table input,.li-table select{width:100%;padding:6px;border:1px solid var(--bor);border-radius:6px;background:var(--bg);color:var(--t1);font-size:12px}
+.tot-box{background:var(--bg3);border-radius:10px;padding:14px;margin-top:10px}
+.tot-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:var(--t2)}
+.tot-grand{font-weight:700;font-size:15px;color:var(--t1);border-top:1px solid var(--bor);padding-top:8px;margin-top:5px}
+.k-card{background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:border .15s}
+.k-card:hover{border-color:var(--acc)}
+.chip{display:inline-flex;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;background:var(--bg3);color:var(--t2);border:1px solid var(--bor);cursor:pointer}
+.chip.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.divider{height:1px;background:var(--bor);margin:14px 0}
+.chart-wrap{position:relative;height:220px;margin-top:12px}
+.empty{text-align:center;padding:36px;color:var(--t3);font-size:13px}
+.progress-bar{height:6px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-top:5px}
+.progress-fill{height:100%;background:var(--acc);border-radius:3px}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:11px 18px;font-size:13px;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none}
+#toast.show{transform:translateY(0);opacity:1}
+.tab{flex:1;padding:8px;border-radius:8px;border:1px solid var(--bor);background:none;color:var(--t2);font-size:13px;cursor:pointer;font-weight:500}
+.tab.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+.color-swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid transparent;display:inline-block}
+.color-swatch.sel{border-color:var(--t1)}
+.pdf-preview{background:#fff;border-radius:8px;padding:20px;color:#222;font-size:12px;border:1px solid var(--bor);min-height:220px;overflow:hidden}
+.perm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.perm-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;font-size:12px;cursor:pointer;border:1px solid transparent}
+.perm-item:hover{border-color:var(--bor)}
+.perm-item input{cursor:pointer;width:15px;height:15px}
+.settings-tabs{display:flex;gap:0;border-bottom:1px solid var(--bor);margin-bottom:20px}
+.settings-tab{padding:10px 18px;border:none;background:none;color:var(--t2);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.settings-tab.active{color:var(--acc);border-bottom-color:var(--acc)}
+.role-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.info-box{background:var(--bg3);border:1px solid var(--bor);border-radius:10px;padding:16px;margin-bottom:14px}
+.info-box-title{font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.stat-mini{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bor);font-size:13px}
+.stat-mini:last-child{border-bottom:none}
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--bor)}
+.activity-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🖨️</div>
+      <h1>B2B Print Hub</h1>
+      <p>Business Management Suite</p>
+    </div>
+    <div id="login-error" style="display:none;background:rgba(239,68,68,.12);border:1px solid var(--err);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--err);margin-bottom:14px"></div>
+    <div class="fg"><label class="fl">Username</label><input class="fc" id="login-user" placeholder="Enter username" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <div class="fg"><label class="fl">Password</label><input class="fc" type="password" id="login-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <button class="btn btn-p" style="width:100%;justify-content:center;padding:12px;font-size:15px;margin-top:4px" onclick="doLogin()">🔐 Sign In</button>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--t3)">Default: admin / admin123</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appRoot" style="display:none">
+<div class="app-layout">
+<div class="sb">
+  <div class="sb-logo">
+    <div class="sb-logo-t">🖨 B2B Print Hub</div>
+    <div class="sb-logo-s">Business Management Suite</div>
+  </div>
+  <nav class="sb-nav" id="sideNav">
+    <div class="nav-grp">
+      <div class="nav-lbl">Overview</div>
+      <button class="nav-i active" onclick="gotoPage('dashboard',this)" data-perm="dashboard"><span>🏠</span>Dashboard</button>
+    </div>
+    <div class="nav-grp" id="salesNav">
+      <div class="nav-lbl">Sales</div>
+      <button class="nav-i" onclick="gotoPage('invoices',this)" data-perm="invoices"><span>🧾</span>Invoices</button>
+      <button class="nav-i" onclick="gotoPage('estimates',this)" data-perm="estimates"><span>📋</span>Estimates</button>
+      <button class="nav-i" onclick="gotoPage('pos',this)" data-perm="pos"><span>🛒</span>Point of Sale</button>
+    </div>
+    <div class="nav-grp" id="opsNav">
+      <div class="nav-lbl">Operations</div>
+      <button class="nav-i" onclick="gotoPage('jobs',this)" data-perm="jobs"><span>🔧</span>Jobs Board</button>
+      <button class="nav-i" onclick="gotoPage('crm',this)" data-perm="crm"><span>👥</span>CRM</button>
+    </div>
+    <div class="nav-grp">
+      <div class="nav-lbl">Reports</div>
+      <button class="nav-i" onclick="gotoPage('analytics',this)" data-perm="analytics"><span>📊</span>Analytics</button>
+      <button class="nav-i" onclick="gotoPage('settings',this)" data-perm="settings" id="settingsNav"><span>⚙️</span>Settings</button>
+    </div>
+  </nav>
+  <div class="sb-user" id="sb-user-block">
+    <div class="sb-user-av" id="sb-user-av"></div>
+    <div style="flex:1;min-width:0">
+      <div class="sb-user-name" id="sb-user-name">User</div>
+      <div class="sb-user-role" id="sb-user-role">Role</div>
+    </div>
+    <button onclick="doLogout()" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px" title="Logout">🚪</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="page-ttl" id="pageTitle">Dashboard</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-o btn-sm" id="pdfSettingsBtn" onclick="openPDFSettings()" style="display:none">⚙️ PDF Settings</button>
+      <button class="btn btn-o btn-sm" id="heldOrdersBtn" onclick="openHeldOrders()" style="display:none">⏸ Held Orders</button>
+      <div id="topBtnWrap" style="display:none">
+        <button class="btn btn-p" onclick="topAction()">+ <span id="topBtnLbl">New</span></button>
+      </div>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="g4" style="margin-bottom:20px">
+        <div class="card" style="padding:16px">
+          <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+            Total Revenue <button onclick="toggleRev()" id="revEye" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--t3)">👁</button>
+          </div>
+          <div style="font-size:24px;font-weight:700" id="dash-rev">$0</div>
+          <div style="font-size:11px;color:var(--ok);margin-top:4px">↑ All time paid</div>
+        </div>
+        <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Jobs Done</div><div style="font-size:24px;font-weight:700" id="dash-done">0</div><div style="font-size:11px;color:var(--t3);margin-top:4px">Completed</div></div>
+        <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Pending Jobs</div><div style="font-size:24px;font-weight:700" id="dash-pend">0</div><div style="font-size:11px;color:var(--t3);margin-top:4px">In progress</div></div>
+        <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Total Clients</div><div style="font-size:24px;font-weight:700" id="dash-cli">0</div><div style="font-size:11px;color:var(--t3);margin-top:4px">CRM contacts</div></div>
+      </div>
+      <div class="g2" style="margin-bottom:20px">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <b>Revenue Overview</b>
+            <div style="display:flex;gap:5px">
+              <button class="chip active" onclick="setRange('week',this)">Week</button>
+              <button class="chip" onclick="setRange('month',this)">Month</button>
+              <button class="chip" onclick="setRange('year',this)">Year</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="revChart"></canvas></div>
+        </div>
+        <div class="card"><b>Sales by Service</b><div class="chart-wrap"><canvas id="svcChart"></canvas></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><b>Recent Invoices</b><div id="dash-inv-list" style="margin-top:12px"></div></div>
+        <div class="card"><b>Activity Log</b><div id="dash-activity" style="margin-top:12px"></div></div>
+      </div>
+    </div>
+
+    <!-- INVOICES -->
+    <div class="page" id="page-invoices">
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="chip active" onclick="filterInv('all',this)">All</button>
+        <button class="chip" onclick="filterInv('draft',this)">Draft</button>
+        <button class="chip" onclick="filterInv('sent',this)">Sent</button>
+        <button class="chip" onclick="filterInv('paid',this)">Paid</button>
+        <button class="chip" onclick="filterInv('voided',this)">Voided</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table><thead><tr><th>#</th><th>Client</th><th>Services</th><th>Date</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="inv-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ESTIMATES -->
+    <div class="page" id="page-estimates">
+      <div class="card" style="padding:0;overflow:hidden">
+        <table><thead><tr><th>#</th><th>Client</th><th>Description</th><th>Date</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="est-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- POS -->
+    <div class="page" id="page-pos">
+      <div style="display:grid;grid-template-columns:1fr 380px;gap:0;height:calc(100vh - 62px);margin:-24px;overflow:hidden">
+        <div style="display:flex;flex-direction:column;background:var(--bg);overflow:hidden">
+          <div style="display:flex;align-items:center;border-bottom:1px solid var(--bor);background:var(--bg2)">
+            <div style="display:flex;flex:1;overflow-x:auto;padding:14px 16px 0" id="pos-cat-tabs"></div>
+            <button onclick="openItemsManager()" style="margin:8px 14px 0;padding:6px 12px;border:1px solid var(--bor);border-radius:8px;background:none;color:var(--t2);font-size:12px;cursor:pointer;white-space:nowrap;font-weight:500">⚙️ Manage Items</button>
+          </div>
+          <div style="padding:12px 16px;background:var(--bg2)"><input class="fc" id="pos-search" placeholder="🔍 Search items..." oninput="renderPOSItems()" style="padding:9px 12px"/></div>
+          <div style="flex:1;overflow-y:auto;padding:12px 16px"><div id="pos-items-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px"></div></div>
+        </div>
+        <div style="background:var(--bg2);border-left:1px solid var(--bor);display:flex;flex-direction:column;overflow:hidden">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between">
+            <div style="font-weight:700;font-size:15px">Current Order</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select class="fc" id="pos-cust" style="font-size:12px;padding:5px 8px;width:140px"></select>
+              <button onclick="clearCart()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:18px">🗑</button>
+            </div>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:8px 0" id="pos-cart-items"></div>
+          <div style="padding:10px 16px;border-top:1px solid var(--bor);border-bottom:1px solid var(--bor)">
+            <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px">Custom Item</div>
+            <div style="display:flex;gap:6px">
+              <input class="fc" id="ci-name" placeholder="Description" style="flex:2;padding:6px 9px;font-size:12px"/>
+              <input class="fc" id="ci-price" type="number" placeholder="$0.00" style="flex:1;padding:6px 9px;font-size:12px" min="0" step="0.01"/>
+              <button class="btn btn-p btn-sm" onclick="addCustomItem()">+</button>
+            </div>
+          </div>
+          <div style="padding:10px 16px;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:var(--t2);white-space:nowrap">Discount:</span>
+            <div style="display:flex;gap:4px;flex:1">
+              <button class="btn btn-o btn-sm" id="disc-5" onclick="applyDisc(5)">5%</button>
+              <button class="btn btn-o btn-sm" id="disc-10" onclick="applyDisc(10)">10%</button>
+              <button class="btn btn-o btn-sm" id="disc-15" onclick="applyDisc(15)">15%</button>
+              <input class="fc" id="disc-custom" type="number" placeholder="%" min="0" max="100" style="width:52px;padding:5px 7px;font-size:12px" oninput="applyDisc(parseFloat(this.value)||0)"/>
+            </div>
+          </div>
+          <div style="padding:12px 16px;background:var(--bg3)">
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--t2);margin-bottom:4px"><span>Subtotal</span><span id="pos-sub">$0.00</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--t2);margin-bottom:4px"><span>Tax (8%)</span><span id="pos-tax">$0.00</span></div>
+            <div id="pos-disc-row" style="display:none;justify-content:space-between;font-size:13px;color:var(--ok);margin-bottom:4px"><span>Discount</span><span id="pos-disc-amt"></span></div>
+            <div style="display:flex;justify-content:space-between;font-weight:700;font-size:20px;color:var(--t1);border-top:1px solid var(--bor);padding-top:10px;margin-top:4px"><span>Total</span><span id="pos-tot">$0.00</span></div>
+          </div>
+          <div style="padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button class="btn btn-p" style="justify-content:center;padding:12px;font-size:14px;font-weight:600" onclick="posCheckout('card')">💳 Card</button>
+            <button class="btn btn-ok" style="justify-content:center;padding:12px;font-size:14px;font-weight:600" onclick="posCheckout('cash')">💵 Cash</button>
+            <button class="btn btn-o" style="justify-content:center;padding:10px;font-size:13px" onclick="posCheckout('other')">📱 Other</button>
+            <button class="btn btn-o" style="justify-content:center;padding:10px;font-size:13px;color:var(--warn)" onclick="holdOrder()">⏸ Hold</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JOBS -->
+    <div class="page" id="page-jobs">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="job-search" class="fc" placeholder="🔍 Search jobs..." style="width:200px;padding:7px 11px" oninput="renderJobs()"/>
+          <select class="fc" id="job-filter-type" style="width:160px;padding:7px 11px" onchange="renderJobs()">
+            <option value="">All Services</option>
+            <option>Web Design</option><option>Print / Banners</option><option>Large Format Signs</option>
+            <option>Window Wraps</option><option>Signs &amp; Awnings</option><option>Install</option><option>Other</option>
+          </select>
+          <select class="fc" id="job-filter-member" style="width:160px;padding:7px 11px" onchange="renderJobs()"><option value="">All Members</option></select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-o btn-sm" onclick="openMembersModal()">👥 Manage Team</button>
+          <button class="btn btn-p btn-sm" onclick="openJobModal(null)">+ New Job</button>
+        </div>
+      </div>
+      <div id="kanban" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start"></div>
+    </div>
+
+    <!-- CRM -->
+    <div class="page" id="page-crm">
+      <div class="card" style="padding:0;overflow:hidden">
+        <table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Jobs</th><th>Total Spent</th><th>Actions</th></tr></thead>
+        <tbody id="crm-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="page" id="page-analytics">
+      <div class="g4" style="margin-bottom:20px">
+        <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Today</div><div style="font-size:24px;font-weight:700" id="an-today">$0</div></div>
+        <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">This Week</div><div style="font-size:24px;font-weight:700" id="an-week">$0</div></div>
+        <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">This Month</div><div style="font-size:24px;font-weight:700" id="an-month">$0</div></div>
+        <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">This Year</div><div style="font-size:24px;font-weight:700" id="an-year">$0</div></div>
+      </div>
+      <div class="g2" style="margin-bottom:20px">
+        <div class="card"><b>Monthly Revenue</b><div class="chart-wrap"><canvas id="moChart"></canvas></div></div>
+        <div class="card"><b>Revenue by Category</b><div class="chart-wrap"><canvas id="catChart"></canvas></div></div>
+      </div>
+      <div class="card"><b>Top Clients by Revenue</b><div id="top-clients" style="margin-top:14px"></div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="settings-tabs">
+        <button class="settings-tab active" onclick="switchSettingsTab('users',this)">👤 Users & Access</button>
+        <button class="settings-tab" onclick="switchSettingsTab('roles',this)">🛡️ Roles</button>
+        <button class="settings-tab" onclick="switchSettingsTab('activity',this)">📋 Activity Log</button>
+        <button class="settings-tab" onclick="switchSettingsTab('security',this)">🔒 Security</button>
+        <button class="settings-tab" onclick="switchSettingsTab('business',this)">🏢 Business Info</button>
+        <button class="settings-tab" onclick="switchSettingsTab('pdf',this)">📄 PDF Settings</button>
+      </div>
+
+      <!-- USERS TAB -->
+      <div id="settings-tab-users">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div><div style="font-weight:600;font-size:16px">User Management</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Manage who has access to the dashboard</div></div>
+          <button class="btn btn-p btn-sm" onclick="openUserModal(null)">+ New User</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <table><thead><tr><th>User</th><th>Username</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+          <tbody id="users-tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ROLES TAB -->
+      <div id="settings-tab-roles" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div><div style="font-weight:600;font-size:16px">Roles & Permissions</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Define what each role can access</div></div>
+          <button class="btn btn-p btn-sm" onclick="openRoleModal(null)">+ New Role</button>
+        </div>
+        <div id="roles-list"></div>
+      </div>
+
+      <!-- ACTIVITY TAB -->
+      <div id="settings-tab-activity" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div><div style="font-weight:600;font-size:16px">Activity Log</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Full audit trail of all user actions</div></div>
+          <button class="btn btn-o btn-sm" onclick="clearActivityLog()">🗑 Clear Log</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;max-height:600px;overflow-y:auto">
+          <table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Module</th><th>Details</th></tr></thead>
+          <tbody id="activity-tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- SECURITY TAB -->
+      <div id="settings-tab-security" style="display:none">
+        <div style="font-weight:600;font-size:16px;margin-bottom:16px">Security Settings</div>
+        <div class="g2">
+          <div class="card">
+            <div style="font-weight:600;margin-bottom:14px">Session Policy</div>
+            <div class="fg"><label class="fl">Session Timeout (minutes)</label><input class="fc" id="sec-timeout" type="number" value="60" min="5" max="480"/></div>
+            <div class="fg"><label class="fl">Max Failed Login Attempts</label><input class="fc" id="sec-attempts" type="number" value="5" min="1" max="20"/></div>
+            <div class="fg"><label class="fl">Require Strong Passwords</label>
+              <select class="fc" id="sec-strongpw"><option value="yes">Yes — 8+ chars, mixed</option><option value="no">No — any password</option></select>
+            </div>
+            <button class="btn btn-p btn-sm" onclick="saveSecuritySettings()">💾 Save Settings</button>
+          </div>
+          <div class="card">
+            <div style="font-weight:600;margin-bottom:14px">Change Your Password</div>
+            <div class="fg"><label class="fl">Current Password</label><input class="fc" type="password" id="pw-current" placeholder="Current password"/></div>
+            <div class="fg"><label class="fl">New Password</label><input class="fc" type="password" id="pw-new" placeholder="New password (min 6 chars)"/></div>
+            <div class="fg"><label class="fl">Confirm New Password</label><input class="fc" type="password" id="pw-confirm" placeholder="Confirm new password"/></div>
+            <button class="btn btn-p btn-sm" onclick="changePassword()">🔑 Change Password</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div style="font-weight:600;margin-bottom:14px">Active Sessions</div>
+          <div id="active-sessions-list"></div>
+        </div>
+      </div>
+
+      <!-- BUSINESS TAB -->
+      <div id="settings-tab-business" style="display:none">
+        <div style="font-weight:600;font-size:16px;margin-bottom:16px">Business Information</div>
+        <div class="g2">
+          <div class="card">
+            <div style="font-weight:600;margin-bottom:14px">Company Details</div>
+            <div class="fg"><label class="fl">Company Name</label><input class="fc" id="biz-name" placeholder="B2B Print Hub"/></div>
+            <div class="fg"><label class="fl">Business Type</label><input class="fc" id="biz-type" placeholder="Print & Sign Company"/></div>
+            <div class="fg"><label class="fl">Tax ID / EIN</label><input class="fc" id="biz-tax-id" placeholder="XX-XXXXXXX"/></div>
+            <div class="fg"><label class="fl">Business License #</label><input class="fc" id="biz-license" placeholder="License number"/></div>
+          </div>
+          <div class="card">
+            <div style="font-weight:600;margin-bottom:14px">Contact & Address</div>
+            <div class="fg"><label class="fl">Address</label><textarea class="fc" id="biz-addr" placeholder="123 Main St, Miami, FL 33101"></textarea></div>
+            <div class="fg"><label class="fl">Phone</label><input class="fc" id="biz-phone" placeholder="(305) 000-0000"/></div>
+            <div class="fg"><label class="fl">Email</label><input class="fc" id="biz-email" placeholder="info@b2bprinthub.com"/></div>
+            <div class="fg"><label class="fl">Website</label><input class="fc" id="biz-web" placeholder="www.b2bprinthub.com"/></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div style="font-weight:600;margin-bottom:14px">Financial Settings</div>
+          <div class="g3">
+            <div class="fg"><label class="fl">Default Tax Rate (%)</label><input class="fc" id="biz-tax-rate" type="number" value="8" min="0" max="30" step="0.1"/></div>
+            <div class="fg"><label class="fl">Default Currency</label><select class="fc" id="biz-currency"><option>USD ($)</option><option>EUR (€)</option><option>GBP (£)</option><option>CAD (C$)</option></select></div>
+            <div class="fg"><label class="fl">Payment Terms Default</label><select class="fc" id="biz-terms"><option>Due on Receipt</option><option>Net 15</option><option>Net 30</option><option>Net 60</option></select></div>
+          </div>
+          <button class="btn btn-p btn-sm" onclick="saveBusinessSettings()">💾 Save Business Info</button>
+        </div>
+      </div>
+
+      <!-- PDF TAB -->
+      <div id="settings-tab-pdf" style="display:none">
+        <div style="font-weight:600;font-size:16px;margin-bottom:16px">PDF Invoice Settings</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div>
+            <div style="display:flex;gap:6px;margin-bottom:16px">
+              <button class="tab active" id="ptab-company" onclick="switchPDFTab('company')">Company</button>
+              <button class="tab" id="ptab-style" onclick="switchPDFTab('style')">Style</button>
+              <button class="tab" id="ptab-content" onclick="switchPDFTab('content')">Content</button>
+            </div>
+            <div id="pdf-tab-company">
+              <div class="fg"><label class="fl">Company Logo</label><input type="file" accept="image/*" class="fc" id="logo-input" onchange="handleLogoUpload(event)" style="font-size:12px;padding:6px"/>
+                <div id="logo-preview-wrap" style="display:none;align-items:center;gap:10px;margin-top:8px"><img id="logo-preview" style="max-height:56px;max-width:160px;border-radius:6px;border:1px solid var(--bor);object-fit:contain"/><button onclick="removeLogo()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:12px">✕ Remove</button></div>
+              </div>
+              <div class="fg"><label class="fl">Company Name</label><input class="fc" id="pdf-co-name" placeholder="B2B Print Hub" oninput="updatePDFPreview()"/></div>
+              <div class="fg"><label class="fl">Tagline</label><input class="fc" id="pdf-co-tag" placeholder="Print · Design · Signs &amp; Awnings" oninput="updatePDFPreview()"/></div>
+              <div class="fg"><label class="fl">Address</label><input class="fc" id="pdf-co-addr" oninput="updatePDFPreview()"/></div>
+              <div class="fg"><label class="fl">Phone</label><input class="fc" id="pdf-co-phone" oninput="updatePDFPreview()"/></div>
+              <div class="fg"><label class="fl">Email</label><input class="fc" id="pdf-co-email" oninput="updatePDFPreview()"/></div>
+              <div class="fg"><label class="fl">Website</label><input class="fc" id="pdf-co-web" oninput="updatePDFPreview()"/></div>
+            </div>
+            <div id="pdf-tab-style" style="display:none">
+              <div class="fg"><label class="fl">Accent Color</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+                  <span class="color-swatch sel" style="background:#6c63ff" onclick="setPDFColor('#6c63ff',this)"></span>
+                  <span class="color-swatch" style="background:#0284c7" onclick="setPDFColor('#0284c7',this)"></span>
+                  <span class="color-swatch" style="background:#16a34a" onclick="setPDFColor('#16a34a',this)"></span>
+                  <span class="color-swatch" style="background:#d97706" onclick="setPDFColor('#d97706',this)"></span>
+                  <span class="color-swatch" style="background:#dc2626" onclick="setPDFColor('#dc2626',this)"></span>
+                  <span class="color-swatch" style="background:#0f172a" onclick="setPDFColor('#0f172a',this)"></span>
+                  <span class="color-swatch" style="background:#7c3aed" onclick="setPDFColor('#7c3aed',this)"></span>
+                  <input type="color" id="pdf-custom-color" style="width:28px;height:28px;border-radius:6px;border:1px solid var(--bor);cursor:pointer;padding:0" oninput="setPDFColor(this.value,null)"/>
+                </div>
+              </div>
+              <div class="fg"><label class="fl">Layout</label><select class="fc" id="pdf-layout" onchange="updatePDFPreview()"><option value="classic">Classic</option><option value="modern">Modern</option><option value="minimal">Minimal</option></select></div>
+              <div class="fg"><label class="fl">Font Size</label><select class="fc" id="pdf-font-size"><option value="small">Small</option><option value="normal" selected>Normal</option><option value="large">Large</option></select></div>
+              <div class="fg"><label class="fl">Show Tax Line</label><select class="fc" id="pdf-show-tax"><option value="yes">Yes</option><option value="no">No</option></select></div>
+            </div>
+            <div id="pdf-tab-content" style="display:none">
+              <div class="fg"><label class="fl">Invoice Title</label><input class="fc" id="pdf-inv-title" placeholder="INVOICE" oninput="updatePDFPreview()"/></div>
+              <div class="fg"><label class="fl">Payment Terms</label><input class="fc" id="pdf-terms" placeholder="Net 30" oninput="updatePDFPreview()"/></div>
+              <div class="fg"><label class="fl">Footer Note</label><textarea class="fc" id="pdf-footer" placeholder="Thank you for your business!" oninput="updatePDFPreview()"></textarea></div>
+              <div class="fg"><label class="fl">Payment Info</label><textarea class="fc" id="pdf-payment" placeholder="Zelle: pay@b2bprinthub.com" oninput="updatePDFPreview()"></textarea></div>
+            </div>
+            <button class="btn btn-p btn-sm" onclick="savePDFSettings()">💾 Save PDF Settings</button>
+          </div>
+          <div>
+            <div class="fl" style="margin-bottom:8px">Live Preview</div>
+            <div id="pdf-preview-box" class="pdf-preview"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /settings page -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app-layout -->
+</div><!-- /appRoot -->
+
+<!-- ===== MODALS ===== -->
+
+<!-- USER MODAL -->
+<div class="overlay" id="userModal">
+<div class="modal" style="max-width:540px">
+  <div class="modal-t"><span id="userModalT">New User</span><button class="xbtn" onclick="closeM('userModal')">×</button></div>
+  <div class="g2" style="margin-bottom:4px">
+    <div class="fg"><label class="fl">Full Name</label><input class="fc" id="user-name" placeholder="John Doe"/></div>
+    <div class="fg"><label class="fl">Username</label><input class="fc" id="user-username" placeholder="johndoe"/></div>
+  </div>
+  <div class="g2" style="margin-bottom:4px">
+    <div class="fg"><label class="fl">Email</label><input class="fc" type="email" id="user-email" placeholder="john@example.com"/></div>
+    <div class="fg"><label class="fl">Role</label><select class="fc" id="user-role"></select></div>
+  </div>
+  <div class="g2" style="margin-bottom:4px">
+    <div class="fg"><label class="fl">Password</label><input class="fc" type="password" id="user-pass" placeholder="Min 6 characters"/></div>
+    <div class="fg"><label class="fl">Status</label><select class="fc" id="user-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+  </div>
+  <div class="fg"><label class="fl">Phone (optional)</label><input class="fc" id="user-phone" placeholder="(305) 000-0000"/></div>
+  <div class="fg"><label class="fl">Notes</label><textarea class="fc" id="user-notes" placeholder="Internal notes about this user..."></textarea></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+    <button class="btn btn-o" onclick="closeM('userModal')">Cancel</button>
+    <button class="btn btn-p" onclick="saveUser()">✓ Save User</button>
+  </div>
+</div>
+</div>
+
+<!-- ROLE MODAL -->
+<div class="overlay" id="roleModal">
+<div class="modal" style="max-width:560px">
+  <div class="modal-t"><span id="roleModalT">New Role</span><button class="xbtn" onclick="closeM('roleModal')">×</button></div>
+  <div class="g2" style="margin-bottom:4px">
+    <div class="fg"><label class="fl">Role Name</label><input class="fc" id="role-name" placeholder="e.g. Sales Rep"/></div>
+    <div class="fg"><label class="fl">Color</label><input type="color" class="fc" id="role-color" value="#6c63ff" style="height:40px;padding:4px"/></div>
+  </div>
+  <div class="fg"><label class="fl">Description</label><input class="fc" id="role-desc" placeholder="Brief description of this role..."/></div>
+  <div class="fl" style="margin-bottom:8px">Module Permissions</div>
+  <div class="perm-grid" id="role-perms-grid"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+    <button class="btn btn-o" onclick="closeM('roleModal')">Cancel</button>
+    <button class="btn btn-p" onclick="saveRole()">✓ Save Role</button>
+  </div>
+</div>
+</div>
+
+<!-- INVOICE MODAL -->
+<div class="overlay" id="invModal">
+<div class="modal" style="max-width:700px">
+  <div class="modal-t"><span id="invModalT">New Invoice</span><button class="xbtn" onclick="closeM('invModal')">×</button></div>
+  <div class="g2" style="margin-bottom:4px">
+    <div class="fg"><label class="fl">Client</label><select class="fc" id="inv-cli"></select></div>
+    <div class="fg"><label class="fl">Date</label><input type="date" class="fc" id="inv-date"/></div>
+  </div>
+  <div class="fg"><label class="fl">Notes</label><textarea class="fc" id="inv-notes" placeholder="Project notes..."></textarea></div>
+  <div class="fl" style="margin-bottom:8px">Line Items</div>
+  <table class="li-table"><thead><tr><th>Service</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th><th></th></tr></thead>
+  <tbody id="li-body"></tbody></table>
+  <button class="btn btn-o btn-sm" onclick="addLI(null)">+ Add Item</button>
+  <div class="tot-box">
+    <div class="tot-row"><span>Subtotal</span><span id="inv-sub">$0.00</span></div>
+    <div class="tot-row"><span>Tax (8%)</span><span id="inv-tax">$0.00</span></div>
+    <div class="tot-row"><span>Discount -$</span><span><input type="number" id="inv-disc" value="0" min="0" style="width:60px;background:var(--bg3);border:1px solid var(--bor);border-radius:5px;color:var(--t1);padding:2px 6px;font-size:12px" oninput="recalcInv()"/></span></div>
+    <div class="tot-row tot-grand"><span>Grand Total</span><span id="inv-grand">$0.00</span></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+    <button class="btn btn-o" onclick="saveInv('draft')">💾 Draft</button>
+    <button class="btn btn-o" onclick="saveInv('sent')">📤 Sent</button>
+    <button class="btn btn-p" onclick="saveInv('paid')">✓ Paid</button>
+  </div>
+</div>
+</div>
+
+<!-- ESTIMATE MODAL -->
+<div class="overlay" id="estModal">
+<div class="modal" style="max-width:700px">
+  <div class="modal-t"><span id="estModalT">New Estimate</span><button class="xbtn" onclick="closeM('estModal')">×</button></div>
+  <div class="g2" style="margin-bottom:4px">
+    <div class="fg"><label class="fl">Client</label><select class="fc" id="est-cli"></select></div>
+    <div class="fg"><label class="fl">Date</label><input type="date" class="fc" id="est-date"/></div>
+  </div>
+  <div class="fg"><label class="fl">Project Description</label><textarea class="fc" id="est-desc" placeholder="Describe the project..."></textarea></div>
+  <div class="fg"><label class="fl">Site Inspection Photos</label><input type="file" accept="image/*" multiple class="fc" onchange="handleEstPhotos(event)"/>
+    <div id="est-photo-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px"></div>
+  </div>
+  <div class="fl" style="margin-bottom:8px">Line Items</div>
+  <table class="li-table"><thead><tr><th>Service</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th><th></th></tr></thead>
+  <tbody id="est-li-body"></tbody></table>
+  <button class="btn btn-o btn-sm" onclick="addEstLI(null)">+ Add Item</button>
+  <div class="tot-box">
+    <div class="tot-row"><span>Subtotal</span><span id="est-sub">$0.00</span></div>
+    <div class="tot-row"><span>Tax (8%)</span><span id="est-tax">$0.00</span></div>
+    <div class="tot-row tot-grand"><span>Estimate Total</span><span id="est-grand">$0.00</span></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+    <button class="btn btn-o" onclick="saveEst()">💾 Save</button>
+    <button class="btn btn-p" onclick="convEst()">📄 Convert to Invoice</button>
+  </div>
+</div>
+</div>
+
+<!-- ESTIMATE APPROVAL MODAL -->
+<div class="overlay" id="estApprovalModal">
+<div class="modal" style="max-width:520px">
+  <div class="modal-t"><span>📋 Estimate Approval</span><button class="xbtn" onclick="closeM('estApprovalModal')">×</button></div>
+  <div id="est-approval-body"></div>
+</div>
+</div>
+
+<!-- CLIENT MODAL -->
+<div class="overlay" id="cliModal">
+<div class="modal" style="max-width:460px">
+  <div class="modal-t"><span id="cliModalT">New Client</span><button class="xbtn" onclick="closeM('cliModal')">×</button></div>
+  <div class="fg"><label class="fl">Full Name / Company</label><input class="fc" id="cli-name" placeholder="John Doe / Acme Corp"/></div>
+  <div class="fg"><label class="fl">Email</label><input type="email" class="fc" id="cli-email"/></div>
+  <div class="fg"><label class="fl">Phone</label><input class="fc" id="cli-phone"/></div>
+  <div class="fg"><label class="fl">Address</label><textarea class="fc" id="cli-addr"></textarea></div>
+  <div class="fg"><label class="fl">Notes</label><textarea class="fc" id="cli-notes"></textarea></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+    <button class="btn btn-o" onclick="closeM('cliModal')">Cancel</button>
+    <button class="btn btn-p" onclick="saveCli()">✓ Save</button>
+  </div>
+</div>
+</div>
+
+<!-- JOB MODAL -->
+<div class="overlay" id="jobModal">
+<div class="modal" style="max-width:620px">
+  <div class="modal-t"><span id="jobModalT">New Job</span><button class="xbtn" onclick="closeM('jobModal')">×</button></div>
+  <div class="g2" style="margin-bottom:4px">
+    <div class="fg"><label class="fl">Job Title</label><input class="fc" id="job-title"/></div>
+    <div class="fg"><label class="fl">Client</label><select class="fc" id="job-cli"></select></div>
+  </div>
+  <div class="g2" style="margin-bottom:4px">
+    <div class="fg"><label class="fl">Service Type</label><select class="fc" id="job-type"><option>Web Design</option><option>Print / Banners</option><option>Large Format Signs</option><option>Window Wraps</option><option>Signs &amp; Awnings</option><option>Install</option><option>Other</option></select></div>
+    <div class="fg"><label class="fl">Status</label><select class="fc" id="job-status"><option value="pending">Pending</option><option value="in-progress">In Progress</option><option value="done">Done</option><option value="voided">Voided</option></select></div>
+  </div>
+  <div class="g2" style="margin-bottom:4px">
+    <div class="fg"><label class="fl">Priority</label><select class="fc" id="job-priority"><option value="low">🟢 Low</option><option value="medium" selected>🟡 Medium</option><option value="high">🔴 High</option></select></div>
+    <div class="fg"><label class="fl">Due Date</label><input type="date" class="fc" id="job-due"/></div>
+  </div>
+  <div class="fg"><label class="fl">Assign Team Members</label><div id="job-members-checkboxes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div></div>
+  <div class="fg"><label class="fl">Description</label><textarea class="fc" id="job-desc"></textarea></div>
+  <div class="fg"><label class="fl">Checklist</label><div id="job-checklist-items"></div><button class="btn btn-o btn-sm" style="margin-top:6px" onclick="addChecklistItem('',false)">+ Add Item</button></div>
+  <div class="fg"><label class="fl">Job Photos</label><input type="file" accept="image/*" multiple class="fc" onchange="handleJobPhotos(event)"/><div id="job-photo-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px"></div></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+    <button class="btn btn-o" onclick="closeM('jobModal')">Cancel</button>
+    <button class="btn btn-p" onclick="saveJob()">✓ Save Job</button>
+  </div>
+</div>
+</div>
+
+<!-- JOB DETAIL MODAL -->
+<div class="overlay" id="jobDetailModal">
+<div class="modal" style="max-width:540px">
+  <div class="modal-t"><span id="jd-title">Job Detail</span><button class="xbtn" onclick="closeM('jobDetailModal')">×</button></div>
+  <div id="jd-body"></div>
+</div>
+</div>
+
+<!-- TEAM MEMBERS MODAL -->
+<div class="overlay" id="membersModal">
+<div class="modal" style="max-width:460px">
+  <div class="modal-t"><span>👥 Team Members</span><button class="xbtn" onclick="closeM('membersModal')">×</button></div>
+  <div id="members-list" style="margin-bottom:16px"></div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <input class="fc" id="new-member-name" placeholder="Name" style="flex:1"/>
+    <input class="fc" id="new-member-role" placeholder="Role" style="flex:1"/>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <input class="fc" id="new-member-color" type="color" value="#6c63ff" style="width:44px;padding:4px;height:38px"/>
+    <button class="btn btn-p" style="flex:1;justify-content:center" onclick="addMember()">+ Add Member</button>
+  </div>
+  <div style="display:flex;justify-content:flex-end"><button class="btn btn-p" onclick="closeM('membersModal');renderJobs()">✓ Done</button></div>
+</div>
+</div>
+
+<!-- ITEMS MANAGER MODAL -->
+<div class="overlay" id="itemsManagerModal">
+<div class="modal" style="max-width:780px">
+  <div class="modal-t"><span>⚙️ Manage POS Items</span><button class="xbtn" onclick="closeM('itemsManagerModal')">×</button></div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <input class="fc" id="im-search" placeholder="🔍 Search..." oninput="renderItemsManager()" style="flex:1;min-width:160px;padding:7px 11px"/>
+    <select class="fc" id="im-filter-cat" onchange="renderItemsManager()" style="width:140px;padding:7px 11px"><option value="">All Categories</option></select>
+    <button class="btn btn-p btn-sm" onclick="openItemForm(0)">+ New Item</button>
+  </div>
+  <div id="item-form-wrap" style="display:none;background:var(--bg3);border:1px solid var(--bor);border-radius:10px;padding:16px;margin-bottom:16px">
+    <div style="font-weight:600;font-size:14px;margin-bottom:12px" id="item-form-title">New Item</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label class="fl">Item Name</label><input class="fc" id="im-name" placeholder="e.g. Banner 3x6"/></div>
+      <div><label class="fl">Price ($)</label><input class="fc" type="number" id="im-price" placeholder="0.00" min="0" step="0.01"/></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label class="fl">Category</label>
+        <div style="display:flex;gap:6px"><select class="fc" id="im-cat" style="flex:1"></select><button class="btn btn-o btn-sm" onclick="showNewCatInput()">+ New</button></div>
+        <div id="im-new-cat-wrap" style="display:none;margin-top:7px"><div style="display:flex;gap:6px"><input class="fc" id="im-new-cat-input" placeholder="New category name..." style="flex:1;padding:7px 10px;font-size:12px"/><button class="btn btn-p btn-sm" onclick="confirmNewCategory()">Add</button><button class="btn btn-o btn-sm" onclick="cancelNewCategory()">✕</button></div></div>
+      </div>
+      <div><label class="fl">SKU / Code</label><input class="fc" id="im-sku" placeholder="e.g. BNR-3x6"/></div>
+    </div>
+    <div style="margin-bottom:12px"><label class="fl">Description</label><textarea class="fc" id="im-desc" placeholder="Item details..." style="min-height:56px"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-o btn-sm" onclick="closeItemForm()">Cancel</button>
+      <button class="btn btn-p btn-sm" onclick="saveItemForm()">✓ Save Item</button>
+    </div>
+  </div>
+  <div style="max-height:360px;overflow-y:scroll;border:1px solid var(--bor);border-radius:10px;scrollbar-width:thin;scrollbar-color:var(--bor) transparent">
+    <table style="position:relative"><thead style="position:sticky;top:0;z-index:2"><tr><th style="background:var(--bg2)">Name</th><th style="background:var(--bg2)">Category</th><th style="background:var(--bg2)">SKU</th><th style="background:var(--bg2)">Description</th><th style="background:var(--bg2)">Price</th><th style="background:var(--bg2);text-align:center">Actions</th></tr></thead>
+    <tbody id="items-manager-tbody"></tbody></table>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
+    <span id="im-count" style="font-size:12px;color:var(--t3)"></span>
+    <button class="btn btn-p btn-sm" onclick="closeM('itemsManagerModal');renderPOSItems()">✓ Done</button>
+  </div>
+</div>
+</div>
+
+<!-- HELD ORDERS MODAL -->
+<div class="overlay" id="heldModal">
+<div class="modal" style="max-width:440px">
+  <div class="modal-t"><span>⏸ Held Orders</span><button class="xbtn" onclick="closeM('heldModal')">×</button></div>
+  <div id="held-list"></div>
+</div>
+</div>
+
+<!-- CASH MODAL -->
+<div class="overlay" id="cashModal">
+<div class="modal" style="max-width:360px">
+  <div class="modal-t"><span>💵 Cash Payment</span><button class="xbtn" onclick="closeM('cashModal')">×</button></div>
+  <div style="text-align:center;margin-bottom:20px">
+    <div style="font-size:13px;color:var(--t2);margin-bottom:4px">Order Total</div>
+    <div style="font-size:32px;font-weight:700;color:var(--acc)" id="cash-total-display">$0.00</div>
+  </div>
+  <div class="fg"><label class="fl">Cash Tendered</label><input class="fc" type="number" id="cash-tendered" placeholder="0.00" oninput="calcChange()" style="font-size:20px;text-align:center;padding:12px"/></div>
+  <div style="background:var(--bg3);border-radius:10px;padding:14px;text-align:center;margin-bottom:16px">
+    <div style="font-size:12px;color:var(--t2)">Change Due</div>
+    <div style="font-size:28px;font-weight:700;color:var(--ok)" id="cash-change">$0.00</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px" id="cash-quick"></div>
+  <button class="btn btn-ok" style="width:100%;justify-content:center;font-size:15px;padding:12px" onclick="confirmCashPayment()">✓ Confirm Payment</button>
+</div>
+</div>
+
+<!-- RECEIPT MODAL -->
+<div class="overlay" id="receiptModal">
+<div class="modal" style="max-width:340px">
+  <div class="modal-t"><span>🧾 Receipt</span><button class="xbtn" onclick="closeM('receiptModal')">×</button></div>
+  <div id="receipt-body" style="font-family:monospace;font-size:12px;background:var(--bg3);border-radius:8px;padding:16px;margin-bottom:14px;white-space:pre-wrap;max-height:400px;overflow-y:auto"></div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-o" style="flex:1;justify-content:center" onclick="printReceipt()">🖨 Print</button>
+    <button class="btn btn-p" style="flex:1;justify-content:center" onclick="closeM('receiptModal');clearCart()">✓ Done</button>
+  </div>
+</div>
+</div>
+
+<div id="toast">✓ <span id="toast-msg">Done!</span></div>
+
+<script>
+// ===== AUTH & USERS SYSTEM =====
+var ALL_MODULES = ['dashboard','invoices','estimates','pos','jobs','crm','analytics','settings'];
+var MODULE_LABELS = {dashboard:'Dashboard',invoices:'Invoices',estimates:'Estimates',pos:'Point of Sale',jobs:'Jobs Board',crm:'CRM',analytics:'Analytics',settings:'Settings'};
+
+var appRoles = [
+  {id:1, name:'Administrator', color:'#ef4444', desc:'Full access to everything', perms:ALL_MODULES.slice(), locked:true},
+  {id:2, name:'Manager', color:'#6c63ff', desc:'Access to all except Settings', perms:['dashboard','invoices','estimates','pos','jobs','crm','analytics'], locked:false},
+  {id:3, name:'Sales Rep', color:'#4caf7d', desc:'Invoices, Estimates, POS and CRM only', perms:['dashboard','invoices','estimates','pos','crm'], locked:false},
+  {id:4, name:'Installer', color:'#f59e0b', desc:'Jobs board and dashboard only', perms:['dashboard','jobs'], locked:false},
+  {id:5, name:'Finance', color:'#38bdf8', desc:'Invoices, Analytics, no Settings', perms:['dashboard','invoices','estimates','analytics'], locked:false}
+];
+
+var appUsers = [
+  {id:1, name:'Andy (Admin)', username:'admin', password:'admin123', email:'admin@b2bprinthub.com', phone:'', roleId:1, status:'active', lastLogin:'', notes:'Owner & Administrator'},
+  {id:2, name:'Maria Lopez', username:'maria', password:'maria123', email:'maria@b2bprinthub.com', phone:'', roleId:3, status:'active', lastLogin:'', notes:'Sales representative'},
+  {id:3, name:'Carlos Ruiz', username:'carlos', password:'carlos123', email:'carlos@b2bprinthub.com', phone:'', roleId:4, status:'active', lastLogin:'', notes:'Lead installer'}
+];
+var nextUserId=4, nextRoleId=6;
+var currentUser=null;
+
+var activityLog=[];
+function logActivity(action, module, details) {
+  activityLog.unshift({time:new Date().toLocaleString(),user:currentUser?currentUser.username:'system',action:action,module:module,details:details||''});
+  if(activityLog.length>200) activityLog.pop();
+  saveAll();
+}
+
+function doLogin() {
+  var u=document.getElementById('login-user').value.trim();
+  var p=document.getElementById('login-pass').value;
+  var err=document.getElementById('login-error');
+  if(!u||!p){err.textContent='Please enter username and password.';err.style.display='block';return;}
+  var found=appUsers.find(function(x){return x.username===u&&x.password===p&&x.status==='active';});
+  if(!found){err.textContent='Invalid username or password.';err.style.display='block';return;}
+  err.style.display='none';
+  currentUser=found;
+  found.lastLogin=new Date().toLocaleString();
+  logActivity('Login','Auth','User signed in');
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appRoot').style.display='block';
+  applyUserPermissions();
+  initApp();
+}
+
+function doLogout() {
+  logActivity('Logout','Auth','User signed out');
+  currentUser=null;
+  document.getElementById('appRoot').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+}
+
+function getUserRole(user) { return appRoles.find(function(r){return r.id===user.roleId;})||appRoles[0]; }
+function hasPermission(mod) { if(!currentUser) return false; var r=getUserRole(currentUser); return r.perms.includes(mod); }
+
+function applyUserPermissions() {
+  if(!currentUser) return;
+  var role=getUserRole(currentUser);
+  // Sidebar user block
+  document.getElementById('sb-user-name').textContent=currentUser.name;
+  document.getElementById('sb-user-role').textContent=role.name;
+  var av=document.getElementById('sb-user-av');
+  av.textContent=inits(currentUser.name); av.style.background=role.color;
+  // Hide/show nav items
+  document.querySelectorAll('.nav-i[data-perm]').forEach(function(btn){
+    var perm=btn.getAttribute('data-perm');
+    btn.style.display=hasPermission(perm)?'flex':'none';
+  });
+}
+
+// ===== DATA =====
+var SVCS=['Web Design','Print / Banners','Large Format Signs','Window Wraps','Signs & Awnings','Install','Other'];
+
+var posItems=[
+  {id:1,n:'Business Cards',p:75,cat:'Print',sku:'BC-001',desc:'Full color, double sided'},
+  {id:2,n:'Banner 3x6',p:120,cat:'Print',sku:'BNR-3x6',desc:'Full color vinyl banner with grommets'},
+  {id:3,n:'Banner 4x8',p:180,cat:'Print',sku:'BNR-4x8',desc:'Full color vinyl banner with grommets'},
+  {id:4,n:'Banner 6x10',p:240,cat:'Print',sku:'BNR-6x10',desc:'Full color vinyl banner'},
+  {id:5,n:'Yard Sign',p:45,cat:'Print',sku:'YS-001',desc:'Corrugated plastic 18x24'},
+  {id:6,n:'Retractable Banner',p:180,cat:'Print',sku:'RB-001',desc:'33x80in retractable stand'},
+  {id:7,n:'Flyers (500)',p:95,cat:'Print',sku:'FLY-500',desc:'Full color 8.5x11'},
+  {id:8,n:'Brochures (250)',p:120,cat:'Print',sku:'BRO-250',desc:'Tri-fold full color'},
+  {id:9,n:'Window Wrap (sm)',p:350,cat:'Wraps',sku:'WW-SM',desc:'Small window wrap up to 4x4 ft'},
+  {id:10,n:'Window Wrap (med)',p:650,cat:'Wraps',sku:'WW-MD',desc:'Medium window wrap up to 6x8 ft'},
+  {id:11,n:'Vehicle Wrap Full',p:2800,cat:'Wraps',sku:'VW-FULL',desc:'Full vehicle wrap with design'},
+  {id:12,n:'Vehicle Wrap Half',p:1600,cat:'Wraps',sku:'VW-HALF',desc:'Half vehicle wrap with design'},
+  {id:13,n:'Channel Letters',p:1200,cat:'Signs',sku:'CL-001',desc:'Illuminated channel letter sign'},
+  {id:14,n:'Awning Design',p:350,cat:'Signs',sku:'AW-001',desc:'Custom awning design'},
+  {id:15,n:'LED Sign',p:850,cat:'Signs',sku:'LED-001',desc:'LED illuminated sign panel'},
+  {id:16,n:'Pylon Sign',p:2200,cat:'Signs',sku:'PY-001',desc:'Double-sided pylon sign'},
+  {id:17,n:'Install (Small)',p:150,cat:'Install',sku:'INST-SM',desc:'Small sign installation'},
+  {id:18,n:'Install (Large)',p:400,cat:'Install',sku:'INST-LG',desc:'Large sign installation'},
+  {id:19,n:'Install (Custom)',p:600,cat:'Install',sku:'INST-CX',desc:'Custom installation'},
+  {id:20,n:'Logo Design',p:299,cat:'Design',sku:'LD-001',desc:'Custom logo design 3 concepts'},
+  {id:21,n:'Website (5pg)',p:999,cat:'Design',sku:'WB-5PG',desc:'5-page responsive website'},
+  {id:22,n:'Website (10pg)',p:1799,cat:'Design',sku:'WB-10PG',desc:'10-page responsive website'},
+  {id:23,n:'Social Media Kit',p:199,cat:'Design',sku:'SM-KIT',desc:'Logo + 5 social templates'}
+];
+var nextPosId=24;
+
+var D={
+  dark:true, revHidden:false,
+  clients:[
+    {id:1,name:'Acme Corp',email:'info@acme.com',phone:'(555)111-2222',address:'123 Main St, Miami FL',notes:''},
+    {id:2,name:'Green Valley LLC',email:'contact@gv.com',phone:'(555)333-4444',address:'456 Oak Ave, NYC',notes:''},
+    {id:3,name:'Metro Signs Inc',email:'hello@metro.com',phone:'(555)555-6666',address:'789 Broadway, LA',notes:''}
+  ],
+  invoices:[
+    {id:1,cid:1,date:'2025-01-10',items:[{svc:'Print / Banners',desc:'3x6 Banners x10',qty:10,price:120,tot:1200}],sub:1200,tax:96,disc:0,grand:1296,status:'paid',notes:'Rush order'},
+    {id:2,cid:2,date:'2025-01-15',items:[{svc:'Signs & Awnings',desc:'Channel Letters',qty:1,price:1200,tot:1200}],sub:1200,tax:96,disc:50,grand:1246,status:'sent',notes:''},
+    {id:3,cid:3,date:'2025-01-20',items:[{svc:'Web Design',desc:'Full Website',qty:1,price:999,tot:999}],sub:999,tax:79.92,disc:0,grand:1078.92,status:'draft',notes:''}
+  ],
+  estimates:[
+    {id:1,cid:1,date:'2025-01-22',desc:'Site inspection for new awning',items:[{svc:'Signs & Awnings',desc:'Custom Awning',qty:1,price:3500,tot:3500}],sub:3500,tax:280,grand:3780,status:'pending',photos:[]}
+  ],
+  jobs:[
+    {id:1,title:'Acme Banners Print',cid:1,type:'Print / Banners',status:'done',desc:'10 banners printed',photos:[],members:[1,2],priority:'medium',due:'',checklist:[]},
+    {id:2,title:'Metro Signs Install',cid:3,type:'Install',status:'in-progress',desc:'Channel letter install',photos:[],members:[3],priority:'high',due:'2025-02-10',checklist:[{text:'Survey site',done:true},{text:'Order materials',done:true},{text:'Install',done:false}]},
+    {id:3,title:'Green Valley Website',cid:2,type:'Web Design',status:'pending',desc:'5-page website',photos:[],members:[1,2],priority:'low',due:'2025-03-01',checklist:[{text:'Wireframes',done:false},{text:'Design',done:false}]}
+  ],
+  members:[
+    {id:1,name:'Andy',role:'Owner',color:'#6c63ff'},
+    {id:2,name:'Maria',role:'Designer',color:'#4caf7d'},
+    {id:3,name:'Carlos',role:'Installer',color:'#f59e0b'}
+  ],
+  pdf:{logo:'',coName:'B2B Print Hub',coTag:'Print · Design · Signs & Awnings',coAddr:'',coPhone:'',coEmail:'',coWeb:'',color:'#6c63ff',layout:'classic',fontSize:'normal',showTax:'yes',invTitle:'INVOICE',terms:'',footer:'Thank you for your business!',payment:''},
+  business:{name:'B2B Print Hub',type:'Print & Sign Company',taxId:'',license:'',addr:'',phone:'',email:'',web:'',taxRate:8,currency:'USD ($)',terms:'Net 30'},
+  security:{timeout:60,attempts:5,strongpw:'yes'},
+  nextInv:4,nextEst:2,nextJob:4,nextCli:4,nextMember:4,
+  invFilter:'all',curPage:'dashboard',range:'week',
+  editInv:null,editEst:null,editJob:null,editCli:null
+};
+
+var RC=null,SC=null,MC=null,CC=null;
+var cart=[],estPhotos=[],jobPhotos=[],checklistItems=[];
+var posDiscount=0,heldOrders=[],lastReceipt='';
+var _editingItemId=null,_posActiveCat='All';
+var _editingUserId=null,_editingRoleId=null;
+
+function saveAll() {
+  try {
+    var obj=JSON.parse(JSON.stringify(D));
+    obj.posItems=posItems; obj.nextPosId=nextPosId;
+    obj.appUsers=appUsers; obj.appRoles=appRoles;
+    obj.nextUserId=nextUserId; obj.nextRoleId=nextRoleId;
+    obj.activityLog=activityLog;
+    localStorage.setItem('b2bph6',JSON.stringify(obj));
+  } catch(e){}
+}
+function loadAll() {
+  try {
+    var s=localStorage.getItem('b2bph6'); if(!s) return;
+    var p=JSON.parse(s);
+    ['dark','revHidden','clients','invoices','estimates','jobs','members','invFilter','range','nextInv','nextEst','nextJob','nextCli','nextMember'].forEach(function(k){if(p[k]!==undefined)D[k]=p[k];});
+    if(p.pdf)D.pdf=Object.assign({},D.pdf,p.pdf);
+    if(p.business)D.business=Object.assign({},D.business,p.business);
+    if(p.security)D.security=Object.assign({},D.security,p.security);
+    if(p.posItems&&p.posItems.length)posItems=p.posItems;
+    if(p.nextPosId)nextPosId=p.nextPosId;
+    if(p.appUsers&&p.appUsers.length)appUsers=p.appUsers;
+    if(p.appRoles&&p.appRoles.length)appRoles=p.appRoles;
+    if(p.nextUserId)nextUserId=p.nextUserId;
+    if(p.nextRoleId)nextRoleId=p.nextRoleId;
+    if(p.activityLog)activityLog=p.activityLog;
+  } catch(e){}
+}
+
+function fmt(n){return '$'+parseFloat(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function today(){return new Date().toISOString().split('T')[0];}
+function inits(n){return(n||'?').split(' ').map(function(x){return x[0];}).join('').toUpperCase().slice(0,2);}
+function cName(id){var c=D.clients.find(function(c){return c.id===id;});return c?c.name:'Unknown';}
+function toast(m){var t=document.getElementById('toast');document.getElementById('toast-msg').textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});});
+
+function toggleTheme(){D.dark=!D.dark;saveAll();document.body.classList.toggle('light',!D.dark);rebuildCharts();}
+function toggleRev(){D.revHidden=!D.revHidden;saveAll();if(D.revHidden){document.getElementById('dash-rev').textContent='••••••';document.getElementById('revEye').textContent='🙈';}else{document.getElementById('revEye').textContent='👁';renderDash();}}
+
+function gotoPage(p,el){
+  if(!hasPermission(p)){toast('Access denied for this module');return;}
+  document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});
+  document.querySelectorAll('.nav-i').forEach(function(x){x.classList.remove('active');});
+  document.getElementById('page-'+p).classList.add('active');
+  if(el)el.classList.add('active');
+  D.curPage=p;
+  var titles={dashboard:'Dashboard',invoices:'Invoices',estimates:'Estimates',pos:'Point of Sale',jobs:'Jobs Board',crm:'CRM / Clients',analytics:'Analytics',settings:'Settings'};
+  var btns={invoices:'New Invoice',estimates:'New Estimate',jobs:'New Job',crm:'New Client'};
+  document.getElementById('pageTitle').textContent=titles[p]||p;
+  var tbw=document.getElementById('topBtnWrap');
+  if(btns[p]){tbw.style.display='block';document.getElementById('topBtnLbl').textContent=btns[p];}else tbw.style.display='none';
+  document.getElementById('pdfSettingsBtn').style.display=p==='invoices'?'inline-flex':'none';
+  document.getElementById('heldOrdersBtn').style.display=p==='pos'?'inline-flex':'none';
+  if(p==='dashboard')renderDash();
+  else if(p==='invoices')renderInvoices();
+  else if(p==='estimates')renderEstimates();
+  else if(p==='pos')renderPOS();
+  else if(p==='jobs')renderJobs();
+  else if(p==='crm')renderCRM();
+  else if(p==='analytics')renderAnalytics();
+  else if(p==='settings')renderSettings();
+}
+
+function topAction(){
+  if(D.curPage==='invoices')openInvModal(null);
+  else if(D.curPage==='estimates')openEstModal(null);
+  else if(D.curPage==='jobs')openJobModal(null);
+  else if(D.curPage==='crm')openCliModal(null);
+}
+
+function fillCli(){
+  var opts='<option value="">-- Select Client --</option>'+D.clients.map(function(c){return '<option value="'+c.id+'">'+c.name+'</option>';}).join('');
+  ['inv-cli','est-cli','job-cli','pos-cust'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
+}
+
+// ===== SETTINGS =====
+var _settingsTab='users';
+function switchSettingsTab(tab,el){
+  _settingsTab=tab;
+  ['users','roles','activity','security','business','pdf'].forEach(function(t){document.getElementById('settings-tab-'+t).style.display=t===tab?'block':'none';});
+  document.querySelectorAll('.settings-tab').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+  if(tab==='users')renderUsersTable();
+  else if(tab==='roles')renderRolesList();
+  else if(tab==='activity')renderActivityTable();
+  else if(tab==='security')renderSecuritySettings();
+  else if(tab==='business')loadBusinessForm();
+  else if(tab==='pdf')loadPDFSettingsForm();
+}
+
+function renderSettings(){
+  switchSettingsTab('users',document.querySelector('.settings-tab'));
+}
+
+// USERS
+function renderUsersTable(){
+  var tb=document.getElementById('users-tbody');
+  tb.innerHTML=appUsers.map(function(u){
+    var role=getUserRole(u);
+    var isMe=currentUser&&u.id===currentUser.id;
+    return '<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:'+role.color+'">'+inits(u.name)+'</div><div><div style="font-weight:500">'+u.name+'</div><div style="font-size:11px;color:var(--t3)">'+u.email+'</div></div></div></td>'
+      +'<td style="font-weight:500;color:var(--acc)">@'+u.username+'</td>'
+      +'<td><span class="role-badge" style="background:'+role.color+'20;color:'+role.color+'">'+role.name+'</span></td>'
+      +'<td><span class="badge '+(u.status==='active'?'b-ok':'b-gray')+'">'+u.status+'</span></td>'
+      +'<td style="font-size:12px;color:var(--t3)">'+(u.lastLogin||'Never')+'</td>'
+      +'<td><div style="display:flex;gap:5px">'
+      +'<button class="btn btn-o btn-sm" onclick="openUserModal(appUsers.find(function(x){return x.id==='+u.id+';}))">✏️</button>'
+      +(!isMe?'<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="deleteUser('+u.id+')">🗑</button>':'<span style="font-size:11px;color:var(--t3);padding:5px 8px">(you)</span>')
+      +'</div></td></tr>';
+  }).join('');
+}
+
+function openUserModal(user){
+  _editingUserId=user?user.id:null;
+  document.getElementById('userModalT').textContent=user?'Edit User':'New User';
+  document.getElementById('user-name').value=user?user.name:'';
+  document.getElementById('user-username').value=user?user.username:'';
+  document.getElementById('user-email').value=user?user.email:'';
+  document.getElementById('user-phone').value=user?user.phone:'';
+  document.getElementById('user-notes').value=user?user.notes:'';
+  document.getElementById('user-status').value=user?user.status:'active';
+  document.getElementById('user-pass').value='';
+  var roleEl=document.getElementById('user-role');
+  roleEl.innerHTML=appRoles.map(function(r){return '<option value="'+r.id+'"'+(user&&user.roleId===r.id?' selected':'')+'>'+r.name+'</option>';}).join('');
+  document.getElementById('userModal').classList.add('open');
+}
+
+function saveUser(){
+  var name=document.getElementById('user-name').value.trim();
+  var username=document.getElementById('user-username').value.trim().toLowerCase();
+  var pass=document.getElementById('user-pass').value;
+  if(!name||!username){toast('Name and username required');return;}
+  var dup=appUsers.find(function(u){return u.username===username&&u.id!==_editingUserId;});
+  if(dup){toast('Username already taken');return;}
+  if(_editingUserId){
+    var u=appUsers.find(function(x){return x.id===_editingUserId;});
+    if(!u)return;
+    u.name=name;u.username=username;u.email=document.getElementById('user-email').value;
+    u.phone=document.getElementById('user-phone').value;u.notes=document.getElementById('user-notes').value;
+    u.roleId=parseInt(document.getElementById('user-role').value);
+    u.status=document.getElementById('user-status').value;
+    if(pass)u.password=pass;
+    logActivity('Edit User','Settings','Updated user: '+username);
+  } else {
+    if(!pass){toast('Password required for new user');return;}
+    appUsers.push({id:nextUserId++,name:name,username:username,password:pass,email:document.getElementById('user-email').value,phone:document.getElementById('user-phone').value,roleId:parseInt(document.getElementById('user-role').value),status:document.getElementById('user-status').value,lastLogin:'',notes:document.getElementById('user-notes').value});
+    logActivity('Create User','Settings','Created user: '+username);
+  }
+  saveAll();closeM('userModal');renderUsersTable();toast('User saved!');
+}
+
+function deleteUser(id){
+  if(currentUser&&id===currentUser.id){toast('Cannot delete your own account');return;}
+  if(!confirm('Delete this user?'))return;
+  var u=appUsers.find(function(x){return x.id===id;});
+  logActivity('Delete User','Settings','Deleted user: '+(u?u.username:''));
+  appUsers=appUsers.filter(function(x){return x.id!==id;});
+  saveAll();renderUsersTable();toast('User deleted');
+}
+
+// ROLES
+function renderRolesList(){
+  var el=document.getElementById('roles-list');
+  el.innerHTML=appRoles.map(function(r){
+    var users=appUsers.filter(function(u){return u.roleId===r.id;}).length;
+    return '<div class="card" style="margin-bottom:12px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<div style="width:36px;height:36px;border-radius:8px;background:'+r.color+'20;border:1px solid '+r.color+'40;display:flex;align-items:center;justify-content:center;font-size:16px">🛡️</div>'
+      +'<div><div style="font-weight:600;font-size:14px">'+r.name+'</div><div style="font-size:12px;color:var(--t3)">'+r.desc+' · '+users+' user'+(users!==1?'s':'')+'</div></div></div>'
+      +'<div style="display:flex;gap:6px">'
+      +(!r.locked?'<button class="btn btn-o btn-sm" onclick="openRoleModal(appRoles.find(function(x){return x.id==='+r.id+';}))">✏️ Edit</button>':'<span style="font-size:11px;color:var(--t3);padding:5px 8px">🔒 System Role</span>')
+      +(!r.locked?'<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="deleteRole('+r.id+')">🗑</button>':'')
+      +'</div></div>'
+      +'<div style="font-size:12px;color:var(--t3);margin-bottom:8px">Permissions:</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
+      +ALL_MODULES.map(function(m){var has=r.perms.includes(m);return '<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;background:'+(has?r.color+'20':'var(--bg3)')+';color:'+(has?r.color:'var(--t3)')+'">'+MODULE_LABELS[m]+'</span>';}).join('')
+      +'</div></div>';
+  }).join('');
+}
+
+function openRoleModal(role){
+  _editingRoleId=role?role.id:null;
+  document.getElementById('roleModalT').textContent=role?'Edit Role':'New Role';
+  document.getElementById('role-name').value=role?role.name:'';
+  document.getElementById('role-desc').value=role?role.desc:'';
+  document.getElementById('role-color').value=role?role.color:'#6c63ff';
+  var grid=document.getElementById('role-perms-grid');
+  grid.innerHTML=ALL_MODULES.map(function(m){
+    var checked=role&&role.perms.includes(m);
+    return '<label class="perm-item"><input type="checkbox" value="'+m+'"'+(checked?' checked':'')+'/>'+MODULE_LABELS[m]+'</label>';
+  }).join('');
+  document.getElementById('roleModal').classList.add('open');
+}
+
+function saveRole(){
+  var name=document.getElementById('role-name').value.trim();
+  if(!name){toast('Enter role name');return;}
+  var perms=Array.from(document.querySelectorAll('#role-perms-grid input:checked')).map(function(x){return x.value;});
+  if(_editingRoleId){
+    var r=appRoles.find(function(x){return x.id===_editingRoleId;});
+    if(!r||r.locked){toast('Cannot edit system roles');return;}
+    r.name=name;r.desc=document.getElementById('role-desc').value;r.color=document.getElementById('role-color').value;r.perms=perms;
+    logActivity('Edit Role','Settings','Updated role: '+name);
+  } else {
+    appRoles.push({id:nextRoleId++,name:name,color:document.getElementById('role-color').value,desc:document.getElementById('role-desc').value,perms:perms,locked:false});
+    logActivity('Create Role','Settings','Created role: '+name);
+  }
+  saveAll();closeM('roleModal');renderRolesList();toast('Role saved!');
+}
+
+function deleteRole(id){
+  var r=appRoles.find(function(x){return x.id===id;});
+  if(!r||r.locked){toast('Cannot delete system roles');return;}
+  var inUse=appUsers.some(function(u){return u.roleId===id;});
+  if(inUse){toast('Role is assigned to users — reassign first');return;}
+  if(!confirm('Delete role "'+r.name+'"?'))return;
+  appRoles=appRoles.filter(function(x){return x.id!==id;});
+  saveAll();renderRolesList();toast('Role deleted');
+}
+
+// ACTIVITY LOG
+function renderActivityTable(){
+  var tb=document.getElementById('activity-tbody');
+  if(!activityLog.length){tb.innerHTML='<tr><td colspan="5"><div class="empty">No activity recorded yet</div></td></tr>';return;}
+  tb.innerHTML=activityLog.map(function(a){
+    return '<tr><td style="font-size:12px;color:var(--t3);white-space:nowrap">'+a.time+'</td>'
+      +'<td><span style="font-weight:500;color:var(--acc)">@'+a.user+'</span></td>'
+      +'<td style="font-weight:500">'+a.action+'</td>'
+      +'<td><span class="badge b-gray">'+a.module+'</span></td>'
+      +'<td style="font-size:12px;color:var(--t2)">'+a.details+'</td></tr>';
+  }).join('');
+}
+
+function clearActivityLog(){
+  if(!confirm('Clear all activity logs?'))return;
+  activityLog=[];saveAll();renderActivityTable();toast('Activity log cleared');
+}
+
+// SECURITY
+function renderSecuritySettings(){
+  document.getElementById('sec-timeout').value=D.security.timeout||60;
+  document.getElementById('sec-attempts').value=D.security.attempts||5;
+  document.getElementById('sec-strongpw').value=D.security.strongpw||'yes';
+  var sl=document.getElementById('active-sessions-list');
+  sl.innerHTML='<div class="info-box"><div class="stat-mini"><span>Current User</span><span style="font-weight:600;color:var(--acc)">@'+(currentUser?currentUser.username:'—')+'</span></div><div class="stat-mini"><span>Session Started</span><span style="color:var(--t2)">'+(currentUser?currentUser.lastLogin:'—')+'</span></div><div class="stat-mini"><span>Role</span><span style="color:var(--t2)">'+(currentUser?getUserRole(currentUser).name:'—')+'</span></div></div>';
+}
+
+function saveSecuritySettings(){
+  D.security.timeout=parseInt(document.getElementById('sec-timeout').value)||60;
+  D.security.attempts=parseInt(document.getElementById('sec-attempts').value)||5;
+  D.security.strongpw=document.getElementById('sec-strongpw').value;
+  logActivity('Update Security','Settings','Security settings updated');
+  saveAll();toast('Security settings saved!');
+}
+
+function changePassword(){
+  var curr=document.getElementById('pw-current').value;
+  var nw=document.getElementById('pw-new').value;
+  var conf=document.getElementById('pw-confirm').value;
+  if(!currentUser){toast('Not logged in');return;}
+  if(curr!==currentUser.password){toast('Current password is incorrect');return;}
+  if(nw.length<6){toast('New password must be at least 6 characters');return;}
+  if(nw!==conf){toast('Passwords do not match');return;}
+  currentUser.password=nw;
+  logActivity('Change Password','Security','Password changed for @'+currentUser.username);
+  saveAll();toast('Password changed successfully!');
+  document.getElementById('pw-current').value='';document.getElementById('pw-new').value='';document.getElementById('pw-confirm').value='';
+}
+
+// BUSINESS
+function loadBusinessForm(){
+  var b=D.business;
+  document.getElementById('biz-name').value=b.name||'';
+  document.getElementById('biz-type').value=b.type||'';
+  document.getElementById('biz-tax-id').value=b.taxId||'';
+  document.getElementById('biz-license').value=b.license||'';
+  document.getElementById('biz-addr').value=b.addr||'';
+  document.getElementById('biz-phone').value=b.phone||'';
+  document.getElementById('biz-email').value=b.email||'';
+  document.getElementById('biz-web').value=b.web||'';
+  document.getElementById('biz-tax-rate').value=b.taxRate||8;
+  document.getElementById('biz-currency').value=b.currency||'USD ($)';
+  document.getElementById('biz-terms').value=b.terms||'Net 30';
+}
+
+function saveBusinessSettings(){
+  D.business={name:document.getElementById('biz-name').value,type:document.getElementById('biz-type').value,taxId:document.getElementById('biz-tax-id').value,license:document.getElementById('biz-license').value,addr:document.getElementById('biz-addr').value,phone:document.getElementById('biz-phone').value,email:document.getElementById('biz-email').value,web:document.getElementById('biz-web').value,taxRate:parseFloat(document.getElementById('biz-tax-rate').value)||8,currency:document.getElementById('biz-currency').value,terms:document.getElementById('biz-terms').value};
+  logActivity('Update Business Info','Settings','Business information updated');
+  saveAll();toast('Business info saved!');
+}
+
+// PDF in settings
+function loadPDFSettingsForm(){
+  var p=D.pdf;
+  if(p.logo){document.getElementById('logo-preview').src=p.logo;document.getElementById('logo-preview-wrap').style.display='flex';}else{document.getElementById('logo-preview-wrap').style.display='none';}
+  document.getElementById('pdf-co-name').value=p.coName;document.getElementById('pdf-co-tag').value=p.coTag;
+  document.getElementById('pdf-co-addr').value=p.coAddr;document.getElementById('pdf-co-phone').value=p.coPhone;
+  document.getElementById('pdf-co-email').value=p.coEmail;document.getElementById('pdf-co-web').value=p.coWeb;
+  document.getElementById('pdf-layout').value=p.layout;document.getElementById('pdf-font-size').value=p.fontSize;
+  document.getElementById('pdf-show-tax').value=p.showTax;document.getElementById('pdf-inv-title').value=p.invTitle;
+  document.getElementById('pdf-terms').value=p.terms;document.getElementById('pdf-footer').value=p.footer;
+  document.getElementById('pdf-payment').value=p.payment;
+  switchPDFTab('company');updatePDFPreview();
+}
+
+function openPDFSettings(){gotoPage('settings',document.querySelector('.nav-i[onclick*="settings"]'));setTimeout(function(){switchSettingsTab('pdf',document.querySelectorAll('.settings-tab')[5]);},100);}
+
+// ===== DASHBOARD =====
+function renderDash(){
+  var paid=D.invoices.filter(function(i){return i.status==='paid';});
+  var total=paid.reduce(function(s,i){return s+i.grand;},0);
+  if(!D.revHidden){document.getElementById('dash-rev').textContent=fmt(total);document.getElementById('revEye').textContent='👁';}
+  else{document.getElementById('dash-rev').textContent='••••••';document.getElementById('revEye').textContent='🙈';}
+  document.getElementById('dash-done').textContent=D.jobs.filter(function(j){return j.status==='done';}).length;
+  document.getElementById('dash-pend').textContent=D.jobs.filter(function(j){return j.status==='pending'||j.status==='in-progress';}).length;
+  document.getElementById('dash-cli').textContent=D.clients.length;
+  var il=document.getElementById('dash-inv-list');
+  il.innerHTML=D.invoices.length?D.invoices.slice(-5).reverse().map(function(i){
+    var bc=i.status==='paid'?'b-ok':i.status==='sent'?'b-inf':i.status==='voided'?'b-err':'b-gray';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bor)"><div class="avatar">'+inits(cName(i.cid))+'</div><div style="flex:1"><div style="font-weight:500;font-size:13px">'+cName(i.cid)+'</div><div style="font-size:11px;color:var(--t3)">'+i.date+'</div></div><span style="font-weight:600">'+fmt(i.grand)+'</span><span class="badge '+bc+'">'+i.status+'</span></div>';
+  }).join(''):'<div class="empty">No invoices yet</div>';
+  var al=document.getElementById('dash-activity');
+  al.innerHTML=activityLog.length?activityLog.slice(0,8).map(function(a){
+    return '<div class="activity-item"><div class="activity-dot" style="background:var(--acc)"></div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+a.action+'</div><div style="font-size:11px;color:var(--t3)">@'+a.user+' · '+a.module+' · '+a.time+'</div></div></div>';
+  }).join(''):'<div class="empty" style="padding:20px">No activity yet</div>';
+  buildRevChart();buildSvcChart();
+}
+
+function setRange(r,el){D.range=r;document.querySelectorAll('#page-dashboard .chip').forEach(function(x){x.classList.remove('active');});el.classList.add('active');buildRevChart();}
+
+function getRevData(){
+  var now=new Date();
+  if(D.range==='week'){var labels=[],data=[];for(var i=6;i>=0;i--){var d=new Date(now);d.setDate(d.getDate()-i);var ds=d.toISOString().split('T')[0];labels.push(['Su','Mo','Tu','We','Th','Fr','Sa'][d.getDay()]);data.push(D.invoices.filter(function(x){return x.status==='paid'&&x.date===ds;}).reduce(function(s,x){return s+x.grand;},0));}return{labels:labels,data:data};}
+  if(D.range==='month'){var labels=[],data=[];for(var i=29;i>=0;i--){var d=new Date(now);d.setDate(d.getDate()-i);var ds=d.toISOString().split('T')[0];labels.push(i%5===0?d.getDate()+'':'');data.push(D.invoices.filter(function(x){return x.status==='paid'&&x.date===ds;}).reduce(function(s,x){return s+x.grand;},0));}return{labels:labels,data:data};}
+  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],yr=now.getFullYear();
+  return{labels:months,data:months.map(function(_,m){return D.invoices.filter(function(x){return x.status==='paid'&&x.date&&x.date.startsWith(yr+'-'+(m+1<10?'0':'')+(m+1));}).reduce(function(s,x){return s+x.grand;},0);})};
+}
+function buildRevChart(){var rd=getRevData();if(RC)RC.destroy();RC=new Chart(document.getElementById('revChart'),{type:'line',data:{labels:rd.labels,datasets:[{label:'Revenue',data:rd.data,borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,.15)',fill:true,tension:.4,borderWidth:2,pointRadius:3,pointBackgroundColor:'#6c63ff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(128,128,128,.1)'},ticks:{color:'#9ea3c0',font:{size:10}}},y:{grid:{color:'rgba(128,128,128,.1)'},ticks:{color:'#9ea3c0',font:{size:10},callback:function(v){return'$'+v;}}}}}});}
+function buildSvcChart(){var cats={};D.invoices.filter(function(i){return i.status==='paid';}).forEach(function(i){i.items.forEach(function(it){cats[it.svc]=(cats[it.svc]||0)+it.tot;});});var labels=Object.keys(cats),data=Object.values(cats);if(!labels.length){labels=['No data'];data=[1];}var colors=['#6c63ff','#4caf7d','#f59e0b','#38bdf8','#ef4444','#a855f7','#ec4899'];if(SC)SC.destroy();SC=new Chart(document.getElementById('svcChart'),{type:'doughnut',data:{labels:labels,datasets:[{data:data,backgroundColor:colors.slice(0,labels.length),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#9ea3c0',font:{size:11},boxWidth:10,padding:10}}}}});}
+function rebuildCharts(){if(D.curPage==='dashboard'){buildRevChart();buildSvcChart();}if(D.curPage==='analytics')renderAnalytics();}
+
+// ===== INVOICES =====
+function filterInv(f,el){D.invFilter=f;document.querySelectorAll('#page-invoices .chip').forEach(function(x){x.classList.remove('active');});el.classList.add('active');renderInvoices();}
+function renderInvoices(){
+  var list=D.invFilter==='all'?D.invoices:D.invoices.filter(function(i){return i.status===D.invFilter;});
+  var tb=document.getElementById('inv-tbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7"><div class="empty">No invoices found</div></td></tr>';return;}
+  tb.innerHTML=list.slice().reverse().map(function(i){
+    var bc=i.status==='paid'?'b-ok':i.status==='sent'?'b-inf':i.status==='voided'?'b-err':'b-gray';
+    var svcs=[...new Set(i.items.map(function(x){return x.svc;}))].join(', ');
+    return '<tr><td style="font-weight:600;color:var(--acc)">#INV-'+String(i.id).padStart(4,'0')+'</td><td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:28px;height:28px;font-size:10px">'+inits(cName(i.cid))+'</div>'+cName(i.cid)+'</div></td><td style="font-size:12px;color:var(--t3)">'+svcs+'</td><td style="color:var(--t3)">'+i.date+'</td><td style="font-weight:600">'+fmt(i.grand)+'</td><td><span class="badge '+bc+'">'+i.status+'</span></td><td><div style="display:flex;gap:5px"><button class="btn btn-o btn-sm" onclick="editInv('+i.id+')">✏️</button><button class="btn btn-p btn-sm" onclick="exportPDF('+i.id+')">📄</button>'+(i.status!=='voided'?'<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="voidInv('+i.id+')">🚫</button>':'')+'</div></td></tr>';
+  }).join('');
+}
+function openInvModal(inv){
+  D.editInv=inv||null;fillCli();
+  document.getElementById('invModalT').textContent=inv?'Edit Invoice':'New Invoice';
+  document.getElementById('inv-cli').value=inv?inv.cid:'';
+  document.getElementById('inv-date').value=inv?inv.date:today();
+  document.getElementById('inv-notes').value=inv?inv.notes:'';
+  document.getElementById('inv-disc').value=inv?inv.disc:0;
+  document.getElementById('li-body').innerHTML='';
+  if(inv&&inv.items&&inv.items.length)inv.items.forEach(function(it){addLI(it);}); else addLI(null);
+  recalcInv();document.getElementById('invModal').classList.add('open');
+}
+function editInv(id){openInvModal(D.invoices.find(function(i){return i.id===id;}));}
+function voidInv(id){var i=D.invoices.find(function(x){return x.id===id;});if(i){i.status='voided';logActivity('Void Invoice','Invoices','#INV-'+String(id).padStart(4,'0'));saveAll();renderInvoices();toast('Invoice voided');}}
+function addLI(it){var tr=document.createElement('tr');tr.innerHTML='<td><select oninput="recalcInv()">'+SVCS.map(function(s){return '<option'+(it&&it.svc===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></td><td><input type="text" value="'+(it?it.desc:'')+'" placeholder="Description" oninput="recalcInv()"/></td><td><input type="number" value="'+(it?it.qty:1)+'" min="1" style="width:52px" oninput="recalcInv()"/></td><td><input type="number" value="'+(it?it.price:0)+'" min="0" step="0.01" style="width:78px" oninput="recalcInv()"/></td><td style="font-weight:600;color:var(--acc)">$'+(it?(it.qty*it.price).toFixed(2):'0.00')+'</td><td><button onclick="this.closest(\'tr\').remove();recalcInv()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:18px">×</button></td>';document.getElementById('li-body').appendChild(tr);}
+function recalcInv(){var sub=0;document.querySelectorAll('#li-body tr').forEach(function(tr){var ni=tr.querySelectorAll('input[type=number]');var qty=parseFloat(ni[0]&&ni[0].value)||0,price=parseFloat(ni[1]&&ni[1].value)||0,tot=qty*price;sub+=tot;if(tr.cells[4])tr.cells[4].textContent='$'+tot.toFixed(2);});var disc=parseFloat(document.getElementById('inv-disc').value)||0,tax=sub*0.08;document.getElementById('inv-sub').textContent=fmt(sub);document.getElementById('inv-tax').textContent=fmt(tax);document.getElementById('inv-grand').textContent=fmt(sub+tax-disc);}
+function getLIItems(){var items=[];document.querySelectorAll('#li-body tr').forEach(function(tr){var sel=tr.querySelector('select'),ni=tr.querySelectorAll('input');var qty=parseFloat(ni[1]&&ni[1].value)||1,price=parseFloat(ni[2]&&ni[2].value)||0;items.push({svc:sel&&sel.value,desc:ni[0]&&ni[0].value,qty:qty,price:price,tot:qty*price});});return items;}
+function saveInv(status){
+  var cid=parseInt(document.getElementById('inv-cli').value);if(!cid){toast('Please select a client');return;}
+  var items=getLIItems(),sub=items.reduce(function(s,i){return s+i.tot;},0),disc=parseFloat(document.getElementById('inv-disc').value)||0,tax=sub*0.08;
+  var inv={id:D.editInv?D.editInv.id:D.nextInv++,cid:cid,date:document.getElementById('inv-date').value,items:items,sub:sub,tax:tax,disc:disc,grand:sub+tax-disc,status:status,notes:document.getElementById('inv-notes').value};
+  if(D.editInv){var idx=D.invoices.findIndex(function(x){return x.id===inv.id;});D.invoices[idx]=inv;}else D.invoices.push(inv);
+  logActivity(D.editInv?'Edit Invoice':'Create Invoice','Invoices','#INV-'+String(inv.id).padStart(4,'0')+' - '+cName(cid)+' - '+fmt(inv.grand));
+  saveAll();closeM('invModal');renderInvoices();if(D.curPage==='dashboard')renderDash();toast('Invoice saved!');
+}
+
+// ===== PDF EXPORT =====
+function buildPDFHtml(title,numStr,dateStr,clientObj,itemsArr,sub,tax,disc,grand,notes,isEstimate){
+  var p=D.pdf;var hfs={small:'18px',normal:'22px',large:'26px'}[p.fontSize]||'22px';var bodyFs={small:'11px',normal:'13px',large:'15px'}[p.fontSize]||'13px';
+  var logoTag=p.logo?'<img src="'+p.logo+'" style="max-height:60px;max-width:180px;object-fit:contain;display:block;margin-bottom:5px"/>':'';
+  var statusColor=isEstimate?'#d97706':'#6c63ff';
+  var hdr='<div style="padding:28px 28px 0"><div style="display:flex;justify-content:space-between;margin-bottom:22px"><div>'+logoTag+'<div style="font-size:'+hfs+';font-weight:700;color:'+p.color+'">'+(p.coName||'B2B Print Hub')+'</div><div style="color:#666;font-size:13px;margin-top:3px">'+(p.coTag||'')+'</div>'+(p.coAddr?'<div style="color:#666;font-size:13px;margin-top:8px">'+p.coAddr+'</div>':'')+(p.coPhone?'<div style="color:#666;font-size:13px">'+p.coPhone+'</div>':'')+(p.coEmail?'<div style="color:#666;font-size:13px">'+p.coEmail+'</div>':'')+(p.coWeb?'<div style="color:'+p.color+';font-size:13px">'+p.coWeb+'</div>':'')+'</div><div style="text-align:right"><div style="font-size:'+hfs+';font-weight:700;color:'+p.color+'">'+title+'</div><div style="color:#555;font-size:14px;margin-top:5px">'+numStr+'</div><div style="color:#555;font-size:14px">Date: '+dateStr+'</div><div style="margin-top:8px;display:inline-block;background:'+statusColor+'20;color:'+statusColor+';padding:3px 12px;border-radius:12px;font-size:13px;font-weight:600">'+(isEstimate?'ESTIMATE':'INVOICE')+'</div></div></div><div style="background:#f9f9f9;border-radius:8px;padding:14px 18px;margin-bottom:20px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">'+(isEstimate?'Prepared For':'Bill To')+'</div><div style="font-weight:600;font-size:14px">'+clientObj.name+'</div>'+(clientObj.address?'<div style="color:#555;font-size:13px">'+clientObj.address+'</div>':'')+(clientObj.phone?'<div style="color:#555;font-size:13px">'+clientObj.phone+'</div>':'')+(clientObj.email?'<div style="color:#555;font-size:13px">'+clientObj.email+'</div>':'')+'</div></div>';
+  var rows=itemsArr.map(function(it){return '<tr><td style="padding:10px 14px">'+it.svc+'</td><td style="padding:10px 14px;color:#444">'+(it.desc||'')+'</td><td style="padding:10px 14px;text-align:center">'+it.qty+'</td><td style="padding:10px 14px;text-align:right">$'+parseFloat(it.price).toFixed(2)+'</td><td style="padding:10px 14px;text-align:right;font-weight:600">$'+parseFloat(it.tot).toFixed(2)+'</td></tr>';}).join('');
+  var totals='<div style="text-align:right;padding:16px 28px"><table style="margin-left:auto;border-collapse:collapse;min-width:220px"><tr><td style="padding:4px 10px;color:#666;font-size:'+bodyFs+'">Subtotal</td><td style="padding:4px 10px;text-align:right;font-size:'+bodyFs+'">'+fmt(sub)+'</td></tr>'+(p.showTax==='yes'?'<tr><td style="padding:4px 10px;color:#666;font-size:'+bodyFs+'">Tax (8%)</td><td style="padding:4px 10px;text-align:right;font-size:'+bodyFs+'">'+fmt(tax)+'</td></tr>':'')+(disc>0?'<tr><td style="padding:4px 10px;color:#666;font-size:'+bodyFs+'">Discount</td><td style="padding:4px 10px;text-align:right;color:#16a34a;font-size:'+bodyFs+'">-'+fmt(disc)+'</td></tr>':'')+'<tr style="border-top:2px solid '+p.color+'"><td style="padding:10px 10px 4px;font-weight:700;font-size:16px;color:'+p.color+'">'+(isEstimate?'EST. TOTAL':'TOTAL')+'</td><td style="padding:10px 10px 4px;font-weight:700;font-size:16px;color:'+p.color+';text-align:right">'+fmt(grand)+'</td></tr></table></div>';
+  var footer='<div style="padding:0 28px 28px">'+(notes?'<div style="background:#f9f9f9;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#555"><b>Notes:</b> '+notes+'</div>':'')+(isEstimate?'<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 18px;margin-bottom:12px"><div style="font-weight:600;color:#1d4ed8;margin-bottom:4px;font-size:13px">📋 To Approve This Estimate</div><div style="font-size:12px;color:#555">Contact us at '+(p.coEmail||p.coPhone||'our office')+'. Once approved we will issue an invoice.</div></div>':'')+(p.terms?'<div style="font-size:13px;color:#555;margin-bottom:10px"><b>Terms:</b> '+p.terms+'</div>':'')+(p.payment?'<div style="background:'+p.color+'10;border-left:3px solid '+p.color+';padding:10px 14px;border-radius:4px;font-size:13px;color:#444;margin-bottom:12px"><b>Payment Info:</b><br/>'+p.payment.replace(/\n/g,'<br/>')+'</div>':'')+(p.footer?'<div style="text-align:center;font-size:13px;color:'+p.color+';border-top:1px solid #eee;padding-top:12px;margin-top:8px">'+p.footer+'</div>':'')+'</div>';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>'+title+' '+numStr+'</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#222;background:#fff}.wrap{max-width:820px;margin:0 auto}table{width:100%;border-collapse:collapse}th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.5px}td{border-bottom:1px solid #f0f0f0}@media print{@page{margin:0}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="wrap">'+hdr+'<div style="padding:0 28px"><table><thead><tr style="background:'+p.color+'"><th style="padding:11px 14px;color:#fff">Service</th><th style="padding:11px 14px;color:#fff">Description</th><th style="padding:11px 14px;color:#fff;text-align:center">Qty</th><th style="padding:11px 14px;color:#fff;text-align:right">Unit Price</th><th style="padding:11px 14px;color:#fff;text-align:right">Total</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+totals+footer+'</div><script>window.onload=function(){window.print();}<\/script></body></html>';
+}
+function openPrintWin(html){var w=window.open('','_blank','width=900,height=1100');if(!w){toast('Allow popups to export PDF');return;}w.document.open();w.document.write(html);w.document.close();}
+function exportPDF(id){var inv=D.invoices.find(function(i){return i.id===id;});if(!inv){toast('Invoice not found');return;}var client=D.clients.find(function(c){return c.id===inv.cid;})||{name:'Unknown',email:'',phone:'',address:''};logActivity('Export PDF','Invoices','#INV-'+String(id).padStart(4,'0'));openPrintWin(buildPDFHtml(D.pdf.invTitle||'INVOICE','#INV-'+String(inv.id).padStart(4,'0'),inv.date,client,inv.items,inv.sub,inv.tax,inv.disc,inv.grand,inv.notes,false));toast('Invoice PDF opened!');}
+function exportEstPDF(id){var e=D.estimates.find(function(x){return x.id===id;});if(!e){toast('Estimate not found');return;}var client=D.clients.find(function(c){return c.id===e.cid;})||{name:'Unknown',email:'',phone:'',address:''};logActivity('Export PDF','Estimates','#EST-'+String(id).padStart(4,'0'));openPrintWin(buildPDFHtml('ESTIMATE','#EST-'+String(e.id).padStart(4,'0'),e.date,client,e.items,e.sub,e.tax,0,e.grand,e.desc,true));toast('Estimate PDF opened!');}
+
+// PDF SETTINGS
+function handleLogoUpload(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){D.pdf.logo=ev.target.result;document.getElementById('logo-preview').src=ev.target.result;document.getElementById('logo-preview-wrap').style.display='flex';updatePDFPreview();};r.readAsDataURL(f);}
+function removeLogo(){D.pdf.logo='';document.getElementById('logo-preview').src='';document.getElementById('logo-preview-wrap').style.display='none';document.getElementById('logo-input').value='';updatePDFPreview();}
+function switchPDFTab(tab){['company','style','content'].forEach(function(t){document.getElementById('pdf-tab-'+t).style.display=t===tab?'block':'none';document.getElementById('ptab-'+t).classList.toggle('active',t===tab);});}
+function setPDFColor(hex,el){D.pdf.color=hex;document.querySelectorAll('.color-swatch').forEach(function(s){s.classList.remove('sel');});if(el)el.classList.add('sel');updatePDFPreview();}
+function updatePDFPreview(){
+  var p={coName:document.getElementById('pdf-co-name').value||'B2B Print Hub',coTag:document.getElementById('pdf-co-tag').value||'',color:D.pdf.color,logo:D.pdf.logo||'',invTitle:document.getElementById('pdf-inv-title').value||'INVOICE',footer:document.getElementById('pdf-footer').value||'',showTax:document.getElementById('pdf-show-tax').value};
+  var logoH=p.logo?'<img src="'+p.logo+'" style="max-height:40px;max-width:120px;object-fit:contain;display:block;margin-bottom:3px"/>':'';
+  var html='<div style="display:flex;justify-content:space-between;margin-bottom:10px"><div>'+logoH+'<div style="font-size:13px;font-weight:700;color:'+p.color+'">'+p.coName+'</div><div style="font-size:10px;color:#666">'+p.coTag+'</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:700;color:'+p.color+'">'+p.invTitle+'</div><div style="font-size:10px;color:#666">#INV-0001 · '+today()+'</div></div></div>';
+  html+='<div style="font-size:10px;color:#666;margin-bottom:8px">Bill To: <b>Sample Client</b></div>';
+  html+='<table style="width:100%;border-collapse:collapse;margin:8px 0;font-size:11px"><thead><tr style="background:'+p.color+'"><th style="padding:5px 7px;color:#fff;text-align:left">Service</th><th style="padding:5px 7px;color:#fff;text-align:right">Total</th></tr></thead><tbody><tr><td style="padding:4px 7px;border-bottom:1px solid #eee">Print / Banners</td><td style="padding:4px 7px;border-bottom:1px solid #eee;text-align:right">$600.00</td></tr></tbody></table>';
+  html+='<div style="text-align:right;font-size:11px"><div>Subtotal: $600.00</div>'+(p.showTax==='yes'?'<div>Tax: $48.00</div>':'')+'<div style="font-weight:700;color:'+p.color+'">Total: $648.00</div></div>';
+  if(p.footer)html+='<div style="font-size:10px;color:'+p.color+';text-align:center;margin-top:6px;border-top:1px solid #eee;padding-top:5px">'+p.footer+'</div>';
+  document.getElementById('pdf-preview-box').innerHTML=html;
+}
+function savePDFSettings(){
+  D.pdf=Object.assign({},D.pdf,{coName:document.getElementById('pdf-co-name').value||'B2B Print Hub',coTag:document.getElementById('pdf-co-tag').value,coAddr:document.getElementById('pdf-co-addr').value,coPhone:document.getElementById('pdf-co-phone').value,coEmail:document.getElementById('pdf-co-email').value,coWeb:document.getElementById('pdf-co-web').value,layout:document.getElementById('pdf-layout').value,fontSize:document.getElementById('pdf-font-size').value,showTax:document.getElementById('pdf-show-tax').value,invTitle:document.getElementById('pdf-inv-title').value||'INVOICE',terms:document.getElementById('pdf-terms').value,footer:document.getElementById('pdf-footer').value,payment:document.getElementById('pdf-payment').value});
+  logActivity('Update PDF Settings','Settings','PDF invoice settings updated');
+  saveAll();toast('PDF settings saved!');
+}
+
+// ===== ESTIMATES =====
+function handleEstPhotos(e){Array.from(e.target.files).forEach(function(f){var r=new FileReader();r.onload=function(ev){estPhotos.push(ev.target.result);document.getElementById('est-photo-grid').innerHTML=estPhotos.map(function(p){return '<img src="'+p+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--bor)"/>';}).join('');};r.readAsDataURL(f);});}
+function openEstModal(est){
+  D.editEst=est||null;estPhotos=est?est.photos.slice():[];fillCli();
+  document.getElementById('estModalT').textContent=est?'Edit Estimate':'New Estimate';
+  document.getElementById('est-cli').value=est?est.cid:'';document.getElementById('est-date').value=est?est.date:today();document.getElementById('est-desc').value=est?est.desc:'';
+  document.getElementById('est-li-body').innerHTML='';
+  if(est&&est.items&&est.items.length)est.items.forEach(function(it){addEstLI(it);}); else addEstLI(null);
+  document.getElementById('est-photo-grid').innerHTML=estPhotos.map(function(p){return '<img src="'+p+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--bor)"/>';}).join('');
+  recalcEst();document.getElementById('estModal').classList.add('open');
+}
+function addEstLI(it){var tr=document.createElement('tr');tr.innerHTML='<td><select oninput="recalcEst()">'+SVCS.map(function(s){return '<option'+(it&&it.svc===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></td><td><input type="text" value="'+(it?it.desc:'')+'" placeholder="Description" oninput="recalcEst()"/></td><td><input type="number" value="'+(it?it.qty:1)+'" min="1" style="width:52px" oninput="recalcEst()"/></td><td><input type="number" value="'+(it?it.price:0)+'" min="0" step="0.01" style="width:78px" oninput="recalcEst()"/></td><td style="font-weight:600;color:var(--acc)">$'+(it?(it.qty*it.price).toFixed(2):'0.00')+'</td><td><button onclick="this.closest(\'tr\').remove();recalcEst()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:18px">×</button></td>';document.getElementById('est-li-body').appendChild(tr);}
+function recalcEst(){var sub=0;document.querySelectorAll('#est-li-body tr').forEach(function(tr){var ni=tr.querySelectorAll('input[type=number]');var qty=parseFloat(ni[0]&&ni[0].value)||0,price=parseFloat(ni[1]&&ni[1].value)||0,tot=qty*price;sub+=tot;if(tr.cells[4])tr.cells[4].textContent='$'+tot.toFixed(2);});var tax=sub*0.08;document.getElementById('est-sub').textContent=fmt(sub);document.getElementById('est-tax').textContent=fmt(tax);document.getElementById('est-grand').textContent=fmt(sub+tax);}
+function getEstItems(){var items=[];document.querySelectorAll('#est-li-body tr').forEach(function(tr){var sel=tr.querySelector('select'),ni=tr.querySelectorAll('input');var qty=parseFloat(ni[1]&&ni[1].value)||1,price=parseFloat(ni[2]&&ni[2].value)||0;items.push({svc:sel&&sel.value,desc:ni[0]&&ni[0].value,qty:qty,price:price,tot:qty*price});});return items;}
+function saveEst(){
+  var cid=parseInt(document.getElementById('est-cli').value);if(!cid){toast('Please select a client');return;}
+  var items=getEstItems(),sub=items.reduce(function(s,i){return s+i.tot;},0),tax=sub*0.08;
+  var est={id:D.editEst?D.editEst.id:D.nextEst++,cid:cid,date:document.getElementById('est-date').value,desc:document.getElementById('est-desc').value,items:items,sub:sub,tax:tax,grand:sub+tax,status:'pending',photos:estPhotos};
+  if(D.editEst){var idx=D.estimates.findIndex(function(x){return x.id===est.id;});D.estimates[idx]=est;}else D.estimates.push(est);
+  logActivity(D.editEst?'Edit Estimate':'Create Estimate','Estimates','#EST-'+String(est.id).padStart(4,'0'));
+  saveAll();closeM('estModal');renderEstimates();toast('Estimate saved!');
+}
+function convEst(){saveEst();var est=D.estimates[D.estimates.length-1];closeM('estModal');quickConv(est.id);}
+function renderEstimates(){
+  var tb=document.getElementById('est-tbody');
+  if(!D.estimates.length){tb.innerHTML='<tr><td colspan="7"><div class="empty">No estimates yet</div></td></tr>';return;}
+  tb.innerHTML=D.estimates.slice().reverse().map(function(e){
+    var bc=e.status==='approved'?'b-ok':e.status==='rejected'?'b-err':e.status==='invoiced'?'b-inf':'b-warn';
+    var statusLabel=e.status==='invoiced'?'✓ Invoiced':e.status;
+    var actions='<div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-o btn-sm" onclick="openEstModal(D.estimates.find(function(x){return x.id==='+e.id+';}))">✏️</button><button class="btn btn-o btn-sm" style="color:var(--inf)" onclick="exportEstPDF('+e.id+')">📄</button>'+(e.status!=='invoiced'?'<button class="btn btn-o btn-sm" style="color:var(--acc)" onclick="openEstApproval('+e.id+')">📤</button>':'')+(e.status==='approved'?'<button class="btn btn-p btn-sm" onclick="quickConv('+e.id+')">💳</button>':'')+(e.status!=='invoiced'&&e.status!=='approved'?'<button class="btn btn-ok btn-sm" onclick="quickConv('+e.id+')">→ Inv</button>':'')+(e.status==='invoiced'?'<span style="font-size:11px;color:var(--inf);font-weight:600">#INV-'+String(e.invoiceId||0).padStart(4,'0')+'</span>':'')+'</div>';
+    return '<tr><td style="font-weight:600;color:var(--acc)">#EST-'+String(e.id).padStart(4,'0')+'</td><td>'+cName(e.cid)+'</td><td style="font-size:12px;color:var(--t3);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(e.desc||'—')+'</td><td style="color:var(--t3)">'+e.date+'</td><td style="font-weight:600">'+fmt(e.grand)+'</td><td><span class="badge '+bc+'">'+statusLabel+'</span></td><td>'+actions+'</td></tr>';
+  }).join('');
+}
+function openEstApproval(id){
+  var e=D.estimates.find(function(x){return x.id===id;});if(!e)return;
+  var client=D.clients.find(function(c){return c.id===e.cid;})||{name:'Unknown',email:''};
+  var html='<div style="background:var(--bg3);border-radius:10px;padding:16px;margin-bottom:16px"><div style="display:flex;justify-content:space-between;margin-bottom:10px"><div><div style="font-size:13px;font-weight:600">'+client.name+'</div><div style="font-size:12px;color:var(--t3)">'+client.email+'</div></div><div style="text-align:right"><div style="font-size:11px;color:var(--t3)">#EST-'+String(e.id).padStart(4,'0')+'</div><div style="font-size:11px;color:var(--t3)">'+e.date+'</div></div></div><div style="text-align:right;font-size:15px;font-weight:700;color:var(--acc)">Total: '+fmt(e.grand)+'</div></div><div style="font-size:13px;font-weight:600;margin-bottom:10px">Update Status:</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"><button class="btn btn-ok" style="justify-content:center;padding:12px" onclick="setEstStatus('+e.id+',\'approved\')">✅ Approve</button><button class="btn btn-o" style="justify-content:center;padding:12px;color:var(--err);border-color:var(--err)" onclick="setEstStatus('+e.id+',\'rejected\')">❌ Reject</button></div>'+(e.status==='approved'?'<div style="background:rgba(76,175,125,.1);border:1px solid var(--ok);border-radius:10px;padding:14px"><div style="font-weight:600;color:var(--ok);margin-bottom:8px">✅ Approved — Ready to Invoice</div><button class="btn btn-p" style="width:100%;justify-content:center;font-size:14px;padding:12px" onclick="closeM(\'estApprovalModal\');quickConv('+e.id+')">💳 Convert to Invoice</button></div>':'');
+  document.getElementById('est-approval-body').innerHTML=html;
+  document.getElementById('estApprovalModal').classList.add('open');
+}
+function setEstStatus(id,status){var e=D.estimates.find(function(x){return x.id===id;});if(!e)return;e.status=status;logActivity('Update Estimate','Estimates','#EST-'+String(id).padStart(4,'0')+' → '+status);saveAll();toast('Estimate: '+status);openEstApproval(id);renderEstimates();}
+function quickConv(id){
+  var est=D.estimates.find(function(e){return e.id===id;});if(!est)return;
+  var newInv={id:D.nextInv++,cid:est.cid,date:today(),items:est.items,sub:est.sub,tax:est.tax,disc:0,grand:est.grand,status:'draft',notes:'Converted from Estimate #EST-'+String(est.id).padStart(4,'0')};
+  D.invoices.push(newInv);est.status='invoiced';est.invoiceId=newInv.id;
+  logActivity('Convert Estimate','Estimates','#EST-'+String(est.id).padStart(4,'0')+' → #INV-'+String(newInv.id).padStart(4,'0'));
+  saveAll();D.invFilter='all';
+  document.querySelectorAll('#page-invoices .chip').forEach(function(x){x.classList.remove('active');});
+  var ac=document.querySelector('#page-invoices .chip');if(ac)ac.classList.add('active');
+  closeM('estApprovalModal');gotoPage('invoices',document.querySelector('.nav-i[onclick*="invoices"]'));renderEstimates();toast('Invoice #INV-'+String(newInv.id).padStart(4,'0')+' created!');
+}
+
+// ===== POS =====
+function getPosCats(){var cats=['All'];posItems.forEach(function(it){if(cats.indexOf(it.cat)<0)cats.push(it.cat);});return cats;}
+function renderPOS(){fillCli();buildPosCatTabs();renderPOSItems();renderCart();}
+function buildPosCatTabs(){var cats=getPosCats();var tabs=document.getElementById('pos-cat-tabs');if(!tabs)return;tabs.innerHTML=cats.map(function(c){return '<button onclick="setPOSCat(\''+c+'\',this)" class="pos-cat-btn" style="padding:10px 16px;border:none;border-bottom:3px solid '+(c===_posActiveCat?'var(--acc)':'transparent')+';background:none;color:'+(c===_posActiveCat?'var(--acc)':'var(--t2)')+';font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">'+c+'</button>';}).join('');}
+function setPOSCat(cat,el){_posActiveCat=cat;document.querySelectorAll('.pos-cat-btn').forEach(function(b){b.style.borderBottomColor='transparent';b.style.color='var(--t2)';});el.style.borderBottomColor='var(--acc)';el.style.color='var(--acc)';renderPOSItems();}
+function renderPOSItems(){var search=(document.getElementById('pos-search')&&document.getElementById('pos-search').value||'').toLowerCase();var items=posItems.filter(function(it){if(_posActiveCat!=='All'&&it.cat!==_posActiveCat)return false;if(search&&it.n.toLowerCase().indexOf(search)<0)return false;return true;});var catColors={Print:'#6c63ff',Wraps:'#38bdf8',Signs:'#f59e0b',Install:'#ef4444',Design:'#4caf7d'};var grid=document.getElementById('pos-items-grid');if(!grid)return;grid.innerHTML=items.map(function(it){var idx=posItems.indexOf(it);var cc=catColors[it.cat]||'#9ea3c0';return '<div onclick="addCart('+idx+')" style="background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:14px 12px;cursor:pointer;text-align:center;position:relative;overflow:hidden;transition:border .15s" onmouseover="this.style.borderColor=\''+cc+'\'" onmouseout="this.style.borderColor=\'var(--bor)\'"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:'+cc+'"></div><div style="font-size:11px;color:'+cc+';font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;margin-top:4px">'+it.cat+'</div><div style="font-weight:600;font-size:13px;line-height:1.3;margin-bottom:8px">'+it.n+'</div><div style="font-weight:700;font-size:16px;color:'+cc+'">'+fmt(it.p)+'</div></div>';}).join('');if(!items.length)grid.innerHTML='<div class="empty" style="grid-column:1/-1">No items found</div>';}
+function addCart(i){var it=posItems[i];var ex=cart.find(function(c){return c.n===it.n;});if(ex)ex.qty++;else cart.push({n:it.n,p:it.p,cat:it.cat,qty:1});renderCart();}
+function addCustomItem(){var name=document.getElementById('ci-name').value.trim(),price=parseFloat(document.getElementById('ci-price').value)||0;if(!name){toast('Enter item description');return;}cart.push({n:name,p:price,cat:'Custom',qty:1});document.getElementById('ci-name').value='';document.getElementById('ci-price').value='';renderCart();toast('Custom item added');}
+function applyDisc(pct){posDiscount=Math.min(Math.max(pct,0),100);document.getElementById('disc-custom').value=pct||'';['5','10','15'].forEach(function(v){var b=document.getElementById('disc-'+v);if(b){b.style.background=parseFloat(v)===pct?'var(--acc)':'';b.style.color=parseFloat(v)===pct?'#fff':'';}});updateCartTot();}
+function renderCart(){var el=document.getElementById('pos-cart-items');if(!el)return;if(!cart.length){el.innerHTML='<div style="text-align:center;padding:32px 16px;color:var(--t3)"><div style="font-size:36px;margin-bottom:8px">🛒</div><div style="font-size:13px">Add items to start an order</div></div>';updateCartTot();return;}el.innerHTML=cart.map(function(it,i){return '<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--bor)"><div style="flex:1"><div style="font-weight:500;font-size:13px">'+it.n+'</div><div style="font-size:11px;color:var(--t3)">'+fmt(it.p)+' each</div></div><div style="display:flex;align-items:center;gap:6px"><button onclick="cQty('+i+',-1)" style="width:26px;height:26px;border:1px solid var(--bor);border-radius:6px;background:var(--bg3);color:var(--t1);cursor:pointer">−</button><span style="font-weight:600;min-width:20px;text-align:center">'+it.qty+'</span><button onclick="cQty('+i+',1)" style="width:26px;height:26px;border:1px solid var(--bor);border-radius:6px;background:var(--bg3);color:var(--t1);cursor:pointer">+</button></div><span style="font-weight:700;font-size:14px;min-width:64px;text-align:right">'+fmt(it.p*it.qty)+'</span><button onclick="rmCart('+i+')" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:18px">×</button></div>';}).join('');updateCartTot();}
+function cQty(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);renderCart();}
+function rmCart(i){cart.splice(i,1);renderCart();}
+function clearCart(){cart=[];posDiscount=0;applyDisc(0);renderCart();}
+function getOrderTotals(){var sub=cart.reduce(function(s,i){return s+i.p*i.qty;},0),tax=sub*0.08,discAmt=sub*(posDiscount/100),grand=sub+tax-discAmt;return{sub:sub,tax:tax,discAmt:discAmt,grand:grand};}
+function updateCartTot(){var t=getOrderTotals();if(document.getElementById('pos-sub'))document.getElementById('pos-sub').textContent=fmt(t.sub);if(document.getElementById('pos-tax'))document.getElementById('pos-tax').textContent=fmt(t.tax);if(document.getElementById('pos-tot'))document.getElementById('pos-tot').textContent=fmt(t.grand);var dr=document.getElementById('pos-disc-row');if(dr){dr.style.display=posDiscount>0?'flex':'none';document.getElementById('pos-disc-amt').textContent='-'+fmt(t.discAmt)+' ('+posDiscount+'%)';}}
+function posCheckout(method){if(!cart.length){toast('Add items first');return;}if(method==='cash'){openCashDrawer();return;}completeSale(method,0);}
+function openCashDrawer(){var t=getOrderTotals();document.getElementById('cash-total-display').textContent=fmt(t.grand);document.getElementById('cash-tendered').value='';document.getElementById('cash-change').textContent='$0.00';var seen={},amounts=[Math.ceil(t.grand/5)*5,Math.ceil(t.grand/10)*10,Math.ceil(t.grand/20)*20,Math.ceil(t.grand/50)*50];document.getElementById('cash-quick').innerHTML=amounts.filter(function(a){if(seen[a]||a<t.grand)return false;seen[a]=true;return true;}).slice(0,4).map(function(a){return '<button class="btn btn-o" style="justify-content:center;font-size:13px;font-weight:600" onclick="document.getElementById(\'cash-tendered\').value='+a+';calcChange()">'+fmt(a)+'</button>';}).join('');document.getElementById('cashModal').classList.add('open');}
+function calcChange(){var t=getOrderTotals(),tendered=parseFloat(document.getElementById('cash-tendered').value)||0,change=tendered-t.grand;document.getElementById('cash-change').textContent=change>=0?fmt(change):'Need '+fmt(t.grand-tendered)+' more';document.getElementById('cash-change').style.color=change>=0?'var(--ok)':'var(--err)';}
+function confirmCashPayment(){var t=getOrderTotals(),tendered=parseFloat(document.getElementById('cash-tendered').value)||0;if(tendered<t.grand){toast('Cash tendered is less than total');return;}closeM('cashModal');completeSale('cash',tendered-t.grand);}
+function completeSale(method,change){var t=getOrderTotals(),cid=parseInt(document.getElementById('pos-cust').value)||D.clients[0].id;var inv={id:D.nextInv++,cid:cid,date:today(),items:cart.map(function(c){return{svc:c.cat,desc:c.n,qty:c.qty,price:c.p,tot:c.p*c.qty};}),sub:t.sub,tax:t.tax,disc:t.discAmt,grand:t.grand,status:'paid',notes:'POS Sale - '+method};D.invoices.push(inv);logActivity('POS Sale','POS',cName(cid)+' - '+fmt(t.grand)+' - '+method);saveAll();showReceipt(inv,method,change);toast('Sale complete!');}
+function showReceipt(inv,method,change){var client=D.clients.find(function(c){return c.id===inv.cid;})||{name:'Walk-in'};var p=D.pdf,line='--------------------------------';var lines=[(p.coName||'B2B PRINT HUB'),line,'Date: '+today()+'  #INV-'+String(inv.id).padStart(4,'0'),'Customer: '+client.name,'Payment: '+method.charAt(0).toUpperCase()+method.slice(1),line,'ITEM                    QTY   TOTAL',line];inv.items.forEach(function(it){var name=it.desc.length>22?it.desc.slice(0,21)+'…':it.desc;lines.push(name.padEnd(24)+String(it.qty).padStart(3)+'  '+fmt(it.tot).padStart(8));});lines.push(line);lines.push('Subtotal:'.padEnd(24)+fmt(inv.sub).padStart(10));lines.push('Tax (8%):'.padEnd(24)+fmt(inv.tax).padStart(10));if(inv.disc>0)lines.push('Discount:'.padEnd(24)+'-'+fmt(inv.disc).padStart(9));lines.push('TOTAL:'.padEnd(24)+fmt(inv.grand).padStart(10));if(method==='cash'&&change>0){lines.push(line);lines.push('Change Due:'.padEnd(24)+fmt(change).padStart(10));}lines.push(line);lines.push(p.footer||'Thank you for your business!');lastReceipt=lines.join('\n');document.getElementById('receipt-body').textContent=lastReceipt;document.getElementById('receiptModal').classList.add('open');}
+function printReceipt(){var w=window.open('','_blank','width=400,height=600');if(!w){toast('Allow popups to print');return;}w.document.write('<html><head><title>Receipt</title><style>body{font-family:monospace;font-size:13px;white-space:pre;padding:20px}@media print{@page{margin:4mm}}</style></head><body>'+lastReceipt+'<script>window.onload=function(){window.print();}<\/script></body></html>');w.document.close();}
+function holdOrder(){if(!cart.length){toast('Nothing to hold');return;}heldOrders.push({cart:cart.slice(),discount:posDiscount,time:new Date().toLocaleTimeString()});clearCart();toast('Order held');}
+function openHeldOrders(){var el=document.getElementById('held-list');if(!heldOrders.length){el.innerHTML='<div class="empty">No held orders</div>';}else{el.innerHTML=heldOrders.map(function(o,i){var sub=o.cart.reduce(function(s,c){return s+c.p*c.qty;},0);return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--bor)"><div><div style="font-weight:500;font-size:13px">Order #'+(i+1)+' - '+o.cart.length+' item(s)</div><div style="font-size:11px;color:var(--t3)">Held at '+o.time+'</div></div><div style="display:flex;gap:6px"><span style="font-weight:600;color:var(--acc)">'+fmt(sub)+'</span><button class="btn btn-p btn-sm" onclick="resumeOrder('+i+')">Resume</button><button class="btn btn-o btn-sm" onclick="deleteHeld('+i+')">🗑</button></div></div>';}).join('');}document.getElementById('heldModal').classList.add('open');}
+function resumeOrder(i){var o=heldOrders.splice(i,1)[0];cart=o.cart;posDiscount=o.discount;applyDisc(posDiscount);renderCart();closeM('heldModal');toast('Order resumed');}
+function deleteHeld(i){heldOrders.splice(i,1);openHeldOrders();}
+
+// ITEMS MANAGER
+function openItemsManager(){_editingItemId=null;document.getElementById('item-form-wrap').style.display='none';document.getElementById('im-search').value='';document.getElementById('im-filter-cat').value='';fillItemCatFilter();renderItemsManager();document.getElementById('itemsManagerModal').classList.add('open');}
+function fillItemCatFilter(){var cats=getPosCats().filter(function(c){return c!=='All';});var sel=document.getElementById('im-filter-cat');sel.innerHTML='<option value="">All Categories</option>'+cats.map(function(c){return '<option>'+c+'</option>';}).join('');var imCat=document.getElementById('im-cat');if(imCat)imCat.innerHTML=cats.map(function(c){return '<option>'+c+'</option>';}).join('');}
+function renderItemsManager(){var search=(document.getElementById('im-search').value||'').toLowerCase();var catF=document.getElementById('im-filter-cat').value||'';var list=posItems.filter(function(it){if(catF&&it.cat!==catF)return false;if(search&&it.n.toLowerCase().indexOf(search)<0&&(it.desc||'').toLowerCase().indexOf(search)<0&&(it.sku||'').toLowerCase().indexOf(search)<0)return false;return true;});var catColors={Print:'#6c63ff',Wraps:'#38bdf8',Signs:'#f59e0b',Install:'#ef4444',Design:'#4caf7d'};var tb=document.getElementById('items-manager-tbody');tb.innerHTML=list.length?list.map(function(it){var cc=catColors[it.cat]||'#9ea3c0';return '<tr><td style="font-weight:500">'+it.n+'</td><td><span style="background:'+cc+'20;color:'+cc+';border-radius:12px;padding:2px 9px;font-size:11px;font-weight:600">'+it.cat+'</span></td><td style="font-size:12px;color:var(--t3)">'+(it.sku||'—')+'</td><td style="font-size:12px;color:var(--t2);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(it.desc||'—')+'</td><td style="font-weight:600;color:var(--acc)">'+fmt(it.p)+'</td><td style="text-align:center"><div style="display:flex;gap:5px;justify-content:center"><button class="btn btn-o btn-sm" onclick="openItemForm('+it.id+')">✏️</button><button class="btn btn-o btn-sm" style="color:var(--err)" onclick="deleteItem('+it.id+')">🗑</button></div></td></tr>';}).join(''):'<tr><td colspan="6"><div class="empty">No items found</div></td></tr>';document.getElementById('im-count').textContent=list.length+' of '+posItems.length+' items';}
+function openItemForm(id){_editingItemId=id||null;fillItemCatFilter();document.getElementById('item-form-wrap').style.display='block';document.getElementById('item-form-title').textContent=id?'Edit Item':'New Item';document.getElementById('im-new-cat-wrap').style.display='none';if(id){var it=posItems.find(function(x){return x.id===id;});if(!it)return;document.getElementById('im-name').value=it.n;document.getElementById('im-price').value=it.p;document.getElementById('im-cat').value=it.cat;document.getElementById('im-sku').value=it.sku||'';document.getElementById('im-desc').value=it.desc||'';}else{document.getElementById('im-name').value='';document.getElementById('im-price').value='';document.getElementById('im-sku').value='';document.getElementById('im-desc').value='';}}
+function closeItemForm(){_editingItemId=null;document.getElementById('item-form-wrap').style.display='none';}
+function saveItemForm(){var name=document.getElementById('im-name').value.trim(),price=parseFloat(document.getElementById('im-price').value);if(!name){toast('Enter item name');return;}if(isNaN(price)||price<0){toast('Enter a valid price');return;}var cat=document.getElementById('im-cat').value,sku=document.getElementById('im-sku').value.trim(),desc=document.getElementById('im-desc').value.trim();if(_editingItemId){var idx=posItems.findIndex(function(x){return x.id===_editingItemId;});if(idx>-1)posItems[idx]={id:_editingItemId,n:name,p:price,cat:cat,sku:sku,desc:desc};logActivity('Edit POS Item','POS',name);}else{posItems.push({id:nextPosId++,n:name,p:price,cat:cat,sku:sku,desc:desc});logActivity('Add POS Item','POS',name);}saveAll();closeItemForm();renderItemsManager();buildPosCatTabs();fillItemCatFilter();toast(_editingItemId?'Item updated!':'Item added!');}
+function deleteItem(id){if(!confirm('Delete this item?'))return;var it=posItems.find(function(x){return x.id===id;});posItems=posItems.filter(function(x){return x.id!==id;});logActivity('Delete POS Item','POS',it?it.n:'');saveAll();renderItemsManager();renderPOSItems();buildPosCatTabs();toast('Item deleted');}
+function showNewCatInput(){document.getElementById('im-new-cat-wrap').style.display='block';document.getElementById('im-new-cat-input').focus();}
+function cancelNewCategory(){document.getElementById('im-new-cat-wrap').style.display='none';document.getElementById('im-new-cat-input').value='';}
+function confirmNewCategory(){var name=document.getElementById('im-new-cat-input').value.trim();if(!name){toast('Enter category name');return;}var sel=document.getElementById('im-cat');var opt=document.createElement('option');opt.value=name;opt.textContent=name;sel.appendChild(opt);sel.value=name;cancelNewCategory();toast('Category "'+name+'" added!');}
+
+// ===== JOBS =====
+function getMember(id){return D.members.find(function(m){return m.id===id;})||null;}
+function memberAvatars(ids){return(ids||[]).map(function(mid){var m=getMember(mid);if(!m)return'';return'<div title="'+m.name+'" style="width:24px;height:24px;border-radius:50%;background:'+m.color+';display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:2px solid var(--bg2);margin-left:-4px">'+inits(m.name)+'</div>';}).join('');}
+function fillMemberFilter(){var sel=document.getElementById('job-filter-member');if(!sel)return;var val=sel.value;sel.innerHTML='<option value="">All Members</option>'+D.members.map(function(m){return'<option value="'+m.id+'">'+m.name+'</option>';}).join('');sel.value=val;}
+function addChecklistItem(text,done){checklistItems.push({text:text||'',done:done||false});renderChecklist();}
+function renderChecklist(){var el=document.getElementById('job-checklist-items');if(!el)return;el.innerHTML=checklistItems.map(function(it,i){return'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><input type="checkbox"'+(it.done?' checked':'')+' onchange="checklistItems['+i+'].done=this.checked" style="width:15px;height:15px;cursor:pointer"/><input type="text" value="'+it.text.replace(/"/g,'&quot;')+'" placeholder="Task..." oninput="checklistItems['+i+'].text=this.value" style="flex:1;padding:5px 8px;border:1px solid var(--bor);border-radius:6px;background:var(--bg);color:var(--t1);font-size:12px"/><button onclick="checklistItems.splice('+i+',1);renderChecklist()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:15px">×</button></div>';}).join('');}
+function handleJobPhotos(e){Array.from(e.target.files).forEach(function(f){var r=new FileReader();r.onload=function(ev){jobPhotos.push(ev.target.result);document.getElementById('job-photo-grid').innerHTML=jobPhotos.map(function(p){return'<img src="'+p+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--bor)"/>';}).join('');};r.readAsDataURL(f);});}
+function renderJobs(){
+  fillMemberFilter();
+  var search=(document.getElementById('job-search')&&document.getElementById('job-search').value||'').toLowerCase();
+  var typeF=document.getElementById('job-filter-type')&&document.getElementById('job-filter-type').value||'';
+  var memberF=document.getElementById('job-filter-member')&&document.getElementById('job-filter-member').value||'';
+  var cols=[{st:'pending',label:'📋 Pending',c:'#38bdf8'},{st:'in-progress',label:'⚙️ In Progress',c:'#f59e0b'},{st:'done',label:'✅ Done',c:'#4caf7d'},{st:'voided',label:'🚫 Voided',c:'#ef4444'}];
+  var pColors={low:'#4caf7d',medium:'#f59e0b',high:'#ef4444'};
+  document.getElementById('kanban').innerHTML=cols.map(function(col){
+    var jobs=D.jobs.filter(function(j){if(j.status!==col.st)return false;if(search&&j.title.toLowerCase().indexOf(search)<0&&(j.desc||'').toLowerCase().indexOf(search)<0)return false;if(typeF&&j.type!==typeF)return false;if(memberF&&!(j.members||[]).includes(parseInt(memberF)))return false;return true;});
+    var total=D.jobs.filter(function(j){return j.status===col.st;}).length;
+    return '<div style="background:var(--bg3);border-radius:14px;padding:14px;min-height:120px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:12px;font-weight:700;color:'+col.c+'">'+col.label+'</span><div style="display:flex;align-items:center;gap:6px"><span style="background:'+col.c+'25;color:'+col.c+';border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">'+total+'</span><button onclick="openJobModalWithStatus(\''+col.st+'\')" style="background:'+col.c+'20;border:none;color:'+col.c+';border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:14px;font-weight:700">+</button></div></div>'+(jobs.length?jobs.map(function(j){var done=(j.checklist||[]).filter(function(x){return x.done;}).length,total2=(j.checklist||[]).length,pct=total2?Math.round(done/total2*100):0,overdue=j.due&&j.due<today()&&j.status!=='done';return'<div class="k-card" onclick="openJobDetail('+j.id+')"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px"><div style="font-weight:500;font-size:13px;flex:1;padding-right:6px">'+j.title+'</div><div style="width:10px;height:10px;border-radius:50%;background:'+(pColors[j.priority]||'#9ea3c0')+';flex-shrink:0;margin-top:3px"></div></div><div style="font-size:11px;color:var(--t3);margin-bottom:6px">'+cName(j.cid)+' · '+j.type+'</div>'+(j.due?'<div style="font-size:10px;color:'+(overdue?'var(--err)':'var(--t3)')+';margin-bottom:5px">📅 '+j.due+(overdue?' ⚠️':'')+'</div>':'')+(total2?'<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:3px"><span>Checklist</span><span>'+done+'/'+total2+'</span></div><div style="height:4px;background:var(--bor);border-radius:2px;overflow:hidden"><div style="height:100%;background:var(--ok);width:'+pct+'%"></div></div></div>':'')+'<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px"><div style="display:flex;margin-left:4px">'+memberAvatars(j.members)+'</div><div style="display:flex;gap:4px"><button onclick="event.stopPropagation();openJobModal(D.jobs.find(function(x){return x.id==='+j.id+';}));" style="background:var(--bg3);border:1px solid var(--bor);border-radius:5px;padding:2px 7px;font-size:11px;color:var(--t2);cursor:pointer">✏️</button><select onchange="moveJob('+j.id+',this.value);event.stopPropagation()" onclick="event.stopPropagation()" style="font-size:10px;padding:2px 4px;border:1px solid var(--bor);border-radius:5px;background:var(--bg3);color:var(--t2);cursor:pointer"><option value="">Move →</option><option value="pending">Pending</option><option value="in-progress">In Progress</option><option value="done">Done</option><option value="voided">Voided</option></select></div></div></div>';}).join(''):'<div style="text-align:center;padding:24px 10px;color:var(--t3);font-size:12px;border:2px dashed var(--bor);border-radius:10px;margin-top:4px">No jobs here</div>')+'</div>';
+  }).join('');
+}
+function moveJob(id,status){if(!status)return;var j=D.jobs.find(function(x){return x.id===id;});if(j){j.status=status;logActivity('Move Job','Jobs',j.title+' → '+status);saveAll();renderJobs();toast('Moved to: '+status);}}
+function openJobModalWithStatus(status){openJobModal(null);setTimeout(function(){document.getElementById('job-status').value=status;},50);}
+function openJobDetail(id){
+  var j=D.jobs.find(function(x){return x.id===id;});if(!j)return;
+  var pColors={low:'#4caf7d',medium:'#f59e0b',high:'#ef4444'};var pLabel={low:'🟢 Low',medium:'🟡 Medium',high:'🔴 High'}[j.priority]||'—';
+  var done=(j.checklist||[]).filter(function(x){return x.done;}).length,total=(j.checklist||[]).length;
+  document.getElementById('jd-title').textContent=j.title;
+  var html='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px"><span class="badge b-'+(j.status==='done'?'ok':j.status==='in-progress'?'warn':j.status==='voided'?'err':'inf')+'">'+j.status+'</span><span style="font-size:12px;color:'+pColors[j.priority]+';font-weight:500">'+pLabel+'</span>'+(j.due?'<span style="font-size:12px;color:var(--t2)">📅 '+j.due+'</span>':'')+'<span style="font-size:12px;color:var(--t2)">'+j.type+'</span></div>';
+  html+='<div style="font-size:13px;color:var(--t2);margin-bottom:14px">Client: <b style="color:var(--t1)">'+cName(j.cid)+'</b></div>';
+  if(j.desc)html+='<div style="font-size:13px;color:var(--t2);margin-bottom:14px;background:var(--bg3);padding:10px 12px;border-radius:8px">'+j.desc+'</div>';
+  if((j.members||[]).length){html+='<div style="margin-bottom:14px"><div class="fl" style="margin-bottom:6px">Assigned Team</div><div style="display:flex;gap:8px;flex-wrap:wrap">';(j.members||[]).forEach(function(mid){var m=getMember(mid);if(!m)return;html+='<div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border-radius:20px;padding:4px 10px 4px 5px"><div style="width:24px;height:24px;border-radius:50%;background:'+m.color+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">'+inits(m.name)+'</div><span style="font-size:12px;font-weight:500">'+m.name+'</span></div>';});html+='</div></div>';}
+  if(total){html+='<div style="margin-bottom:14px"><div class="fl" style="margin-bottom:6px">Checklist ('+done+'/'+total+')</div><div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:8px"><div style="height:100%;background:var(--ok);width:'+Math.round(done/total*100)+'%"></div></div>';(j.checklist||[]).forEach(function(it,i){html+='<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bor)"><input type="checkbox"'+(it.done?' checked':'')+' onchange="toggleCheck('+id+','+i+',this.checked)" style="width:15px;height:15px;cursor:pointer"/><span style="font-size:13px;'+(it.done?'text-decoration:line-through;color:var(--t3)':'')+'">'+it.text+'</span></div>';});html+='</div>';}
+  if(j.photos&&j.photos.length){html+='<div style="margin-bottom:14px"><div class="fl" style="margin-bottom:6px">Photos</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';j.photos.forEach(function(p){html+='<img src="'+p+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--bor);cursor:pointer" onclick="window.open(this.src)"/>';});html+='</div></div>';}
+  html+='<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px"><button class="btn btn-o" onclick="closeM(\'jobDetailModal\')">Close</button><button class="btn btn-p" onclick="closeM(\'jobDetailModal\');openJobModal(D.jobs.find(function(x){return x.id==='+id+';}))">✏️ Edit</button></div>';
+  document.getElementById('jd-body').innerHTML=html;document.getElementById('jobDetailModal').classList.add('open');
+}
+function toggleCheck(jobId,idx,val){var j=D.jobs.find(function(x){return x.id===jobId;});if(j&&j.checklist[idx]){j.checklist[idx].done=val;saveAll();openJobDetail(jobId);}}
+function openJobModal(job){
+  D.editJob=job||null;jobPhotos=job?job.photos.slice():[];checklistItems=job?(job.checklist||[]).map(function(x){return{text:x.text,done:x.done};}):[];
+  fillCli();document.getElementById('jobModalT').textContent=job?'Edit Job':'New Job';
+  document.getElementById('job-title').value=job?job.title:'';document.getElementById('job-cli').value=job?job.cid:'';
+  document.getElementById('job-type').value=job?job.type:'Web Design';document.getElementById('job-status').value=job?job.status:'pending';
+  document.getElementById('job-priority').value=job?(job.priority||'medium'):'medium';document.getElementById('job-due').value=job?(job.due||''):'';
+  document.getElementById('job-desc').value=job?job.desc:'';
+  document.getElementById('job-photo-grid').innerHTML=jobPhotos.map(function(p){return'<img src="'+p+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--bor)"/>';}).join('');
+  var cb=document.getElementById('job-members-checkboxes');cb.innerHTML=D.members.map(function(m){var checked=(job&&(job.members||[]).includes(m.id))?'checked':'';return'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--bg3);border:1px solid var(--bor);border-radius:20px;padding:4px 10px"><input type="checkbox" value="'+m.id+'" '+checked+' style="cursor:pointer"/><div style="width:20px;height:20px;border-radius:50%;background:'+m.color+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff">'+inits(m.name)+'</div><span style="font-size:12px;font-weight:500">'+m.name+'</span></label>';}).join('');
+  renderChecklist();document.getElementById('jobModal').classList.add('open');
+}
+function saveJob(){
+  var title=document.getElementById('job-title').value.trim();if(!title){toast('Enter a job title');return;}
+  var selMembers=Array.from(document.querySelectorAll('#job-members-checkboxes input:checked')).map(function(x){return parseInt(x.value);});
+  var job={id:D.editJob?D.editJob.id:D.nextJob++,title:title,cid:parseInt(document.getElementById('job-cli').value)||D.clients[0].id,type:document.getElementById('job-type').value,status:document.getElementById('job-status').value,priority:document.getElementById('job-priority').value,due:document.getElementById('job-due').value,desc:document.getElementById('job-desc').value,photos:jobPhotos,members:selMembers,checklist:checklistItems.slice()};
+  if(D.editJob){var idx=D.jobs.findIndex(function(x){return x.id===job.id;});D.jobs[idx]=job;}else D.jobs.push(job);
+  logActivity(D.editJob?'Edit Job':'Create Job','Jobs',title);
+  saveAll();closeM('jobModal');renderJobs();toast('Job saved!');
+}
+function openMembersModal(){renderMembersList();document.getElementById('membersModal').classList.add('open');}
+function renderMembersList(){var el=document.getElementById('members-list');el.innerHTML=D.members.length?D.members.map(function(m){return'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bor)"><div style="width:34px;height:34px;border-radius:50%;background:'+m.color+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">'+inits(m.name)+'</div><div style="flex:1"><div style="font-weight:500;font-size:13px">'+m.name+'</div><div style="font-size:11px;color:var(--t3)">'+m.role+'</div></div><button onclick="removeMember('+m.id+')" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:14px">🗑</button></div>';}).join(''):'<div class="empty">No team members yet</div>';}
+function addMember(){var name=document.getElementById('new-member-name').value.trim();if(!name){toast('Enter a name');return;}D.members.push({id:D.nextMember++,name:name,role:document.getElementById('new-member-role').value||'Team Member',color:document.getElementById('new-member-color').value});document.getElementById('new-member-name').value='';document.getElementById('new-member-role').value='';saveAll();renderMembersList();fillMemberFilter();toast('Member added!');}
+function removeMember(id){D.members=D.members.filter(function(m){return m.id!==id;});D.jobs.forEach(function(j){j.members=(j.members||[]).filter(function(mid){return mid!==id;});});saveAll();renderMembersList();fillMemberFilter();}
+
+// ===== CRM =====
+function renderCRM(){
+  var tb=document.getElementById('crm-tbody');
+  if(!D.clients.length){tb.innerHTML='<tr><td colspan="6"><div class="empty">No clients yet</div></td></tr>';return;}
+  tb.innerHTML=D.clients.map(function(c){var jobs=D.jobs.filter(function(j){return j.cid===c.id;}).length,spent=D.invoices.filter(function(i){return i.cid===c.id&&i.status==='paid';}).reduce(function(s,i){return s+i.grand;},0);return'<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="avatar">'+inits(c.name)+'</div><div><div style="font-weight:500">'+c.name+'</div><div style="font-size:11px;color:var(--t3)">'+(c.address||'')+'</div></div></div></td><td><a href="mailto:'+c.email+'" style="color:var(--inf);text-decoration:none">'+(c.email||'—')+'</a></td><td style="color:var(--t2)">'+(c.phone||'—')+'</td><td>'+jobs+'</td><td style="font-weight:600;color:var(--ok)">'+fmt(spent)+'</td><td><button class="btn btn-o btn-sm" onclick="openCliModal(D.clients.find(function(x){return x.id==='+c.id+';}))">✏️ Edit</button></td></tr>';}).join('');
+}
+function openCliModal(cli){D.editCli=cli||null;document.getElementById('cliModalT').textContent=cli?'Edit Client':'New Client';document.getElementById('cli-name').value=cli?cli.name:'';document.getElementById('cli-email').value=cli?cli.email:'';document.getElementById('cli-phone').value=cli?cli.phone:'';document.getElementById('cli-addr').value=cli?cli.address:'';document.getElementById('cli-notes').value=cli?cli.notes:'';document.getElementById('cliModal').classList.add('open');}
+function saveCli(){var name=document.getElementById('cli-name').value.trim();if(!name){toast('Enter a name');return;}var cli={id:D.editCli?D.editCli.id:D.nextCli++,name:name,email:document.getElementById('cli-email').value,phone:document.getElementById('cli-phone').value,address:document.getElementById('cli-addr').value,notes:document.getElementById('cli-notes').value};if(D.editCli){var idx=D.clients.findIndex(function(x){return x.id===cli.id;});D.clients[idx]=cli;}else D.clients.push(cli);logActivity(D.editCli?'Edit Client':'Create Client','CRM',name);saveAll();closeM('cliModal');renderCRM();fillCli();toast('Client saved!');}
+
+// ===== ANALYTICS =====
+function renderAnalytics(){
+  var now=new Date(),todayStr=today(),weekAgo=new Date(now),moAgo=new Date(now),yrStart=now.getFullYear()+'-01-01';
+  weekAgo.setDate(weekAgo.getDate()-7);moAgo.setMonth(moAgo.getMonth()-1);
+  var paid=D.invoices.filter(function(i){return i.status==='paid';});
+  document.getElementById('an-today').textContent=fmt(paid.filter(function(i){return i.date===todayStr;}).reduce(function(s,i){return s+i.grand;},0));
+  document.getElementById('an-week').textContent=fmt(paid.filter(function(i){return new Date(i.date)>=weekAgo;}).reduce(function(s,i){return s+i.grand;},0));
+  document.getElementById('an-month').textContent=fmt(paid.filter(function(i){return new Date(i.date)>=moAgo;}).reduce(function(s,i){return s+i.grand;},0));
+  document.getElementById('an-year').textContent=fmt(paid.filter(function(i){return i.date>=yrStart;}).reduce(function(s,i){return s+i.grand;},0));
+  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],yr=now.getFullYear();
+  var mData=months.map(function(_,m){return paid.filter(function(i){return i.date&&i.date.startsWith(yr+'-'+(m+1<10?'0':'')+(m+1));}).reduce(function(s,i){return s+i.grand;},0);});
+  if(MC)MC.destroy();MC=new Chart(document.getElementById('moChart'),{type:'bar',data:{labels:months,datasets:[{data:mData,backgroundColor:'rgba(108,99,255,.75)',borderRadius:6,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#9ea3c0',font:{size:10}}},y:{grid:{color:'rgba(128,128,128,.1)'},ticks:{color:'#9ea3c0',callback:function(v){return'$'+v;}}}}}});
+  var cats={};paid.forEach(function(i){i.items.forEach(function(it){cats[it.svc]=(cats[it.svc]||0)+it.tot;});});var cl=Object.keys(cats),cd=Object.values(cats);if(!cl.length){cl=['No data'];cd=[1];}
+  var colors=['#6c63ff','#4caf7d','#f59e0b','#38bdf8','#ef4444','#a855f7','#ec4899'];
+  if(CC)CC.destroy();CC=new Chart(document.getElementById('catChart'),{type:'doughnut',data:{labels:cl,datasets:[{data:cd,backgroundColor:colors.slice(0,cl.length),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#9ea3c0',font:{size:11},boxWidth:10,padding:10}}}}});
+  var topC=D.clients.map(function(c){return{name:c.name,rev:paid.filter(function(i){return i.cid===c.id;}).reduce(function(s,i){return s+i.grand;},0)};}).sort(function(a,b){return b.rev-a.rev;}).slice(0,5);var maxR=topC[0]?topC[0].rev:1;
+  document.getElementById('top-clients').innerHTML=topC.length?topC.map(function(c){return'<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><div class="avatar" style="width:28px;height:28px;font-size:10px">'+inits(c.name)+'</div><span style="flex:1;font-weight:500;font-size:13px">'+c.name+'</span><span style="font-weight:600;font-size:13px;color:var(--acc)">'+fmt(c.rev)+'</span></div><div class="progress-bar"><div class="progress-fill" style="width:'+Math.round(c.rev/maxR*100)+'%"></div></div></div>';}).join(''):'<div class="empty">No revenue data yet</div>';
+}
+
+// ===== INIT =====
+function initApp(){
+  loadAll();
+  document.body.classList.toggle('light',!D.dark);
+  fillCli();renderDash();
+  // theme toggle button (optional in topbar)
+}
+
+// Boot
+loadAll();
+// If user was somehow persisted, skip login (optional - keep login always)
+</script>
+</body>
+</html>
