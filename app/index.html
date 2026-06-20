@@ -180,6 +180,7 @@ textarea.fc{resize:vertical;min-height:70px}
     <div class="nav-grp">
       <div class="nav-lbl">Operations</div>
       <button class="nav-i" onclick="gotoPage('jobs',this)" data-perm="jobs"><span>🔧</span>Jobs Board</button>
+      <button class="nav-i" onclick="gotoPage('myportal',this)" data-perm="installer_portal"><span>👷</span>My Work</button>
       <button class="nav-i" onclick="gotoPage('crm',this)" data-perm="crm"><span>👥</span>CRM</button>
     </div>
     <div class="nav-grp">
@@ -334,6 +335,61 @@ textarea.fc{resize:vertical;min-height:70px}
         </div>
       </div>
       <div id="kanban" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start"></div>
+    </div>
+
+    <div class="page" id="page-myportal">
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="chip active" onclick="setPortalTab('overview',this)">Overview</button>
+        <button class="chip" onclick="setPortalTab('jobs',this)">My Jobs</button>
+        <button class="chip" onclick="setPortalTab('earnings',this)">Earnings</button>
+        <button class="chip" onclick="setPortalTab('crew',this)">My Crew</button>
+      </div>
+
+      <!-- OVERVIEW -->
+      <div id="portal-tab-overview">
+        <div class="g4" style="margin-bottom:20px">
+          <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Jobs Done</div><div style="font-size:24px;font-weight:700" id="portal-done">0</div></div>
+          <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">In Progress</div><div style="font-size:24px;font-weight:700" id="portal-progress">0</div></div>
+          <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Pending</div><div style="font-size:24px;font-weight:700" id="portal-pending">0</div></div>
+          <div class="card" style="padding:16px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Total Earnings</div><div style="font-size:24px;font-weight:700;color:var(--acc)" id="portal-total-earn">$0</div></div>
+        </div>
+        <div class="g2" style="margin-bottom:20px">
+          <div class="card" style="padding:16px;border-left:3px solid var(--ok)">
+            <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Paid</div>
+            <div style="font-size:22px;font-weight:700;color:var(--ok)" id="portal-paid-earn">$0</div>
+          </div>
+          <div class="card" style="padding:16px;border-left:3px solid var(--warn)">
+            <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Pending Payment</div>
+            <div style="font-size:22px;font-weight:700;color:var(--warn)" id="portal-pending-earn">$0</div>
+          </div>
+        </div>
+        <div class="card">
+          <b>Recent Jobs</b>
+          <div id="portal-recent-jobs" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- MY JOBS -->
+      <div id="portal-tab-jobs" style="display:none">
+        <div id="portal-kanban" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start"></div>
+      </div>
+
+      <!-- EARNINGS -->
+      <div id="portal-tab-earnings" style="display:none">
+        <div class="card" style="padding:0;overflow:hidden">
+          <table><thead><tr><th>Job</th><th>Client</th><th>Type</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="portal-earnings-tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- MY CREW -->
+      <div id="portal-tab-crew" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div><div style="font-weight:600;font-size:16px">My Crew</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Helpers and team members you work with on jobs</div></div>
+          <button class="btn btn-p btn-sm" onclick="openCrewModal(null)">+ Add Crew Member</button>
+        </div>
+        <div id="crew-list" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px"></div>
+      </div>
     </div>
 
     <div class="page" id="page-crm">
@@ -596,6 +652,24 @@ textarea.fc{resize:vertical;min-height:70px}
     <div class="fg"><label class="fl">Due Date</label><input type="date" class="fc" id="job-due"/></div>
   </div>
   <div class="fg"><label class="fl">Assign Members</label><div id="job-members-checkboxes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div></div>
+  <div class="fg" id="job-payment-wrap" style="display:none">
+    <label class="fl">Installer Payment</label>
+    <div style="background:var(--bg3);border-radius:10px;padding:14px">
+      <div class="g2" style="margin-bottom:10px">
+        <div><label class="fl">Pay Type</label><select class="fc" id="job-pay-type" onchange="togglePayFields()"><option value="none">No payment set</option><option value="flat">Flat fee</option><option value="hourly">Hourly rate</option></select></div>
+        <div id="job-pay-installer-wrap"><label class="fl">Installer</label><select class="fc" id="job-pay-installer"></select></div>
+      </div>
+      <div class="g2" id="job-pay-flat-row" style="display:none">
+        <div><label class="fl">Flat Amount ($)</label><input class="fc" type="number" id="job-pay-flat" min="0" step="0.01"/></div>
+        <div></div>
+      </div>
+      <div class="g2" id="job-pay-hourly-row" style="display:none">
+        <div><label class="fl">Hourly Rate ($)</label><input class="fc" type="number" id="job-pay-rate" min="0" step="0.01"/></div>
+        <div><label class="fl">Hours</label><input class="fc" type="number" id="job-pay-hours" min="0" step="0.25"/></div>
+      </div>
+      <div id="job-pay-total" style="font-size:13px;color:var(--t2);margin-top:8px"></div>
+    </div>
+  </div>
   <div class="fg"><label class="fl">Description</label><textarea class="fc" id="job-desc"></textarea></div>
   <div class="fg"><label class="fl">Checklist</label><div id="job-checklist-items"></div><button class="btn btn-o btn-sm" style="margin-top:6px" onclick="addChecklistItem('',false)">+ Add Item</button></div>
   <div class="fg"><label class="fl">Job Photos</label><input type="file" accept="image/*" multiple class="fc" onchange="handleJobPhotos(event)"/><div id="job-photo-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px"></div></div>
@@ -706,6 +780,20 @@ textarea.fc{resize:vertical;min-height:70px}
 </div>
 </div>
 
+<div class="overlay" id="crewModal">
+<div class="modal" style="max-width:460px">
+  <div class="modal-t"><span id="crewModalT">New Crew Member</span><button class="xbtn" onclick="closeM('crewModal')">&times;</button></div>
+  <div class="fg"><label class="fl">Name</label><input class="fc" id="crew-name" placeholder="John Smith"/></div>
+  <div class="fg"><label class="fl">Role / Title</label><input class="fc" id="crew-role" placeholder="e.g. Helper, Apprentice, Driver"/></div>
+  <div class="fg"><label class="fl">Phone</label><input class="fc" id="crew-phone" placeholder="(305) 000-0000"/></div>
+  <div class="fg"><label class="fl">Notes</label><textarea class="fc" id="crew-notes"></textarea></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-o" onclick="closeM('crewModal')">Cancel</button>
+    <button class="btn btn-p" onclick="saveCrewMember()">Save</button>
+  </div>
+</div>
+</div>
+
 <div class="overlay" id="heldModal">
 <div class="modal" style="max-width:440px">
   <div class="modal-t"><span>Held Orders</span><button class="xbtn" onclick="closeM('heldModal')">&times;</button></div>
@@ -757,8 +845,8 @@ try {
   sbInitError = e;
 }
 
-var ALL_MODULES = ["dashboard","invoices","estimates","pos","jobs","crm","analytics","settings"];
-var MODULE_LABELS = {dashboard:"Dashboard",invoices:"Invoices",estimates:"Estimates",pos:"Point of Sale",jobs:"Jobs Board",crm:"CRM",analytics:"Analytics",settings:"Settings"};
+var ALL_MODULES = ["dashboard","invoices","estimates","pos","jobs","installer_portal","crm","analytics","settings"];
+var MODULE_LABELS = {dashboard:"Dashboard",invoices:"Invoices",estimates:"Estimates",pos:"Point of Sale",jobs:"Jobs Board",installer_portal:"My Work (Installer)",crm:"CRM",analytics:"Analytics",settings:"Settings"};
 var SVCS = ["Web Design","Print / Banners","Large Format Signs","Window Wraps","Signs & Awnings","Install","Other"];
 var CAT_COLORS = {Print:"#6c63ff",Wraps:"#38bdf8",Signs:"#f59e0b",Install:"#ef4444",Design:"#4caf7d"};
 
@@ -770,6 +858,8 @@ var invoices = [];
 var estimates = [];
 var jobs = [];
 var teamMembers = [];
+var jobPayments = [];
+var crewMembers = [];
 var posItems = [];
 var activityLog = [];
 
@@ -1154,7 +1244,9 @@ function loadAppData() {
     dbGet("estimates", {order: "id"}),
     dbGet("jobs", {order: "id"}),
     dbGet("team_members", {order: "id"}),
-    dbGet("pos_items", {order: "name"})
+    dbGet("pos_items", {order: "name"}),
+    dbGet("job_payments", {order: "id"}),
+    dbGet("crew_members", {order: "id"})
   ]).then(function (results) {
     appRoles = results[0];
     appUsers = results[1];
@@ -1164,6 +1256,8 @@ function loadAppData() {
     jobs = results[5];
     teamMembers = results[6];
     posItems = results[7];
+    jobPayments = results[8];
+    crewMembers = results[9];
     return dbGet("activity_log", {order: "created_at", asc: false, limit: 200});
   }).then(function (log) {
     activityLog = log;
@@ -1195,6 +1289,7 @@ function gotoPage(p, el) {
   else if (p === "estimates") renderEstimates();
   else if (p === "pos") renderPOS();
   else if (p === "jobs") renderJobs();
+  else if (p === "myportal") renderMyPortal();
   else if (p === "crm") renderCRM();
   else if (p === "analytics") renderAnalytics();
   else if (p === "settings") renderSettings();
