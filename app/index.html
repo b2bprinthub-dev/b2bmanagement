@@ -969,7 +969,6 @@ function doLogout() {
 }
 
 var _pendingAuthUser = null;
-var _suppressSignOutRedirect = false;
 
 function handleAuthSession(session) {
   if (!session || !session.user) {
@@ -986,11 +985,11 @@ function handleAuthSession(session) {
     .then(function (res) {
       if (res.error || !res.data) {
         _pendingAuthUser = authUser;
-        _suppressSignOutRedirect = true;
+        try { sessionStorage.setItem("b2b_suppress_signout_redirect", "1"); } catch (e) {}
         sb.auth.signOut().then(function () {
           withMinLoadingTime(function () {
             showAccessPending(authUser);
-            _suppressSignOutRedirect = false;
+            try { sessionStorage.removeItem("b2b_suppress_signout_redirect"); } catch (e) {}
           }, 700);
         });
         return;
@@ -3229,12 +3228,16 @@ function bootApp() {
 
       // Listen for future auth changes (login completing after Google redirect, logout, etc.)
       sb.auth.onAuthStateChange(function (event, session) {
+        console.log("[auth event]", event, "suppressed=", (function(){try{return sessionStorage.getItem("b2b_suppress_signout_redirect");}catch(e){return "err";}})());
         if (event === "SIGNED_IN") {
           showLoading("Signing you in...");
           handleAuthSession(session);
         } else if (event === "SIGNED_OUT") {
           currentUser = null;
-          if (_suppressSignOutRedirect) return;
+          var suppressed = false;
+          try { suppressed = sessionStorage.getItem("b2b_suppress_signout_redirect") === "1"; } catch (e) {}
+          if (suppressed) { console.log("[auth event] redirect suppressed"); return; }
+          console.log("[auth event] redirecting to ../");
           window.location.href = "../";
         }
       });
