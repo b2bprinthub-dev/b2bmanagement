@@ -120,6 +120,31 @@ textarea.fc{resize:vertical;min-height:70px}
   </div>
 </div>
 
+<div id="accessPendingScreen" class="login-screen" style="display:none">
+  <div class="login-box" style="text-align:center;max-width:440px">
+    <div style="width:64px;height:64px;border-radius:50%;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px">🔒</div>
+    <h1 style="font-size:19px;margin-bottom:6px">Access not yet approved</h1>
+    <p style="margin-top:0;margin-bottom:24px">Your Google account was verified, but it hasn't been granted access to B2B Print Hub yet.</p>
+
+    <div id="pending-profile" style="display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--bor);border-radius:10px;padding:12px 14px;margin-bottom:18px;text-align:left"></div>
+
+    <div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:20px;text-align:left">
+      <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px">What to do next</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.6">
+        Send the email above to your administrator and ask them to add it under
+        <b style="color:var(--t1)">Settings &rarr; Users &rarr; New User</b>.
+        Once added, just sign in again &mdash; no need to wait or refresh.
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn btn-o" style="flex:1;justify-content:center" id="pending-copy-btn" onclick="copyPendingEmail()">Copy Email</button>
+      <button class="btn btn-p" style="flex:1;justify-content:center" onclick="retryPendingLogin()">Try Again</button>
+    </div>
+    <button class="btn btn-o" style="width:100%;justify-content:center;color:var(--t3)" onclick="switchGoogleAccount()">Use a different Google account</button>
+  </div>
+</div>
+
 <div id="appRoot" style="display:none">
 <div class="app-layout">
 <div class="sb">
@@ -908,9 +933,12 @@ function doLogout() {
   });
 }
 
+var _pendingAuthUser = null;
+
 function handleAuthSession(session) {
   if (!session || !session.user) {
     hideLoading();
+    document.getElementById("accessPendingScreen").style.display = "none";
     document.getElementById("loginScreen").style.display = "flex";
     return;
   }
@@ -921,11 +949,8 @@ function handleAuthSession(session) {
   sb.from("app_users").select("*").eq("email", email).eq("status", "active").maybeSingle()
     .then(function (res) {
       if (res.error || !res.data) {
-        var err = document.getElementById("login-error");
-        hideLoading();
-        document.getElementById("loginScreen").style.display = "flex";
-        err.textContent = "Your Google account (" + email + ") is not approved for access. Contact your administrator.";
-        err.style.display = "block";
+        _pendingAuthUser = authUser;
+        showAccessPending(authUser);
         sb.auth.signOut();
         return;
       }
@@ -937,6 +962,7 @@ function handleAuthSession(session) {
       sb.from("app_users").update(updates).eq("id", currentUser.id).then(function () {});
 
       logActivity("Login", "Auth", "Signed in via Google as " + email);
+      document.getElementById("accessPendingScreen").style.display = "none";
       document.getElementById("loginScreen").style.display = "none";
       document.getElementById("appRoot").style.display = "block";
       document.getElementById("syncStatus").style.display = "flex";
@@ -948,6 +974,80 @@ function handleAuthSession(session) {
         renderDash();
       });
     });
+}
+
+function showAccessPending(authUser) {
+  hideLoading();
+  document.getElementById("loginScreen").style.display = "none";
+  var screen = document.getElementById("accessPendingScreen");
+  var name = (authUser.user_metadata && authUser.user_metadata.full_name) || authUser.email;
+  var avatarUrl = authUser.user_metadata && authUser.user_metadata.avatar_url;
+  var initials = inits(name);
+
+  var avatarHtml = avatarUrl
+    ? '<img src="' + avatarUrl + '" style="width:42px;height:42px;border-radius:50%;flex-shrink:0"/>'
+    : '<div style="width:42px;height:42px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0">' + initials + "</div>";
+
+  document.getElementById("pending-profile").innerHTML =
+    avatarHtml +
+    '<div style="min-width:0">' +
+    '<div style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + "</div>" +
+    '<div style="font-size:12px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="pending-email-text">' + authUser.email + "</div>" +
+    "</div>";
+
+  screen.style.display = "flex";
+}
+
+function copyPendingEmail() {
+  if (!_pendingAuthUser) return;
+  var email = _pendingAuthUser.email;
+  var btn = document.getElementById("pending-copy-btn");
+  var done = function () {
+    var orig = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(function () { btn.textContent = orig; }, 1800);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(email).then(done).catch(function () { fallbackCopy(email, done); });
+  } else {
+    fallbackCopy(email, done);
+  }
+}
+function fallbackCopy(text, cb) {
+  var ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch (e) {}
+  document.body.removeChild(ta);
+  if (cb) cb();
+}
+
+function retryPendingLogin() {
+  document.getElementById("accessPendingScreen").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+  doGoogleLogin();
+}
+
+function switchGoogleAccount() {
+  document.getElementById("accessPendingScreen").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+  var err = document.getElementById("login-error");
+  err.style.display = "none";
+  var btn = document.getElementById("login-btn");
+  btn.disabled = true;
+  sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.href, queryParams: { prompt: "select_account" } }
+  }).then(function (res) {
+    if (res.error) {
+      err.textContent = "Google sign-in failed: " + res.error.message;
+      err.style.display = "block";
+      btn.disabled = false;
+    }
+  });
 }
 
 function applyUserUI() {
