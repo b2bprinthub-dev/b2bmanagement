@@ -297,8 +297,13 @@ textarea.fc{resize:vertical;min-height:70px}
     </div>
 
     <div class="page" id="page-crm">
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="chip active" onclick="filterCli('active',this)">Active</button>
+        <button class="chip" onclick="filterCli('archived',this)">Archived</button>
+        <button class="chip" onclick="filterCli('all',this)">All</button>
+      </div>
       <div class="card" style="padding:0;overflow:hidden">
-        <table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Jobs</th><th>Total Spent</th><th>Actions</th></tr></thead>
+        <table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Jobs</th><th>Total Spent</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="crm-tbody"></tbody></table>
       </div>
     </div>
@@ -733,6 +738,7 @@ var bizSettings = {
 var revHidden = false;
 var curPage = "dashboard";
 var invFilter = "all";
+var cliFilter = "active";
 var range = "week";
 
 var cart = [];
@@ -1000,6 +1006,7 @@ function topAction() {
 function fillCli() {
   var opts = '<option value="">-- Select Client --</option>';
   for (var i = 0; i < clients.length; i++) {
+    if (clients[i].archived) continue;
     opts += '<option value="' + clients[i].id + '">' + clients[i].name + "</option>";
   }
   var ids = ["inv-cli", "est-cli", "job-cli", "pos-cust"];
@@ -2323,26 +2330,93 @@ function removeMember(id) {
   });
 }
 
+function filterCli(f, el) {
+  cliFilter = f;
+  var chips = document.querySelectorAll("#page-crm .chip");
+  for (var i = 0; i < chips.length; i++) chips[i].classList.remove("active");
+  el.classList.add("active");
+  renderCRM();
+}
+
 function renderCRM() {
   var tb = document.getElementById("crm-tbody");
-  if (!clients.length) { tb.innerHTML = '<tr><td colspan="6"><div class="empty">No clients yet</div></td></tr>'; return; }
+  var list = clients.filter(function (c) {
+    if (cliFilter === "active") return !c.archived;
+    if (cliFilter === "archived") return !!c.archived;
+    return true;
+  });
+  if (!list.length) {
+    var msg = cliFilter === "archived" ? "No archived clients" : cliFilter === "active" ? "No active clients" : "No clients yet";
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty">' + msg + "</div></td></tr>";
+    return;
+  }
   var html = "";
-  for (var i = 0; i < clients.length; i++) {
-    var c = clients[i];
+  for (var i = 0; i < list.length; i++) {
+    var c = list[i];
     var cJobs = 0;
     for (var j = 0; j < jobs.length; j++) { if (jobs[j].cid === c.id) cJobs++; }
     var spent = 0;
     for (var k = 0; k < invoices.length; k++) {
       if (invoices[k].cid === c.id && invoices[k].status === "paid") spent += parseFloat(invoices[k].grand || 0);
     }
-    html += '<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="avatar">' + inits(c.name) + '</div><div><div style="font-weight:500">' + c.name + '</div><div style="font-size:11px;color:var(--t3)">' + (c.address || "") + "</div></div></div></td>" +
+    var rowOpacity = c.archived ? "opacity:0.55" : "";
+    html += '<tr style="' + rowOpacity + '"><td><div style="display:flex;align-items:center;gap:10px"><div class="avatar">' + inits(c.name) + '</div><div><div style="font-weight:500">' + c.name + '</div><div style="font-size:11px;color:var(--t3)">' + (c.address || "") + "</div></div></div></td>" +
       '<td><a href="mailto:' + c.email + '" style="color:var(--inf);text-decoration:none">' + (c.email || "-") + "</a></td>" +
       '<td style="color:var(--t2)">' + (c.phone || "-") + "</td>" +
       "<td>" + cJobs + "</td>" +
       '<td style="font-weight:600;color:var(--ok)">' + fmt(spent) + "</td>" +
-      '<td><button class="btn btn-o btn-sm" onclick="editCliById(' + c.id + ')">Edit</button></td></tr>';
+      "<td>" + (c.archived ? '<span class="badge b-gray">Archived</span>' : '<span class="badge b-ok">Active</span>') + "</td>" +
+      '<td><div style="display:flex;gap:5px;flex-wrap:wrap">' +
+      '<button class="btn btn-o btn-sm" onclick="editCliById(' + c.id + ')">Edit</button>' +
+      (c.archived
+        ? '<button class="btn btn-o btn-sm" style="color:var(--ok)" onclick="unarchiveClient(' + c.id + ')">Restore</button>'
+        : '<button class="btn btn-o btn-sm" style="color:var(--warn)" onclick="archiveClient(' + c.id + ')">Archive</button>') +
+      '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="deleteClient(' + c.id + ',' + cJobs + ',' + (spent > 0 ? "1" : "0") + ')">Delete</button>' +
+      "</div></td></tr>";
   }
   tb.innerHTML = html;
+}
+
+function archiveClient(id) {
+  if (!confirm("Archive this client? They will be hidden from the active list but their invoice history is kept.")) return;
+  dbUpdate("clients", id, {archived: true}).then(function (updated) {
+    var c = findClient(id);
+    if (c) c.archived = true;
+    logActivity("Archive Client", "CRM", c ? c.name : "");
+    renderCRM();
+    fillCli();
+    toast("Client archived");
+  });
+}
+
+function unarchiveClient(id) {
+  dbUpdate("clients", id, {archived: false}).then(function (updated) {
+    var c = findClient(id);
+    if (c) c.archived = false;
+    logActivity("Restore Client", "CRM", c ? c.name : "");
+    renderCRM();
+    fillCli();
+    toast("Client restored");
+  });
+}
+
+function deleteClient(id, jobCount, hasRevenue) {
+  var c = findClient(id);
+  var warnMsg = "Permanently delete " + (c ? c.name : "this client") + "? This cannot be undone.";
+  if (jobCount > 0 || hasRevenue) {
+    warnMsg = "WARNING: " + (c ? c.name : "This client") + " has " + jobCount + " job(s) and/or invoice history. " +
+      "Deleting the client will NOT delete their invoices or jobs, but those records will show \"Unknown\" as the client. " +
+      "Consider Archiving instead to keep their history intact and tidy.\n\nDelete permanently anyway?";
+  }
+  if (!confirm(warnMsg)) return;
+  dbDelete("clients", id).then(function (ok) {
+    if (!ok) return;
+    clients = clients.filter(function (x) { return x.id !== id; });
+    logActivity("Delete Client", "CRM", c ? c.name : "");
+    renderCRM();
+    fillCli();
+    toast("Client deleted");
+  });
 }
 function findClient(id) {
   for (var i = 0; i < clients.length; i++) { if (clients[i].id === id) return clients[i]; }
