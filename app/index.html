@@ -2642,82 +2642,7 @@ function filterCli(f, el) {
   el.classList.add("active");
   renderCRM();
 }
-// ===== INSTALLER PORTAL =====
-var _portalTab = "overview";
 
-function myAssignedJobs() {
-  if (!currentUser) return [];
-  return jobs.filter(function (j) {
-    return Array.isArray(j.assigned_user_ids) && j.assigned_user_ids.indexOf(currentUser.id) > -1;
-  });
-}
-
-function myPaymentsFor(jobIds) {
-  if (!currentUser) return [];
-  return jobPayments.filter(function (p) {
-    return p.installer_user_id === currentUser.id && jobIds.indexOf(p.job_id) > -1;
-  });
-}
-
-function paymentAmount(p) {
-  if (!p) return 0;
-  if (p.pay_type === "hourly") return parseFloat(p.hourly_rate || 0) * parseFloat(p.hours || 0);
-  return parseFloat(p.flat_amount || 0);
-}
-
-function setPortalTab(tab, el) {
-  _portalTab = tab;
-  var tabs = ["overview", "jobs", "earnings", "crew"];
-  for (var i = 0; i < tabs.length; i++) {
-    document.getElementById("portal-tab-" + tabs[i]).style.display = tabs[i] === tab ? "block" : "none";
-  }
-  var chips = document.querySelectorAll("#page-myportal .chip");
-  for (var j = 0; j < chips.length; j++) chips[j].classList.remove("active");
-  if (el) el.classList.add("active");
-  if (tab === "overview") renderPortalOverview();
-  else if (tab === "jobs") renderPortalKanban();
-  else if (tab === "earnings") renderPortalEarnings();
-  else if (tab === "crew") renderCrewList();
-}
-
-function renderMyPortal() {
-  setPortalTab("overview", document.querySelector("#page-myportal .chip"));
-}
-
-function renderPortalOverview() {
-  var myJobs = myAssignedJobs();
-  var myIds = myJobs.map(function (j) { return j.id; });
-  var myPays = myPaymentsFor(myIds);
-
-  var done = myJobs.filter(function (j) { return j.status === "done"; }).length;
-  var progress = myJobs.filter(function (j) { return j.status === "in-progress"; }).length;
-  var pending = myJobs.filter(function (j) { return j.status === "pending"; }).length;
-
-  var total = 0, paid = 0, pendingPay = 0;
-  for (var i = 0; i < myPays.length; i++) {
-    var amt = paymentAmount(myPays[i]);
-    total += amt;
-    if (myPays[i].status === "paid") paid += amt; else pendingPay += amt;
-  }
-
-  document.getElementById("portal-done").textContent = done;
-  document.getElementById("portal-progress").textContent = progress;
-  document.getElementById("portal-pending").textContent = pending;
-  document.getElementById("portal-total-earn").textContent = fmt(total);
-  document.getElementById("portal-paid-earn").textContent = fmt(paid);
-  document.getElementById("portal-pending-earn").textContent = fmt(pendingPay);
-
-  var recentEl = document.getElementById("portal-recent-jobs");
-  var recent = myJobs.slice(-6).reverse();
-  if (!recent.length) { recentEl.innerHTML = '<div class="empty">No jobs assigned to you yet</div>'; return; }
-  var html = "";
-  for (var k = 0; k < recent.length; k++) {
-    var j = recent[k];
-    var bc = j.status === "done" ? "b-ok" : j.status === "in-progress" ? "b-warn" : j.status === "voided" ? "b-err" : "b-inf";
-    var pay = myPaymentsFor([j.id])[0];
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bor)">' +
-      '<div style="flex:1"><div style="font-weight:500;font-size:13px">' + j.title + '</div><div style="font-size:11px;color:var(--t3)">' + cName(j.cid) + " - " + j.type + "</div></div>" +
-      (pay ? '<span style="font-weight:600;font-size:13px;color:' + (pay.status === "paid" ? "var(--ok)" : "var(--warn)") + '">' +
 function renderCRM() {
   var tb = document.getElementById("crm-tbody");
   var list = clients.filter(function (c) {
@@ -2779,6 +2704,7 @@ function unarchiveClient(id) {
     toast("Client restored");
   });
 }
+
 function deleteClient(id, jobCount, hasRevenue) {
   var c = findClient(id);
   var warnMsg = "Permanently delete " + (c ? c.name : "this client") + "? This cannot be undone.";
