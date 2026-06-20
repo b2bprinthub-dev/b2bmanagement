@@ -969,6 +969,7 @@ function doLogout() {
 }
 
 var _pendingAuthUser = null;
+var _suppressSignOutRedirect = false;
 
 function handleAuthSession(session) {
   if (!session || !session.user) {
@@ -985,8 +986,13 @@ function handleAuthSession(session) {
     .then(function (res) {
       if (res.error || !res.data) {
         _pendingAuthUser = authUser;
-        sb.auth.signOut();
-        withMinLoadingTime(function () { showAccessPending(authUser); }, 700);
+        _suppressSignOutRedirect = true;
+        sb.auth.signOut().then(function () {
+          withMinLoadingTime(function () {
+            showAccessPending(authUser);
+            _suppressSignOutRedirect = false;
+          }, 700);
+        });
         return;
       }
       currentUser = res.data;
@@ -3228,6 +3234,7 @@ function bootApp() {
           handleAuthSession(session);
         } else if (event === "SIGNED_OUT") {
           currentUser = null;
+          if (_suppressSignOutRedirect) return;
           window.location.href = "../";
         }
       });
