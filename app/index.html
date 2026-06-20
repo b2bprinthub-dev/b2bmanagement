@@ -904,9 +904,7 @@ function doLogout() {
   logActivity("Logout", "Auth", "User signed out");
   sb.auth.signOut().then(function () {
     currentUser = null;
-    document.getElementById("appRoot").style.display = "none";
-    document.getElementById("loginScreen").style.display = "flex";
-    document.getElementById("syncStatus").style.display = "none";
+    window.location.href = "../";
   });
 }
 
@@ -2990,8 +2988,7 @@ function bootApp() {
           handleAuthSession(session);
         } else if (event === "SIGNED_OUT") {
           currentUser = null;
-          document.getElementById("appRoot").style.display = "none";
-          document.getElementById("loginScreen").style.display = "flex";
+          window.location.href = "../";
         }
       });
     })
