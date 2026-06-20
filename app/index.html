@@ -2552,6 +2552,7 @@ function openJobModal(job) {
     chtml += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--bg3);border:1px solid var(--bor);border-radius:20px;padding:4px 10px"><input type="checkbox" value="' + m.id + '" ' + checked + ' style="cursor:pointer"/><div style="width:20px;height:20px;border-radius:50%;background:' + m.color + ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff">' + inits(m.name) + '</div><span style="font-size:12px;font-weight:500">' + m.name + "</span></label>";
   }
   cb.innerHTML = chtml;
+  loadPaymentIntoJobForm(job);
   renderChecklist();
   document.getElementById("jobModal").classList.add("open");
 }
