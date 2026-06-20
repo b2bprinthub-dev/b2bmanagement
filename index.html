@@ -112,10 +112,11 @@ textarea.fc{resize:vertical;min-height:70px}
       <p>Business Management Suite</p>
     </div>
     <div id="login-error" style="display:none;background:rgba(239,68,68,.12);border:1px solid var(--err);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--err);margin-bottom:14px"></div>
-    <div class="fg"><label class="fl">Username</label><input class="fc" id="login-user" placeholder="Enter username"/></div>
-    <div class="fg"><label class="fl">Password</label><input class="fc" type="password" id="login-pass" placeholder="Enter password"/></div>
-    <button class="btn btn-p" style="width:100%;justify-content:center;padding:12px;font-size:15px;margin-top:4px" onclick="doLogin()" id="login-btn">Sign In</button>
-    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--t3)">Default: admin / admin123</div>
+    <button class="btn btn-p" style="width:100%;justify-content:center;padding:12px;font-size:15px;gap:10px" onclick="signInWithGoogle()" id="google-btn">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#fff" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.08-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#fff" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33C2.44 15.98 5.48 18 9 18z"/><path fill="#fff" d="M3.97 10.72c-.18-.54-.28-1.12-.28-1.72s.1-1.18.28-1.72V4.95H.96A8.997 8.997 0 000 9c0 1.45.35 2.82.96 4.05l3.01-2.33z"/><path fill="#fff" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.59-2.59C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--t3)">Only approved company accounts can access this app</div>
   </div>
 </div>
 
@@ -362,11 +363,12 @@ textarea.fc{resize:vertical;min-height:70px}
         <div style="font-weight:600;font-size:16px;margin-bottom:16px">Security</div>
         <div class="g2">
           <div class="card">
-            <div style="font-weight:600;margin-bottom:14px">Change Your Password</div>
-            <div class="fg"><label class="fl">Current Password</label><input class="fc" type="password" id="pw-current"/></div>
-            <div class="fg"><label class="fl">New Password</label><input class="fc" type="password" id="pw-new" placeholder="Min 6 characters"/></div>
-            <div class="fg"><label class="fl">Confirm Password</label><input class="fc" type="password" id="pw-confirm"/></div>
-            <button class="btn btn-p btn-sm" onclick="changePassword()">Change Password</button>
+            <div style="font-weight:600;margin-bottom:14px">Authentication</div>
+            <div style="font-size:13px;color:var(--t2);line-height:1.6">
+              This app uses <b>Sign in with Google</b>. There are no passwords to manage here &mdash;
+              access is controlled entirely by which email addresses are marked <b>active</b> in
+              <b>Settings &rarr; Users</b>. To revoke someone's access, set their status to Inactive.
+            </div>
           </div>
           <div class="card">
             <div style="font-weight:600;margin-bottom:14px">Current Session</div>
@@ -620,16 +622,15 @@ textarea.fc{resize:vertical;min-height:70px}
 <div class="overlay" id="userModal">
 <div class="modal" style="max-width:540px">
   <div class="modal-t"><span id="userModalT">New User</span><button class="xbtn" onclick="closeM('userModal')">&times;</button></div>
+  <div style="background:var(--bg3);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--t2);margin-bottom:16px">
+    Users sign in with Google. Enter the exact Google email address they will use &mdash; access is granted automatically the first time they sign in with that email.
+  </div>
   <div class="g2" style="margin-bottom:4px">
     <div class="fg"><label class="fl">Full Name</label><input class="fc" id="user-name" placeholder="John Doe"/></div>
-    <div class="fg"><label class="fl">Username</label><input class="fc" id="user-username" placeholder="johndoe"/></div>
+    <div class="fg"><label class="fl">Google Email (login)</label><input class="fc" type="email" id="user-email" placeholder="john@gmail.com"/></div>
   </div>
   <div class="g2" style="margin-bottom:4px">
-    <div class="fg"><label class="fl">Email</label><input class="fc" type="email" id="user-email"/></div>
     <div class="fg"><label class="fl">Role</label><select class="fc" id="user-role"></select></div>
-  </div>
-  <div class="g2" style="margin-bottom:4px">
-    <div class="fg"><label class="fl">Password</label><input class="fc" type="password" id="user-pass" placeholder="Min 6 characters"/></div>
     <div class="fg"><label class="fl">Status</label><select class="fc" id="user-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
   </div>
   <div class="fg"><label class="fl">Notes</label><textarea class="fc" id="user-notes"></textarea></div>
@@ -880,50 +881,88 @@ function saveSetting(key, value) {
   });
 }
 
-function doLogin() {
-  var u = document.getElementById("login-user").value.trim();
-  var p = document.getElementById("login-pass").value;
-  var err = document.getElementById("login-error");
-  if (!u || !p) {
-    err.textContent = "Please enter username and password.";
-    err.style.display = "block";
-    return;
-  }
-  var btn = document.getElementById("login-btn");
-  btn.textContent = "Signing in...";
+function signInWithGoogle() {
+  var btn = document.getElementById("google-btn");
   btn.disabled = true;
-
-  sb.from("app_users").select("*").eq("username", u).eq("password", p).eq("status", "active").single()
-    .then(function (res) {
-      btn.textContent = "Sign In";
+  sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.href }
+  }).then(function (res) {
+    if (res.error) {
       btn.disabled = false;
-      if (res.error || !res.data) {
-        err.textContent = "Invalid username or password.";
-        err.style.display = "block";
-        return;
-      }
-      err.style.display = "none";
-      currentUser = res.data;
-      sb.from("app_users").update({last_login: new Date().toLocaleString()}).eq("id", res.data.id).then(function(){});
-      logActivity("Login", "Auth", "User signed in from browser");
-      document.getElementById("loginScreen").style.display = "none";
-      document.getElementById("appRoot").style.display = "block";
-      document.getElementById("syncStatus").style.display = "flex";
-      applyUserUI();
-      loadAppData().then(function () {
-        renderDash();
-      });
-    });
+      var err = document.getElementById("login-error");
+      err.textContent = "Could not start Google sign-in: " + res.error.message;
+      err.style.display = "block";
+    }
+    // On success, the browser redirects to Google then back here.
+    // handleAuthSession() picks it up on reload.
+  });
 }
 
 function doLogout() {
   logActivity("Logout", "Auth", "User signed out");
-  currentUser = null;
-  document.getElementById("appRoot").style.display = "none";
-  document.getElementById("loginScreen").style.display = "flex";
-  document.getElementById("syncStatus").style.display = "none";
-  document.getElementById("login-user").value = "";
-  document.getElementById("login-pass").value = "";
+  sb.auth.signOut().then(function () {
+    currentUser = null;
+    document.getElementById("appRoot").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("syncStatus").style.display = "none";
+    document.getElementById("login-error").style.display = "none";
+    var btn = document.getElementById("google-btn");
+    if (btn) btn.disabled = false;
+  });
+}
+
+// Resolves a Supabase Auth session into an app_users row (matched by email).
+// Links auth_id automatically on first successful login for that email.
+function resolveAppUser(authUser) {
+  var email = authUser.email;
+  return sb.from("app_users").select("*").eq("email", email).eq("status", "active").maybeSingle()
+    .then(function (res) {
+      if (res.error || !res.data) {
+        return null;
+      }
+      var row = res.data;
+      if (!row.auth_id) {
+        return dbUpdate("app_users", row.id, {auth_id: authUser.id, last_login: new Date().toLocaleString()})
+          .then(function (updated) { return updated || row; });
+      } else {
+        sb.from("app_users").update({last_login: new Date().toLocaleString()}).eq("id", row.id).then(function(){});
+        return row;
+      }
+    });
+}
+
+function handleAuthSession() {
+  return sb.auth.getSession().then(function (res) {
+    var session = res.data && res.data.session;
+    if (!session || !session.user) {
+      hideLoading();
+      document.getElementById("loginScreen").style.display = "flex";
+      return;
+    }
+    document.getElementById("loadingMsg").textContent = "Signing you in...";
+    document.getElementById("loadingScreen").style.display = "flex";
+    return resolveAppUser(session.user).then(function (appUser) {
+      if (!appUser) {
+        hideLoading();
+        document.getElementById("loginScreen").style.display = "flex";
+        var err = document.getElementById("login-error");
+        err.textContent = "Your Google account (" + session.user.email + ") is not approved for access. Contact your administrator.";
+        err.style.display = "block";
+        sb.auth.signOut();
+        return;
+      }
+      currentUser = appUser;
+      logActivity("Login", "Auth", "Signed in via Google as " + session.user.email);
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("appRoot").style.display = "block";
+      document.getElementById("syncStatus").style.display = "flex";
+      applyUserUI();
+      return loadAppData().then(function () {
+        renderDash();
+      });
+    });
+  });
 }
 
 function applyUserUI() {
@@ -2573,11 +2612,9 @@ function openUserModal(user) {
   _editUserId = user ? user.id : null;
   document.getElementById("userModalT").textContent = user ? "Edit User" : "New User";
   document.getElementById("user-name").value = user ? user.name : "";
-  document.getElementById("user-username").value = user ? user.username : "";
   document.getElementById("user-email").value = user ? user.email : "";
   document.getElementById("user-notes").value = user ? user.notes : "";
   document.getElementById("user-status").value = user ? user.status : "active";
-  document.getElementById("user-pass").value = "";
   var roleOpts = "";
   for (var i = 0; i < appRoles.length; i++) {
     var r = appRoles[i];
@@ -2589,17 +2626,15 @@ function openUserModal(user) {
 
 function saveUser() {
   var name = document.getElementById("user-name").value.trim();
-  var username = document.getElementById("user-username").value.trim().toLowerCase();
-  var pass = document.getElementById("user-pass").value;
-  if (!name || !username) { toast("Name and username required", true); return; }
+  var email = document.getElementById("user-email").value.trim().toLowerCase();
+  if (!name || !email) { toast("Name and email required", true); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast("Enter a valid email address", true); return; }
   var dup = null;
   for (var i = 0; i < appUsers.length; i++) {
-    if (appUsers[i].username === username && appUsers[i].id !== _editUserId) { dup = appUsers[i]; break; }
+    if (appUsers[i].email === email && appUsers[i].id !== _editUserId) { dup = appUsers[i]; break; }
   }
-  if (dup) { toast("Username already taken", true); return; }
-  var row = {name: name, username: username, email: document.getElementById("user-email").value, role_id: parseInt(document.getElementById("user-role").value), status: document.getElementById("user-status").value, notes: document.getElementById("user-notes").value};
-  if (pass) { row.password = pass; }
-  else if (!_editUserId) { toast("Password required for new user", true); return; }
+  if (dup) { toast("This email is already registered", true); return; }
+  var row = {name: name, email: email, role_id: parseInt(document.getElementById("user-role").value), status: document.getElementById("user-status").value, notes: document.getElementById("user-notes").value};
 
   if (_editUserId) {
     dbUpdate("app_users", _editUserId, row).then(function (updated) {
@@ -2608,7 +2643,7 @@ function saveUser() {
           if (appUsers[j].id === _editUserId) appUsers[j] = Object.assign({}, appUsers[j], updated);
         }
       }
-      logActivity("Edit User", "Settings", "Updated: @" + username);
+      logActivity("Edit User", "Settings", "Updated: " + email);
       closeM("userModal");
       renderUsersTable();
       toast("User saved!");
@@ -2616,21 +2651,21 @@ function saveUser() {
   } else {
     dbInsert("app_users", row).then(function (created) {
       if (created) appUsers.push(created);
-      logActivity("Create User", "Settings", "Created: @" + username);
+      logActivity("Create User", "Settings", "Created: " + email);
       closeM("userModal");
       renderUsersTable();
-      toast("User saved!");
+      toast("User saved! They can now sign in with Google using " + email);
     });
   }
 }
 
 function deleteUser(id) {
   if (currentUser && id === currentUser.id) { toast("Cannot delete your own account", true); return; }
-  if (!confirm("Delete this user?")) return;
+  if (!confirm("Delete this user? They will lose access immediately.")) return;
   var u = findUser(id);
   dbDelete("app_users", id).then(function () {
     appUsers = appUsers.filter(function (x) { return x.id !== id; });
-    logActivity("Delete User", "Settings", "Deleted: @" + (u ? u.username : ""));
+    logActivity("Delete User", "Settings", "Deleted: " + (u ? u.email : ""));
     renderUsersTable();
     toast("User deleted");
   });
@@ -2754,27 +2789,9 @@ function clearActivityLog() {
 
 function renderSecurityTab() {
   document.getElementById("session-info").innerHTML =
-    '<div style="padding:10px 0;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Logged in as</span><span style="font-weight:600;color:var(--acc)">@' + (currentUser ? currentUser.username : "") + "</span></div>" +
+    '<div style="padding:10px 0;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Signed in as</span><span style="font-weight:600;color:var(--acc)">' + (currentUser ? currentUser.email : "") + "</span></div>" +
     '<div style="padding:10px 0;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Role</span><span style="font-weight:600">' + getUserRole(currentUser).name + "</span></div>" +
     '<div style="padding:10px 0;display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Last Login</span><span>' + (currentUser ? (currentUser.last_login || "-") : "-") + "</span></div>";
-}
-
-function changePassword() {
-  var curr = document.getElementById("pw-current").value;
-  var nw = document.getElementById("pw-new").value;
-  var conf = document.getElementById("pw-confirm").value;
-  if (!currentUser) { toast("Not logged in", true); return; }
-  if (curr !== currentUser.password) { toast("Current password is incorrect", true); return; }
-  if (nw.length < 6) { toast("New password must be at least 6 characters", true); return; }
-  if (nw !== conf) { toast("Passwords do not match", true); return; }
-  dbUpdate("app_users", currentUser.id, {password: nw}).then(function () {
-    currentUser.password = nw;
-    logActivity("Change Password", "Security", "Password changed for @" + currentUser.username);
-    toast("Password changed successfully!");
-    document.getElementById("pw-current").value = "";
-    document.getElementById("pw-new").value = "";
-    document.getElementById("pw-confirm").value = "";
-  });
 }
 
 function loadBizForm() {
@@ -2950,8 +2967,7 @@ function bootApp() {
   withTimeout(sb.from("roles").select("id").limit(1), 8000, "Supabase database response")
     .then(function (result) {
       if (result.error) throw result.error;
-      hideLoading();
-      document.getElementById("loginScreen").style.display = "flex";
+      return handleAuthSession();
     })
     .catch(function (e) {
       var detail = (e && e.message) || String(e);
@@ -2975,6 +2991,13 @@ function bootApp() {
 
 window.addEventListener("DOMContentLoaded", function () {
   bootApp();
+  if (sb && sb.auth) {
+    sb.auth.onAuthStateChange(function (event, session) {
+      if (event === "SIGNED_IN" && !currentUser) {
+        handleAuthSession();
+      }
+    });
+  }
 });
 </script>
 </body>
