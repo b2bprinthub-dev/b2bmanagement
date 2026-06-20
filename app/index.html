@@ -2554,6 +2554,7 @@ function openJobModal(job) {
   cb.innerHTML = chtml;
   loadPaymentIntoJobForm(job);
 }
+  
   function togglePayFields() {
   var type = document.getElementById("job-pay-type").value;
   document.getElementById("job-pay-flat-row").style.display = type === "flat" ? "grid" : "none";
