@@ -112,11 +112,11 @@ textarea.fc{resize:vertical;min-height:70px}
       <p>Business Management Suite</p>
     </div>
     <div id="login-error" style="display:none;background:rgba(239,68,68,.12);border:1px solid var(--err);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--err);margin-bottom:14px"></div>
-    <button class="btn btn-p" style="width:100%;justify-content:center;padding:12px;font-size:15px;gap:10px" onclick="signInWithGoogle()" id="google-btn">
-      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#fff" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.08-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#fff" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33C2.44 15.98 5.48 18 9 18z"/><path fill="#fff" d="M3.97 10.72c-.18-.54-.28-1.12-.28-1.72s.1-1.18.28-1.72V4.95H.96A8.997 8.997 0 000 9c0 1.45.35 2.82.96 4.05l3.01-2.33z"/><path fill="#fff" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.59-2.59C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+    <button class="btn btn-o" style="width:100%;justify-content:center;padding:12px;font-size:15px;gap:10px" onclick="doGoogleLogin()" id="login-btn">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.69 9c0-.6.1-1.18.28-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.59-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
       Sign in with Google
     </button>
-    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--t3)">Only approved company accounts can access this app</div>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--t3)">Only approved team accounts can access this app</div>
   </div>
 </div>
 
@@ -338,7 +338,7 @@ textarea.fc{resize:vertical;min-height:70px}
           <button class="btn btn-p btn-sm" onclick="openUserModal(null)">+ New User</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
-          <table><thead><tr><th>User</th><th>Username</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+          <table><thead><tr><th>User</th><th>Google Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
           <tbody id="users-tbody"></tbody></table>
         </div>
       </div>
@@ -355,7 +355,7 @@ textarea.fc{resize:vertical;min-height:70px}
           <button class="btn btn-o btn-sm" onclick="clearActivityLog()">Clear</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;max-height:500px;overflow-y:auto">
-          <table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Module</th><th>Details</th></tr></thead>
+          <table><thead><tr><th>Time</th><th>Account</th><th>Action</th><th>Module</th><th>Details</th></tr></thead>
           <tbody id="activity-tbody"></tbody></table>
         </div>
       </div>
@@ -365,10 +365,11 @@ textarea.fc{resize:vertical;min-height:70px}
           <div class="card">
             <div style="font-weight:600;margin-bottom:14px">Authentication</div>
             <div style="font-size:13px;color:var(--t2);line-height:1.6">
-              This app uses <b>Sign in with Google</b>. There are no passwords to manage here &mdash;
-              access is controlled entirely by which email addresses are marked <b>active</b> in
-              <b>Settings &rarr; Users</b>. To revoke someone's access, set their status to Inactive.
+              This app uses <b>Sign in with Google</b>. There is no separate password to manage here &mdash;
+              your account security is handled entirely by your Google account. To change your password
+              or enable two-factor authentication, manage it directly in your Google Account settings.
             </div>
+            <div style="margin-top:14px"><a href="https://myaccount.google.com/security" target="_blank" class="btn btn-o btn-sm">Open Google Account Security</a></div>
           </div>
           <div class="card">
             <div style="font-weight:600;margin-bottom:14px">Current Session</div>
@@ -622,12 +623,12 @@ textarea.fc{resize:vertical;min-height:70px}
 <div class="overlay" id="userModal">
 <div class="modal" style="max-width:540px">
   <div class="modal-t"><span id="userModalT">New User</span><button class="xbtn" onclick="closeM('userModal')">&times;</button></div>
-  <div style="background:var(--bg3);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--t2);margin-bottom:16px">
-    Users sign in with Google. Enter the exact Google email address they will use &mdash; access is granted automatically the first time they sign in with that email.
+  <div style="background:var(--bg3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--t2)">
+    Users sign in with Google. Add their exact Gmail address below to grant access &mdash; there is no password to set.
   </div>
   <div class="g2" style="margin-bottom:4px">
     <div class="fg"><label class="fl">Full Name</label><input class="fc" id="user-name" placeholder="John Doe"/></div>
-    <div class="fg"><label class="fl">Google Email (login)</label><input class="fc" type="email" id="user-email" placeholder="john@gmail.com"/></div>
+    <div class="fg"><label class="fl">Google Email</label><input class="fc" type="email" id="user-email" placeholder="john@gmail.com"/></div>
   </div>
   <div class="g2" style="margin-bottom:4px">
     <div class="fg"><label class="fl">Role</label><select class="fc" id="user-role"></select></div>
@@ -856,7 +857,7 @@ function dbDelete(table, id) {
 function logActivity(action, mod, details) {
   var entry = {
     time: new Date().toISOString(),
-    username: currentUser ? currentUser.username : "system",
+    username: currentUser ? currentUser.email : "system",
     action: action, module: mod, details: details || ""
   };
   activityLog.unshift(entry);
@@ -881,21 +882,21 @@ function saveSetting(key, value) {
   });
 }
 
-function signInWithGoogle() {
-  var btn = document.getElementById("google-btn");
+function doGoogleLogin() {
+  var err = document.getElementById("login-error");
+  err.style.display = "none";
+  var btn = document.getElementById("login-btn");
   btn.disabled = true;
   sb.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: window.location.href }
   }).then(function (res) {
     if (res.error) {
-      btn.disabled = false;
-      var err = document.getElementById("login-error");
-      err.textContent = "Could not start Google sign-in: " + res.error.message;
+      err.textContent = "Google sign-in failed: " + res.error.message;
       err.style.display = "block";
+      btn.disabled = false;
     }
-    // On success, the browser redirects to Google then back here.
-    // handleAuthSession() picks it up on reload.
+    // On success, the browser redirects to Google then back here automatically.
   });
 }
 
@@ -906,63 +907,47 @@ function doLogout() {
     document.getElementById("appRoot").style.display = "none";
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("syncStatus").style.display = "none";
-    document.getElementById("login-error").style.display = "none";
-    var btn = document.getElementById("google-btn");
-    if (btn) btn.disabled = false;
   });
 }
 
-// Resolves a Supabase Auth session into an app_users row (matched by email).
-// Links auth_id automatically on first successful login for that email.
-function resolveAppUser(authUser) {
+function handleAuthSession(session) {
+  if (!session || !session.user) {
+    hideLoading();
+    document.getElementById("loginScreen").style.display = "flex";
+    return;
+  }
+  var authUser = session.user;
   var email = authUser.email;
-  return sb.from("app_users").select("*").eq("email", email).eq("status", "active").maybeSingle()
+
+  // Look up this email in our approved app_users allowlist
+  sb.from("app_users").select("*, roles(*)").eq("email", email).eq("status", "active").maybeSingle()
     .then(function (res) {
       if (res.error || !res.data) {
-        return null;
-      }
-      var row = res.data;
-      if (!row.auth_id) {
-        return dbUpdate("app_users", row.id, {auth_id: authUser.id, last_login: new Date().toLocaleString()})
-          .then(function (updated) { return updated || row; });
-      } else {
-        sb.from("app_users").update({last_login: new Date().toLocaleString()}).eq("id", row.id).then(function(){});
-        return row;
-      }
-    });
-}
-
-function handleAuthSession() {
-  return sb.auth.getSession().then(function (res) {
-    var session = res.data && res.data.session;
-    if (!session || !session.user) {
-      hideLoading();
-      document.getElementById("loginScreen").style.display = "flex";
-      return;
-    }
-    document.getElementById("loadingMsg").textContent = "Signing you in...";
-    document.getElementById("loadingScreen").style.display = "flex";
-    return resolveAppUser(session.user).then(function (appUser) {
-      if (!appUser) {
+        var err = document.getElementById("login-error");
         hideLoading();
         document.getElementById("loginScreen").style.display = "flex";
-        var err = document.getElementById("login-error");
-        err.textContent = "Your Google account (" + session.user.email + ") is not approved for access. Contact your administrator.";
+        err.textContent = "Your Google account (" + email + ") is not approved for access. Contact your administrator.";
         err.style.display = "block";
         sb.auth.signOut();
         return;
       }
-      currentUser = appUser;
-      logActivity("Login", "Auth", "Signed in via Google as " + session.user.email);
+      currentUser = res.data;
+
+      // Link the auth_id on first login if not already linked
+      var updates = { last_login: new Date().toLocaleString() };
+      if (!currentUser.auth_id) updates.auth_id = authUser.id;
+      sb.from("app_users").update(updates).eq("id", currentUser.id).then(function () {});
+
+      logActivity("Login", "Auth", "Signed in via Google as " + email);
       document.getElementById("loginScreen").style.display = "none";
       document.getElementById("appRoot").style.display = "block";
       document.getElementById("syncStatus").style.display = "flex";
       applyUserUI();
-      return loadAppData().then(function () {
+      loadAppData().then(function () {
+        hideLoading();
         renderDash();
       });
     });
-  });
 }
 
 function applyUserUI() {
@@ -2591,8 +2576,8 @@ function renderUsersTable() {
     var u = appUsers[i];
     var role = getUserRole(u);
     var isMe = currentUser && u.id === currentUser.id;
-    html += '<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:' + role.color + '">' + inits(u.name) + '</div><div><div style="font-weight:500">' + u.name + '</div><div style="font-size:11px;color:var(--t3)">' + (u.email || "") + "</div></div></div></td>" +
-      '<td style="font-weight:500;color:var(--acc)">@' + u.username + "</td>" +
+    html += '<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:' + role.color + '">' + inits(u.name) + '</div><div style="font-weight:500">' + u.name + "</div></div></td>" +
+      '<td style="font-weight:500;color:var(--acc)">' + (u.email || "-") + "</td>" +
       '<td><span style="background:' + role.color + '20;color:' + role.color + ';border-radius:12px;padding:2px 9px;font-size:11px;font-weight:600">' + role.name + "</span></td>" +
       '<td><span class="badge ' + (u.status === "active" ? "b-ok" : "b-gray") + '">' + u.status + "</span></td>" +
       '<td style="font-size:12px;color:var(--t3)">' + (u.last_login || "Never") + "</td>" +
@@ -2627,13 +2612,13 @@ function openUserModal(user) {
 function saveUser() {
   var name = document.getElementById("user-name").value.trim();
   var email = document.getElementById("user-email").value.trim().toLowerCase();
-  if (!name || !email) { toast("Name and email required", true); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast("Enter a valid email address", true); return; }
+  if (!name || !email) { toast("Name and Google email required", true); return; }
+  if (email.indexOf("@") < 0) { toast("Enter a valid email address", true); return; }
   var dup = null;
   for (var i = 0; i < appUsers.length; i++) {
     if (appUsers[i].email === email && appUsers[i].id !== _editUserId) { dup = appUsers[i]; break; }
   }
-  if (dup) { toast("This email is already registered", true); return; }
+  if (dup) { toast("That email is already registered", true); return; }
   var row = {name: name, email: email, role_id: parseInt(document.getElementById("user-role").value), status: document.getElementById("user-status").value, notes: document.getElementById("user-notes").value};
 
   if (_editUserId) {
@@ -2770,7 +2755,7 @@ function renderActivityTable() {
     var a = rows[i];
     var timeStr = a.time ? new Date(a.time).toLocaleString() : "";
     html += '<tr><td style="font-size:12px;color:var(--t3);white-space:nowrap">' + timeStr + "</td>" +
-      '<td><span style="font-weight:500;color:var(--acc)">@' + a.username + "</span></td>" +
+      '<td><span style="font-weight:500;color:var(--acc)">' + a.username + "</span></td>" +
       '<td style="font-weight:500">' + a.action + "</td>" +
       '<td><span class="badge b-gray">' + a.module + "</span></td>" +
       '<td style="font-size:12px;color:var(--t2)">' + a.details + "</td></tr>";
@@ -2792,6 +2777,24 @@ function renderSecurityTab() {
     '<div style="padding:10px 0;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Signed in as</span><span style="font-weight:600;color:var(--acc)">' + (currentUser ? currentUser.email : "") + "</span></div>" +
     '<div style="padding:10px 0;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Role</span><span style="font-weight:600">' + getUserRole(currentUser).name + "</span></div>" +
     '<div style="padding:10px 0;display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Last Login</span><span>' + (currentUser ? (currentUser.last_login || "-") : "-") + "</span></div>";
+}
+
+function changePassword() {
+  var curr = document.getElementById("pw-current").value;
+  var nw = document.getElementById("pw-new").value;
+  var conf = document.getElementById("pw-confirm").value;
+  if (!currentUser) { toast("Not logged in", true); return; }
+  if (curr !== currentUser.password) { toast("Current password is incorrect", true); return; }
+  if (nw.length < 6) { toast("New password must be at least 6 characters", true); return; }
+  if (nw !== conf) { toast("Passwords do not match", true); return; }
+  dbUpdate("app_users", currentUser.id, {password: nw}).then(function () {
+    currentUser.password = nw;
+    logActivity("Change Password", "Security", "Password changed for @" + currentUser.username);
+    toast("Password changed successfully!");
+    document.getElementById("pw-current").value = "";
+    document.getElementById("pw-new").value = "";
+    document.getElementById("pw-confirm").value = "";
+  });
 }
 
 function loadBizForm() {
@@ -2964,10 +2967,31 @@ function bootApp() {
   }
 
   document.getElementById("loadingMsg").textContent = "Connecting to database...";
+
   withTimeout(sb.from("roles").select("id").limit(1), 8000, "Supabase database response")
     .then(function (result) {
       if (result.error) throw result.error;
-      return handleAuthSession();
+
+      // Connection good. Now check if there's already a signed-in session
+      // (e.g. returning from the Google OAuth redirect, or a previous session).
+      document.getElementById("loadingMsg").textContent = "Checking sign-in status...";
+      return sb.auth.getSession();
+    })
+    .then(function (sessionRes) {
+      var session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
+      handleAuthSession(session);
+
+      // Listen for future auth changes (login completing after Google redirect, logout, etc.)
+      sb.auth.onAuthStateChange(function (event, session) {
+        if (event === "SIGNED_IN") {
+          showLoading("Signing you in...");
+          handleAuthSession(session);
+        } else if (event === "SIGNED_OUT") {
+          currentUser = null;
+          document.getElementById("appRoot").style.display = "none";
+          document.getElementById("loginScreen").style.display = "flex";
+        }
+      });
     })
     .catch(function (e) {
       var detail = (e && e.message) || String(e);
@@ -2991,13 +3015,6 @@ function bootApp() {
 
 window.addEventListener("DOMContentLoaded", function () {
   bootApp();
-  if (sb && sb.auth) {
-    sb.auth.onAuthStateChange(function (event, session) {
-      if (event === "SIGNED_IN" && !currentUser) {
-        handleAuthSession();
-      }
-    });
-  }
 });
 </script>
 </body>
