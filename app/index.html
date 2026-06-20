@@ -122,27 +122,40 @@ textarea.fc{resize:vertical;min-height:70px}
 </div>
 
 <div id="accessPendingScreen" class="login-screen" style="display:none">
-  <div class="login-box" style="text-align:center;max-width:440px">
+  <div class="login-box" style="text-align:center;max-width:440px" id="pending-box-default">
     <div style="width:64px;height:64px;border-radius:50%;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px">🔒</div>
     <h1 style="font-size:19px;margin-bottom:6px">Access not yet approved</h1>
     <p style="margin-top:0;margin-bottom:24px">Your Google account was verified, but it hasn't been granted access to B2B Print Hub yet.</p>
 
     <div id="pending-profile" style="display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--bor);border-radius:10px;padding:12px 14px;margin-bottom:18px;text-align:left"></div>
 
-    <div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:20px;text-align:left">
-      <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px">What to do next</div>
-      <div style="font-size:13px;color:var(--t2);line-height:1.6">
-        Send the email above to your administrator and ask them to add it under
-        <b style="color:var(--t1)">Settings &rarr; Users &rarr; New User</b>.
-        Once added, just sign in again &mdash; no need to wait or refresh.
-      </div>
+    <div id="pending-request-status" style="display:none;background:rgba(76,175,125,.1);border:1px solid var(--ok);border-radius:10px;padding:14px;margin-bottom:18px;text-align:left">
+      <div style="font-size:13px;font-weight:600;color:var(--ok);margin-bottom:4px">Request sent</div>
+      <div style="font-size:12px;color:var(--t2)">Your administrator has been notified. You'll be able to sign in as soon as they approve your request &mdash; just click "Try Again" below.</div>
     </div>
 
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="btn btn-o" style="flex:1;justify-content:center" id="pending-copy-btn" onclick="copyPendingEmail()">Copy Email</button>
-      <button class="btn btn-p" style="flex:1;justify-content:center" onclick="retryPendingLogin()">Try Again</button>
+      <button class="btn btn-p" style="flex:1;justify-content:center" onclick="openRequestAccessForm()" id="pending-request-btn">Request Access</button>
+      <button class="btn btn-o" style="flex:1;justify-content:center" onclick="retryPendingLogin()">Try Again</button>
     </div>
     <button class="btn btn-o" style="width:100%;justify-content:center;color:var(--t3)" onclick="switchGoogleAccount()">Use a different Google account</button>
+  </div>
+
+  <div class="login-box" style="text-align:left;max-width:440px;display:none" id="pending-box-form">
+    <h1 style="font-size:19px;margin-bottom:6px">Request access</h1>
+    <p style="margin-top:0;margin-bottom:20px">Tell your administrator a bit about yourself so they can set up your account with the right role.</p>
+
+    <div class="fg"><label class="fl">Full Name</label><input class="fc" id="req-name" placeholder="John Doe"/></div>
+    <div class="fg"><label class="fl">Email</label><input class="fc" id="req-email" disabled style="opacity:.7"/></div>
+    <div class="fg"><label class="fl">Phone (optional)</label><input class="fc" id="req-phone" placeholder="(305) 000-0000"/></div>
+    <div class="fg"><label class="fl">What's this for? (optional)</label><textarea class="fc" id="req-reason" placeholder="e.g. I'm joining the sales team and need access to invoices and CRM"></textarea></div>
+
+    <div id="req-error" style="display:none;background:rgba(239,68,68,.12);border:1px solid var(--err);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--err);margin-bottom:14px"></div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-o" style="flex:1;justify-content:center" onclick="closeRequestAccessForm()">Cancel</button>
+      <button class="btn btn-p" style="flex:1;justify-content:center" onclick="submitAccessRequest()" id="req-submit-btn">Send Request</button>
+    </div>
   </div>
 </div>
 
@@ -352,6 +365,7 @@ textarea.fc{resize:vertical;min-height:70px}
     <div class="page" id="page-settings">
       <div class="settings-tabs">
         <button class="settings-tab active" onclick="switchSettingsTab('users',this)">Users</button>
+        <button class="settings-tab" onclick="switchSettingsTab('requests',this)">Access Requests <span id="req-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:4px"></span></button>
         <button class="settings-tab" onclick="switchSettingsTab('roles',this)">Roles</button>
         <button class="settings-tab" onclick="switchSettingsTab('activity',this)">Activity Log</button>
         <button class="settings-tab" onclick="switchSettingsTab('security',this)">Security</button>
@@ -368,6 +382,13 @@ textarea.fc{resize:vertical;min-height:70px}
           <tbody id="users-tbody"></tbody></table>
         </div>
       </div>
+      <div id="settings-tab-requests" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div><div style="font-weight:600;font-size:16px">Access Requests</div><div style="font-size:13px;color:var(--t3);margin-top:2px">People who tried to sign in and requested access</div></div>
+        </div>
+        <div id="requests-list"></div>
+      </div>
+
       <div id="settings-tab-roles" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <div><div style="font-weight:600;font-size:16px">Roles and Permissions</div></div>
@@ -1008,8 +1029,27 @@ function showAccessPending(authUser) {
     avatarHtml +
     '<div style="min-width:0">' +
     '<div style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + "</div>" +
-    '<div style="font-size:12px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="pending-email-text">' + authUser.email + "</div>" +
+    '<div style="font-size:12px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + authUser.email + "</div>" +
     "</div>";
+
+  document.getElementById("req-name").value = name;
+  document.getElementById("req-email").value = authUser.email;
+  document.getElementById("pending-box-default").style.display = "block";
+  document.getElementById("pending-box-form").style.display = "none";
+
+  // Check if a request already exists for this email
+  sb.from("access_requests").select("status").eq("email", authUser.email).order("requested_at", {ascending: false}).limit(1).maybeSingle()
+    .then(function (res) {
+      var statusBox = document.getElementById("pending-request-status");
+      var reqBtn = document.getElementById("pending-request-btn");
+      if (res.data && res.data.status === "pending") {
+        statusBox.style.display = "block";
+        reqBtn.textContent = "Resend Request";
+      } else {
+        statusBox.style.display = "none";
+        reqBtn.textContent = "Request Access";
+      }
+    });
 
   screen.style.display = "flex";
   screen.style.opacity = "0";
@@ -1019,31 +1059,45 @@ function showAccessPending(authUser) {
   });
 }
 
-function copyPendingEmail() {
-  if (!_pendingAuthUser) return;
-  var email = _pendingAuthUser.email;
-  var btn = document.getElementById("pending-copy-btn");
-  var done = function () {
-    var orig = btn.textContent;
-    btn.textContent = "Copied!";
-    setTimeout(function () { btn.textContent = orig; }, 1800);
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(email).then(done).catch(function () { fallbackCopy(email, done); });
-  } else {
-    fallbackCopy(email, done);
-  }
+function openRequestAccessForm() {
+  document.getElementById("pending-box-default").style.display = "none";
+  document.getElementById("pending-box-form").style.display = "block";
+  document.getElementById("req-error").style.display = "none";
 }
-function fallbackCopy(text, cb) {
-  var ta = document.createElement("textarea");
-  ta.value = text;
-  ta.style.position = "fixed";
-  ta.style.opacity = "0";
-  document.body.appendChild(ta);
-  ta.select();
-  try { document.execCommand("copy"); } catch (e) {}
-  document.body.removeChild(ta);
-  if (cb) cb();
+function closeRequestAccessForm() {
+  document.getElementById("pending-box-form").style.display = "none";
+  document.getElementById("pending-box-default").style.display = "block";
+}
+
+function submitAccessRequest() {
+  var name = document.getElementById("req-name").value.trim();
+  var email = document.getElementById("req-email").value.trim();
+  var phone = document.getElementById("req-phone").value.trim();
+  var reason = document.getElementById("req-reason").value.trim();
+  var err = document.getElementById("req-error");
+  if (!name) { err.textContent = "Please enter your name."; err.style.display = "block"; return; }
+  err.style.display = "none";
+
+  var btn = document.getElementById("req-submit-btn");
+  btn.disabled = true;
+  btn.textContent = "Sending...";
+
+  var authId = _pendingAuthUser ? _pendingAuthUser.id : null;
+  var row = {name: name, email: email, phone: phone, reason: reason, google_auth_id: authId, status: "pending"};
+
+  sb.from("access_requests").insert(row).then(function (res) {
+    btn.disabled = false;
+    btn.textContent = "Send Request";
+    if (res.error) {
+      err.textContent = "Could not send request: " + res.error.message;
+      err.style.display = "block";
+      return;
+    }
+    closeRequestAccessForm();
+    document.getElementById("pending-request-status").style.display = "block";
+    document.getElementById("pending-request-btn").textContent = "Resend Request";
+    toast("Access request sent!");
+  });
 }
 
 function retryPendingLogin() {
@@ -2673,9 +2727,9 @@ function renderAnalytics() {
   }
 }
 
-function renderSettings() { switchSettingsTab("users", document.querySelector(".settings-tab")); }
+function renderSettings() { switchSettingsTab("users", document.querySelector(".settings-tab")); checkPendingRequestsBadge(); }
 function switchSettingsTab(tab, el) {
-  var tabs = ["users", "roles", "activity", "security", "business", "pdf"];
+  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf"];
   for (var i = 0; i < tabs.length; i++) {
     document.getElementById("settings-tab-" + tabs[i]).style.display = tabs[i] === tab ? "block" : "none";
   }
@@ -2683,11 +2737,74 @@ function switchSettingsTab(tab, el) {
   for (var j = 0; j < btns.length; j++) btns[j].classList.remove("active");
   if (el) el.classList.add("active");
   if (tab === "users") renderUsersTable();
+  else if (tab === "requests") renderRequestsList();
   else if (tab === "roles") renderRolesList();
   else if (tab === "activity") renderActivityTable();
   else if (tab === "security") renderSecurityTab();
   else if (tab === "business") loadBizForm();
   else if (tab === "pdf") loadPDFForm();
+}
+
+function checkPendingRequestsBadge() {
+  sb.from("access_requests").select("id", {count: "exact", head: true}).eq("status", "pending").then(function (res) {
+    var badge = document.getElementById("req-badge");
+    var count = res.count || 0;
+    if (count > 0) { badge.textContent = count; badge.style.display = "inline-block"; }
+    else { badge.style.display = "none"; }
+  });
+}
+
+function renderRequestsList() {
+  var el = document.getElementById("requests-list");
+  el.innerHTML = '<div class="empty">Loading...</div>';
+  sb.from("access_requests").select("*").order("requested_at", {ascending: false}).then(function (res) {
+    var rows = res.data || [];
+    if (!rows.length) { el.innerHTML = '<div class="empty">No access requests yet</div>'; return; }
+    var html = "";
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var when = r.requested_at ? new Date(r.requested_at).toLocaleString() : "";
+      var statusBadge = r.status === "approved" ? '<span class="badge b-ok">Approved</span>' : r.status === "denied" ? '<span class="badge b-err">Denied</span>' : '<span class="badge b-warn">Pending</span>';
+      html += '<div class="card" style="margin-bottom:12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">' +
+        '<div><div style="font-weight:600;font-size:14px">' + r.name + '</div>' +
+        '<div style="font-size:12px;color:var(--acc)">' + r.email + '</div>' +
+        (r.phone ? '<div style="font-size:12px;color:var(--t3)">' + r.phone + '</div>' : '') +
+        '</div>' + statusBadge + '</div>' +
+        (r.reason ? '<div style="font-size:13px;color:var(--t2);background:var(--bg3);padding:10px 12px;border-radius:8px;margin-bottom:10px">' + r.reason + '</div>' : '') +
+        '<div style="font-size:11px;color:var(--t3);margin-bottom:' + (r.status === "pending" ? "10px" : "0") + '">Requested ' + when + '</div>';
+      if (r.status === "pending") {
+        html += '<div style="display:flex;gap:8px"><button class="btn btn-ok btn-sm" onclick="approveRequest(' + r.id + ')">Approve &amp; Create User</button><button class="btn btn-o btn-sm" style="color:var(--err)" onclick="denyRequest(' + r.id + ')">Deny</button></div>';
+      }
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  });
+}
+
+function approveRequest(id) {
+  sb.from("access_requests").select("*").eq("id", id).single().then(function (res) {
+    if (!res.data) return;
+    var r = res.data;
+    // Pre-fill the New User modal with their info instead of guessing a role for them
+    openUserModal(null);
+    document.getElementById("user-name").value = r.name;
+    document.getElementById("user-email").value = r.email;
+    toast("Choose a role and click Save to finish approving " + r.name);
+    sb.from("access_requests").update({status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: currentUser ? currentUser.email : ""}).eq("id", id).then(function () {
+      renderRequestsList();
+      checkPendingRequestsBadge();
+    });
+  });
+}
+
+function denyRequest(id) {
+  if (!confirm("Deny this access request? They will need to submit a new request to be reconsidered.")) return;
+  sb.from("access_requests").update({status: "denied", reviewed_at: new Date().toISOString(), reviewed_by: currentUser ? currentUser.email : ""}).eq("id", id).then(function () {
+    renderRequestsList();
+    checkPendingRequestsBadge();
+    toast("Request denied");
+  });
 }
 
 function renderUsersTable() {
