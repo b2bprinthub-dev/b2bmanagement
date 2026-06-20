@@ -2584,7 +2584,36 @@ function findJobPayment(jobId) {
   return null;
 }
 
-function loadPaymentIntoJobForm(job) {
+function togglePayFields() {
+  var type = document.getElementById("job-pay-type").value;
+  document.getElementById("job-pay-flat-row").style.display = type === "flat" ? "grid" : "none";
+  document.getElementById("job-pay-hourly-row").style.display = type === "hourly" ? "grid" : "none";
+  document.getElementById("job-pay-installer-wrap").style.display = type === "none" ? "none" : "block";
+  updatePayTotal();
+}
+function updatePayTotal() {
+  var type = document.getElementById("job-pay-type").value;
+  var totalEl = document.getElementById("job-pay-total");
+  if (type === "flat") {
+    var amt = parseFloat(document.getElementById("job-pay-flat").value) || 0;
+    totalEl.textContent = "Total: " + fmt(amt);
+  } else if (type === "hourly") {
+    var rate = parseFloat(document.getElementById("job-pay-rate").value) || 0;
+    var hrs = parseFloat(document.getElementById("job-pay-hours").value) || 0;
+    totalEl.textContent = "Total: " + fmt(rate * hrs) + " (" + hrs + " hrs x " + fmt(rate) + ")";
+  } else {
+    totalEl.textContent = "";
+  }
+}
+document.addEventListener("input", function (e) {
+  if (e.target && (e.target.id === "job-pay-flat" || e.target.id === "job-pay-rate" || e.target.id === "job-pay-hours")) updatePayTotal();
+});
+
+function findJobPayment(jobId) {
+  for (var i = 0; i < jobPayments.length; i++) { if (jobPayments[i].job_id === jobId) return jobPayments[i]; }
+  return null;
+}
+  function loadPaymentIntoJobForm(job) {
   var wrap = document.getElementById("job-payment-wrap");
   wrap.style.display = "block";
   var instSel = document.getElementById("job-pay-installer");
