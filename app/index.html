@@ -2765,11 +2765,18 @@ function renderRequestsList() {
   sb.from("access_requests").select("*").order("requested_at", {ascending: false}).then(function (res) {
     var rows = res.data || [];
     if (!rows.length) { el.innerHTML = '<div class="empty">No access requests yet</div>'; return; }
+    var roleOpts = "";
+    for (var ri = 0; ri < appRoles.length; ri++) {
+      roleOpts += '<option value="' + appRoles[ri].id + '">' + appRoles[ri].name + "</option>";
+    }
     var html = "";
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       var when = r.requested_at ? new Date(r.requested_at).toLocaleString() : "";
-      var statusBadge = r.status === "approved" ? '<span class="badge b-ok">Approved</span>' : r.status === "denied" ? '<span class="badge b-err">Denied</span>' : '<span class="badge b-warn">Pending</span>';
+      var alreadyUser = appUsers.some(function (u) { return u.email === r.email; });
+      var statusBadge = r.status === "approved"
+        ? (alreadyUser ? '<span class="badge b-ok">Approved &amp; Active</span>' : '<span class="badge b-warn">Approved &mdash; No Account Yet</span>')
+        : r.status === "denied" ? '<span class="badge b-err">Denied</span>' : '<span class="badge b-warn">Pending</span>';
       html += '<div class="card" style="margin-bottom:12px">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">' +
         '<div><div style="font-weight:600;font-size:14px">' + r.name + '</div>' +
@@ -2777,9 +2784,14 @@ function renderRequestsList() {
         (r.phone ? '<div style="font-size:12px;color:var(--t3)">' + r.phone + '</div>' : '') +
         '</div>' + statusBadge + '</div>' +
         (r.reason ? '<div style="font-size:13px;color:var(--t2);background:var(--bg3);padding:10px 12px;border-radius:8px;margin-bottom:10px">' + r.reason + '</div>' : '') +
-        '<div style="font-size:11px;color:var(--t3);margin-bottom:' + (r.status === "pending" ? "10px" : "0") + '">Requested ' + when + '</div>';
-      if (r.status === "pending") {
-        html += '<div style="display:flex;gap:8px"><button class="btn btn-ok btn-sm" onclick="approveRequest(' + r.id + ')">Approve &amp; Create User</button><button class="btn btn-o btn-sm" style="color:var(--err)" onclick="denyRequest(' + r.id + ')">Deny</button></div>';
+        '<div style="font-size:11px;color:var(--t3);margin-bottom:10px">Requested ' + when + '</div>';
+
+      if (!alreadyUser) {
+        html += '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+          '<select class="fc" id="req-role-' + r.id + '" style="width:auto;flex:1;min-width:140px;padding:7px 10px">' + roleOpts + '</select>' +
+          '<button class="btn btn-ok btn-sm" onclick="approveRequest(' + r.id + ')">Approve &amp; Create User</button>' +
+          (r.status !== "denied" ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="denyRequest(' + r.id + ')">Deny</button>' : '') +
+          '</div>';
       }
       html += '</div>';
     }
@@ -2789,16 +2801,28 @@ function renderRequestsList() {
 
 function approveRequest(id) {
   sb.from("access_requests").select("*").eq("id", id).single().then(function (res) {
-    if (!res.data) return;
+    if (!res.data) { toast("Request not found", true); return; }
     var r = res.data;
-    // Pre-fill the New User modal with their info instead of guessing a role for them
-    openUserModal(null);
-    document.getElementById("user-name").value = r.name;
-    document.getElementById("user-email").value = r.email;
-    toast("Choose a role and click Save to finish approving " + r.name);
-    sb.from("access_requests").update({status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: currentUser ? currentUser.email : ""}).eq("id", id).then(function () {
-      renderRequestsList();
-      checkPendingRequestsBadge();
+    var roleSel = document.getElementById("req-role-" + id);
+    var roleId = roleSel ? parseInt(roleSel.value) : (appRoles[0] ? appRoles[0].id : null);
+    if (!roleId) { toast("No roles available to assign", true); return; }
+
+    var userRow = {name: r.name, email: r.email, role_id: roleId, status: "active", notes: r.reason || ""};
+
+    dbInsert("app_users", userRow).then(function (created) {
+      if (!created) return; // dbInsert already showed the specific error toast
+      appUsers.push(created);
+      sb.from("access_requests").update({
+        status: "approved",
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: currentUser ? currentUser.email : ""
+      }).eq("id", id).then(function () {
+        logActivity("Approve Access Request", "Settings", r.email + " -> account created");
+        renderRequestsList();
+        renderUsersTable();
+        checkPendingRequestsBadge();
+        toast(r.name + " approved and added as a user!");
+      });
     });
   });
 }
@@ -2878,7 +2902,8 @@ function saveUser() {
     });
   } else {
     dbInsert("app_users", row).then(function (created) {
-      if (created) appUsers.push(created);
+      if (!created) return; // dbInsert already showed the error toast
+      appUsers.push(created);
       logActivity("Create User", "Settings", "Created: " + email);
       closeM("userModal");
       renderUsersTable();
