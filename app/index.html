@@ -77,7 +77,8 @@ textarea.fc{resize:vertical;min-height:70px}
 .progress-fill{height:100%;background:var(--acc);border-radius:3px}
 #toast{position:fixed;bottom:24px;right:24px;background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:11px 18px;font-size:13px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;max-width:300px}
 #toast.show{transform:translateY(0);opacity:1}
-.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;padding:24px}
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;padding:24px;opacity:0;transition:opacity .25s ease}
+.loading-screen.visible{opacity:1}
 #retryBtn{margin-top:8px}
 .spinner{width:40px;height:40px;border:3px solid var(--bor);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -843,11 +844,24 @@ for (var oi = 0; oi < overlays.length; oi++) {
 }
 
 function showLoading(msg) {
-  document.getElementById("loadingScreen").style.display = "flex";
+  var el = document.getElementById("loadingScreen");
+  el.style.display = "flex";
   document.getElementById("loadingMsg").textContent = msg || "Loading...";
+  requestAnimationFrame(function () { el.classList.add("visible"); });
 }
 function hideLoading() {
-  document.getElementById("loadingScreen").style.display = "none";
+  var el = document.getElementById("loadingScreen");
+  el.classList.remove("visible");
+  setTimeout(function () { el.style.display = "none"; }, 250);
+}
+
+// Ensures a screen transition never feels like an instant flash --
+// guarantees `loadingScreen` stays visible at least `minMs` before `fn` runs.
+var _loadingShownAt = 0;
+function withMinLoadingTime(fn, minMs) {
+  var elapsed = Date.now() - _loadingShownAt;
+  var wait = Math.max(0, (minMs || 500) - elapsed);
+  setTimeout(fn, wait);
 }
 
 function dbGet(table, options) {
@@ -950,8 +964,8 @@ function handleAuthSession(session) {
     .then(function (res) {
       if (res.error || !res.data) {
         _pendingAuthUser = authUser;
-        showAccessPending(authUser);
         sb.auth.signOut();
+        withMinLoadingTime(function () { showAccessPending(authUser); }, 700);
         return;
       }
       currentUser = res.data;
@@ -964,14 +978,16 @@ function handleAuthSession(session) {
       logActivity("Login", "Auth", "Signed in via Google as " + email);
       document.getElementById("accessPendingScreen").style.display = "none";
       document.getElementById("loginScreen").style.display = "none";
-      document.getElementById("appRoot").style.display = "block";
-      document.getElementById("syncStatus").style.display = "flex";
 
       // Load roles FIRST so getUserRole() resolves correctly, then the rest of the data
       loadAppData().then(function () {
         applyUserUI();
-        hideLoading();
-        renderDash();
+        withMinLoadingTime(function () {
+          document.getElementById("appRoot").style.display = "block";
+          document.getElementById("syncStatus").style.display = "flex";
+          hideLoading();
+          renderDash();
+        }, 600);
       });
     });
 }
@@ -996,6 +1012,11 @@ function showAccessPending(authUser) {
     "</div>";
 
   screen.style.display = "flex";
+  screen.style.opacity = "0";
+  requestAnimationFrame(function () {
+    screen.style.transition = "opacity .3s ease";
+    screen.style.opacity = "1";
+  });
 }
 
 function copyPendingEmail() {
@@ -3066,6 +3087,8 @@ function bootApp() {
     return;
   }
 
+  _loadingShownAt = Date.now();
+  document.getElementById("loadingScreen").classList.add("visible");
   document.getElementById("loadingMsg").textContent = "Connecting to database...";
 
   withTimeout(sb.from("roles").select("id").limit(1), 8000, "Supabase database response")
