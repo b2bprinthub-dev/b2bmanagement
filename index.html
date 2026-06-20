@@ -919,8 +919,8 @@ function handleAuthSession(session) {
   var authUser = session.user;
   var email = authUser.email;
 
-  // Look up this email in our approved app_users allowlist
-  sb.from("app_users").select("*, roles(*)").eq("email", email).eq("status", "active").maybeSingle()
+  // Look up this email in our approved app_users allowlist (no join needed)
+  sb.from("app_users").select("*").eq("email", email).eq("status", "active").maybeSingle()
     .then(function (res) {
       if (res.error || !res.data) {
         var err = document.getElementById("login-error");
@@ -942,8 +942,10 @@ function handleAuthSession(session) {
       document.getElementById("loginScreen").style.display = "none";
       document.getElementById("appRoot").style.display = "block";
       document.getElementById("syncStatus").style.display = "flex";
-      applyUserUI();
+
+      // Load roles FIRST so getUserRole() resolves correctly, then the rest of the data
       loadAppData().then(function () {
+        applyUserUI();
         hideLoading();
         renderDash();
       });
