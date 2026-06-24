@@ -4170,6 +4170,10 @@ function renderEstimates() {
   }
   tb.innerHTML = html;
 }
+function findInv(id) {
+  for (var i = 0; i < invoices.length; i++) { if (invoices[i].id === id) return invoices[i]; }
+  return null;
+}
 function findEst(id) {
   for (var i = 0; i < estimates.length; i++) { if (estimates[i].id === id) return estimates[i]; }
   return null;
@@ -6791,16 +6795,39 @@ function saveIntakeJob() {
         setTimeout(function(){ openJobDetail(newJob.id); }, 400);
       };
 
-      var price = parseFloat(q.price);
-      if (q.price && !isNaN(price) && price > 0) {
-        var lineItem = [{desc: d.title + ' (' + svc.label + ')', qty: 1, unit: price, total: price}];
-        if (q.output === 'job+estimate') {
-          dbInsert('estimates', {cid:clientId, job_id:newJob.id, status:'draft', items:lineItem, total:price, notes:b.text||''}).then(function(e){ if(e) estimates.push(e); afterJob(); });
-        } else if (q.output === 'job+invoice') {
-          dbInsert('invoices', {cid:clientId, job_id:newJob.id, status:'draft', items:lineItem, total:price, notes:b.text||''}).then(function(iv){ if(iv) invoices.push(iv); afterJob(); });
-        } else {
+      var price = parseFloat(q.price) || 0;
+      var lineItem = [{svc: svc.label||'Other', desc: d.title+' ('+svc.label+')', qty: 1, price: price, tot: price}];
+      var sub = price; var taxAmt = sub * 0.08; var grand = sub + taxAmt;
+
+      if (q.output === 'job+estimate') {
+        var estMeta = {_v:2, scope: b.text||(jobRow.description||''), serviceType:_wiz.service||null, terms:'50-deposit', validity:30};
+        dbInsert('estimates', {
+          cid: clientId, date: today(),
+          description: JSON.stringify(estMeta),
+          items: lineItem, sub: sub, tax: taxAmt, grand: grand,
+          status: 'draft', photos: []
+        }).then(function(e) {
+          if (e) {
+            estimates.push(e);
+            newJob.linked_estimate_id = e.id;
+            dbUpdate('jobs', newJob.id, {linked_estimate_id: e.id});
+          }
           afterJob();
-        }
+        });
+      } else if (q.output === 'job+invoice') {
+        dbInsert('invoices', {
+          cid: clientId, date: today(),
+          items: lineItem, sub: sub, tax: taxAmt, disc: 0, grand: grand,
+          status: 'draft',
+          notes: 'Job: ' + d.title + (b.text ? '\n' + b.text : '')
+        }).then(function(iv) {
+          if (iv) {
+            invoices.push(iv);
+            newJob.linked_invoice_id = iv.id;
+            dbUpdate('jobs', newJob.id, {linked_invoice_id: iv.id});
+          }
+          afterJob();
+        });
       } else {
         afterJob();
       }
@@ -9416,6 +9443,57 @@ function findJob(id) {
 }
 function editJobById(id) { openJobModal(findJob(id)); }
 
+function createDocFromJob(type, jobId) {
+  var j = findJob(jobId);
+  if (!j) return;
+  var svcMap = {
+    'Print / Banners':'print','Large Format Signs':'large-format',
+    'Window Wraps':'window-wrap','Vehicle Wraps':'vehicle-wrap',
+    'Signs & Awnings':'signs','Web Design':'web',
+    'Install':'install','Design Only':'design-only'
+  };
+
+  closeM('jobDetailModal');
+
+  if (type === 'estimate') {
+    openEstModal(null);
+    setTimeout(function() {
+      // Set client
+      var cliEl = document.getElementById('est-cli');
+      if (cliEl && j.cid) cliEl.value = j.cid;
+      // Set scope
+      var scopeEl = document.getElementById('est-scope');
+      if (scopeEl) scopeEl.value = j.description || j.title;
+      // Select service type card
+      var svcId = svcMap[j.type] || null;
+      if (svcId) estSelectService(svcId);
+      // Replace default line item with job-based one
+      document.getElementById('est-li-body').innerHTML = '';
+      addEstLI({svc: j.type||'Other', desc: j.title, qty: 1, price: 0, tot: 0});
+      recalcEst();
+      // Link back to job after save — store job id in notes
+      var notesEl = document.getElementById('est-notes');
+      if (notesEl) notesEl.value = 'From Job #' + j.id + (notesEl.value ? ' — ' + notesEl.value : '');
+    }, 80);
+
+  } else {
+    openInvModal(null);
+    setTimeout(function() {
+      // Set client
+      var cliEl = document.getElementById('inv-cli');
+      if (cliEl && j.cid) cliEl.value = j.cid;
+      // Pre-fill notes
+      var notesEl = document.getElementById('inv-notes');
+      if (notesEl) notesEl.value = 'Job: ' + j.title + (j.description ? '\n' + j.description : '');
+      // Add job line item
+      var tbody = document.getElementById('inv-li-body');
+      if (tbody) tbody.innerHTML = '';
+      if (typeof addLI === 'function') addLI({svc: j.type||'Other', desc: j.title, qty: 1, price: 0});
+      if (typeof recalcInv === 'function') recalcInv();
+    }, 80);
+  }
+}
+
 function togglePayFields() {
   var type = document.getElementById("job-pay-type").value;
   var isFlat = type === "flat";
@@ -10145,6 +10223,43 @@ function openJobDetail(id) {
     if (instName) html += '<div style="font-size:12px;color:var(--t2)">Assigned: <b style="color:var(--t1)">' + instName + '</b></div>';
     if (pay.status !== "paid") html += '<button class="btn btn-ok btn-sm" onclick="markPaymentPaid(' + id + ')">Mark Paid</button>';
     html += '</div></div>';
+  }
+
+  // Linked invoice / estimate
+  var linkedInv = j.linked_invoice_id ? invoices.find(function(i){ return i.id === j.linked_invoice_id; }) : null;
+  var linkedEst = j.linked_estimate_id ? estimates.find(function(e){ return e.id === j.linked_estimate_id; }) : null;
+  if (linkedInv || linkedEst) {
+    html += '<div style="background:var(--bg3);border-radius:10px;padding:12px 14px;margin-bottom:14px">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">📎 Linked Documents</div>';
+    if (linkedEst) {
+      var estMeta = {}; try { var ep=JSON.parse(linkedEst.description||''); if(ep._v) estMeta=ep; } catch(ex){}
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+        '<span style="font-size:13px">📋 Estimate <b style="color:var(--acc)">#EST-'+String(linkedEst.id).padStart(4,'0')+'</b> — '+fmt(linkedEst.grand||0)+'</span>' +
+        '<div style="display:flex;gap:6px">' +
+          '<span class="badge b-'+(linkedEst.status==='approved'?'ok':linkedEst.status==='invoiced'?'inf':'warn')+'">'+linkedEst.status+'</span>' +
+          '<button class="btn btn-o btn-sm" onclick="closeM(\'jobDetailModal\');openEstModal(findEst('+linkedEst.id+'))">Edit</button>' +
+          (linkedEst.status!=='invoiced'?'<button class="btn btn-p btn-sm" onclick="closeM(\'jobDetailModal\');quickConv('+linkedEst.id+')">→ Invoice</button>':'') +
+        '</div></div>';
+    }
+    if (linkedInv) {
+      html += '<div style="display:flex;align-items:center;justify-content:space-between">' +
+        '<span style="font-size:13px">🧾 Invoice <b style="color:var(--acc)">#INV-'+String(linkedInv.id).padStart(4,'0')+'</b> — '+fmt(linkedInv.grand||0)+'</span>' +
+        '<div style="display:flex;gap:6px">' +
+          '<span class="badge b-'+(linkedInv.status==='paid'?'ok':linkedInv.status==='voided'?'err':'warn')+'">'+linkedInv.status+'</span>' +
+          '<button class="btn btn-o btn-sm" onclick="closeM(\'jobDetailModal\');openInvModal(findInv('+linkedInv.id+'))">Edit</button>' +
+        '</div></div>';
+    }
+    html += '</div>';
+  }
+
+  // Action buttons — create docs from job
+  var canCreate = canEditPayment();
+  if (canCreate) {
+    html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
+    if (!linkedEst) html += '<button class="btn btn-o btn-sm" style="color:#a78bfa;border-color:rgba(167,139,250,.4)" onclick="createDocFromJob(\'estimate\','+id+')">📄 Create Estimate</button>';
+    if (!linkedInv) html += '<button class="btn btn-o btn-sm" style="color:#4caf7d;border-color:rgba(76,175,125,.4)" onclick="createDocFromJob(\'invoice\','+id+')">🧾 Create Invoice</button>';
+    if (linkedEst && !linkedInv) html += '<button class="btn btn-p btn-sm" onclick="closeM(\'jobDetailModal\');quickConv('+linkedEst.id+')">🧾 Convert Estimate → Invoice</button>';
+    html += '</div>';
   }
 
   var archiveBtn = (j.status === 'done' || j.status === 'voided')
