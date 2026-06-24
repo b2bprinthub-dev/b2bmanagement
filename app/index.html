@@ -3525,6 +3525,38 @@ function openInvModal(inv) {
   }
   recalcInv();
 
+  // Lock line items if invoice has payments
+  var amtPaid = inv ? getInvAmountPaid(inv.id) : 0;
+  var hasPayments = amtPaid > 0;
+  var liTable = document.querySelector('#invModal .li-table');
+  var addItemBtn = document.querySelector('#invModal .btn-o[onclick="addLI(null)"]');
+  var discInput = document.getElementById('inv-disc');
+  var invCli = document.getElementById('inv-cli');
+  var invDate = document.getElementById('inv-date');
+  var invNotes = document.getElementById('inv-notes');
+
+  // Disable/enable line item editing
+  document.querySelectorAll('#li-body select, #li-body input').forEach(function(el) { el.disabled = hasPayments; });
+  document.querySelectorAll('#li-body button').forEach(function(el) { el.disabled = hasPayments; el.style.opacity = hasPayments ? '.3' : ''; });
+  if (addItemBtn) { addItemBtn.disabled = hasPayments; addItemBtn.style.display = hasPayments ? 'none' : ''; }
+  if (discInput) discInput.disabled = hasPayments;
+  if (invCli) invCli.disabled = hasPayments;
+
+  // Show or remove lock notice
+  var existingNotice = document.getElementById('inv-lock-notice');
+  if (hasPayments) {
+    if (!existingNotice) {
+      var notice = document.createElement('div');
+      notice.id = 'inv-lock-notice';
+      notice.style.cssText = 'background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--warn);margin-bottom:8px;display:flex;align-items:center;gap:6px';
+      notice.innerHTML = '🔒 Line items are locked — this invoice has recorded payments. Void and reissue to make changes.';
+      var liLabel = document.querySelector('#invModal .fl[style*="margin-bottom:8px"]');
+      if (liLabel && liLabel.textContent.trim() === 'Line Items') liLabel.parentNode.insertBefore(notice, liLabel);
+    }
+  } else {
+    if (existingNotice) existingNotice.remove();
+  }
+
   // Payment history panel — only for existing invoices
   var panel = document.getElementById('inv-payment-panel');
   if (inv && inv.id && panel) {
