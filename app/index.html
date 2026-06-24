@@ -221,6 +221,7 @@ textarea.fc{resize:vertical;min-height:70px}
         💬
         <span id="msg-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center"></span>
       </button>
+      <div id="topNewJobBtn" style="display:none"><button class="btn btn-p" onclick="openIntakeWizard()" style="background:var(--acc);white-space:nowrap">+ New Job</button></div>
       <div id="topBtnWrap" style="display:none"><button class="btn btn-p" onclick="topAction()">+ <span id="topBtnLbl">New</span></button></div>
     </div>
   </div>
@@ -2625,6 +2626,8 @@ function gotoPage(p, el) {
   if (btns[p]) { tw.style.display = "block"; document.getElementById("topBtnLbl").textContent = btns[p]; }
   else { tw.style.display = "none"; }
   document.getElementById("heldOrdersBtn").style.display = p === "pos" ? "inline-flex" : "none";
+  var njb = document.getElementById("topNewJobBtn");
+  if (njb) njb.style.display = (canEditPayment() && p !== "jobs") ? "block" : "none";
 
   if (p === "dashboard") renderDash();
   else if (p === "invoices") renderInvoices();
