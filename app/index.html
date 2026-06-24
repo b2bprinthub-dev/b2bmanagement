@@ -4538,11 +4538,29 @@ function doSendApproval() {
         if (estimates[i].id === est.id) { estimates[i] = updated; break; }
       }
     }
-    // Now open mailto
+    // Build email body fresh with the REAL token (not the preview placeholder)
     var baseUrl = getApprovalBaseURL();
     var approvalUrl = baseUrl + '?approve=' + token + '&eid=' + est.id;
+    var estMeta2 = getEstMeta(updated || est);
+    var svcLabel = (estMeta2.serviceType||'Print Service').replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+    var scope    = (estMeta2.scope||'').substring(0,100);
+    var userMsg  = document.getElementById('sapv-msg').value;
+    var body =
+      userMsg + '\n\n' +
+      '- - - - - - - - - - - - - - - -\n' +
+      'ESTIMATE #EST-' + String(est.id).padStart(4,'0') + '\n' +
+      'Service : ' + svcLabel + '\n' +
+      (scope ? 'Scope   : ' + scope + '\n' : '') +
+      'Date    : ' + est.date + '\n' +
+      'TOTAL   : ' + fmt(est.grand) + '\n' +
+      '- - - - - - - - - - - - - - - -\n\n' +
+      'To review and respond to this estimate, open the link below:\n\n' +
+      approvalUrl + '\n\n' +
+      (autoOn ? 'Upon your approval we will send your invoice automatically.\n\n' : '') +
+      'This estimate is valid for ' + (estMeta2.validity||30) + ' days.\n\n' +
+      'Thank you for your business!\n' +
+      (currentUser ? currentUser.name : 'B2B Print Hub Team');
     var subject = encodeURIComponent('Estimate Ready for Your Approval - EST-' + String(est.id).padStart(4,'0'));
-    var body = document.getElementById('sapv-preview').textContent;
     // Do NOT encode the email address — mailto: uses raw address
     var mailto = 'mailto:' + toEmail + '?subject=' + subject + '&body=' + encodeURIComponent(body);
     window.location.href = mailto;
