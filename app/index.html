@@ -95,9 +95,74 @@ textarea.fc{resize:vertical;min-height:70px}
 .perm-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;font-size:12px;cursor:pointer}
 .perm-item input{cursor:pointer;width:15px;height:15px}
 .sync-indicator{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ok)}
+/* Approval notification dropdown */
+.notif-drop{position:absolute;top:calc(100% + 8px);right:0;width:320px;background:var(--bg2);border:1px solid var(--bor);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:500;overflow:hidden}
+.notif-item{padding:12px 14px;border-bottom:1px solid var(--bor);cursor:pointer;transition:background .12s}
+.notif-item:hover{background:var(--bg3)}
+.notif-item:last-child{border-bottom:none}
+/* Approval public page */
+#approvalScreen{display:none;position:fixed;inset:0;background:#0f1117;z-index:9999;overflow-y:auto;padding:24px 16px}
+.apv-card{max-width:540px;margin:0 auto;background:#1a1d2e;border:1px solid #3a3d52;border-radius:16px;overflow:hidden}
+.apv-header{background:#6c63ff;padding:24px;text-align:center;color:#fff}
+.apv-body{padding:24px}
+.apv-btn{width:100%;padding:14px;border-radius:10px;border:none;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px;transition:all .15s}
 </style>
 </head>
 <body>
+
+<!-- ── Public Estimate Approval Page (no login required) ── -->
+<div id="approvalScreen">
+  <div class="apv-card">
+    <div class="apv-header">
+      <div style="font-size:36px;margin-bottom:8px">🖨️</div>
+      <div style="font-size:20px;font-weight:700">B2B Print Hub</div>
+      <div style="font-size:13px;opacity:.8;margin-top:4px">Estimate Approval Request</div>
+    </div>
+    <div class="apv-body" id="apv-body">
+      <div style="text-align:center;padding:40px;color:#9ea3c0">Loading estimate...</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:20px;font-size:12px;color:#6b7099">© B2B Print Hub — Powered by your local print team</div>
+</div>
+
+<!-- ── Send for Approval Dialog ── -->
+<div class="overlay" id="sendApprovalModal">
+<div class="modal" style="max-width:520px">
+  <div class="modal-t"><span>📧 Send Estimate for Approval</span><button class="xbtn" onclick="closeM('sendApprovalModal')">&times;</button></div>
+  <div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:18px" id="sapv-est-summary"></div>
+  <div class="fg">
+    <label class="fl">Customer Email</label>
+    <input class="fc" id="sapv-email" type="email" placeholder="customer@example.com"/>
+  </div>
+  <div class="fg">
+    <label class="fl">Personal Message (optional)</label>
+    <textarea class="fc" id="sapv-msg" rows="3" placeholder="Hi [Name], please review your estimate and let us know if you'd like to proceed..."></textarea>
+  </div>
+  <div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div>
+        <div style="font-size:13px;font-weight:600">Auto-create Invoice on Approval</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">When customer approves, automatically generate invoice</div>
+      </div>
+      <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0">
+        <input type="checkbox" id="sapv-auto" style="opacity:0;width:0;height:0">
+        <span onclick="this.previousElementSibling.click()" style="position:absolute;cursor:pointer;inset:0;background:var(--bor);border-radius:11px;transition:.3s" id="sapv-auto-slider"></span>
+      </label>
+    </div>
+    <div style="font-size:11px;color:var(--warn);padding:8px 10px;background:rgba(245,158,11,.08);border-radius:8px;border-left:3px solid var(--warn)">
+      💡 <strong>Recommended:</strong> Keep OFF for first-time customers or large jobs. Turn ON only for repeat customers with standard orders.
+    </div>
+  </div>
+  <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:18px">
+    <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Email Preview</div>
+    <div id="sapv-preview" style="font-size:12px;color:var(--t2);line-height:1.6;white-space:pre-wrap;font-family:monospace"></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-o" onclick="closeM('sendApprovalModal')">Cancel</button>
+    <button class="btn btn-p" onclick="doSendApproval()">📧 Open in Email App</button>
+  </div>
+</div>
+</div>
 
 <div id="loadingScreen" class="loading-screen">
   <div class="spinner" id="loadingSpinner"></div>
@@ -221,6 +286,13 @@ textarea.fc{resize:vertical;min-height:70px}
         💬
         <span id="msg-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center"></span>
       </button>
+      <div style="position:relative" id="approvalBellWrap">
+        <button onclick="toggleApprovalNotifs()" style="position:relative;background:none;border:1px solid var(--bor);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--t2);font-size:18px;line-height:1;display:flex;align-items:center" title="Estimate Approvals">
+          🔔
+          <span id="approval-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:var(--warn);color:#000;border-radius:10px;font-size:10px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center"></span>
+        </button>
+        <div class="notif-drop" id="approvalNotifDrop" style="display:none"></div>
+      </div>
       <div id="topNewJobBtn" style="display:none"><button class="btn btn-p" onclick="openIntakeWizard()" style="background:var(--acc);white-space:nowrap">+ New Job</button></div>
       <div id="topBtnWrap" style="display:none"><button class="btn btn-p" onclick="topAction()">+ <span id="topBtnLbl">New</span></button></div>
     </div>
@@ -1562,6 +1634,7 @@ textarea.fc{resize:vertical;min-height:70px}
   <!-- Footer Actions -->
   <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid var(--bor)">
     <button class="btn btn-o" onclick="saveEst('draft')">💾 Save Draft</button>
+    <button class="btn btn-o" style="color:var(--inf);border-color:rgba(56,189,248,.4)" onclick="openSendApprovalDialog()">📧 Send for Approval</button>
     <button class="btn btn-o" style="color:#f59e0b;border-color:rgba(245,158,11,.4)" onclick="saveEst('sent')">📤 Mark as Sent</button>
     <button class="btn btn-p" onclick="convEst()">🧾 Convert to Invoice</button>
   </div>
@@ -2394,6 +2467,7 @@ function handleAuthSession(session) {
       // Load roles FIRST so getUserRole() resolves correctly, then the rest of the data
       loadAppData().then(function () {
         applyUserUI();
+        refreshApprovalBell();
         startMessagingRealtime();
         withMinLoadingTime(function () {
           document.getElementById("appRoot").style.display = "block";
@@ -4182,25 +4256,87 @@ function findEst(id) {
 function openEstApproval(id) {
   var e = findEst(id);
   if (!e) return;
-  var client = {name:"Unknown", email:""};
+  var client = {name:'Unknown', email:''};
   for (var c = 0; c < clients.length; c++) { if (clients[c].id === e.cid) { client = clients[c]; break; } }
+  var meta = getEstMeta(e);
+  var hasSent = !!meta.approvalToken;
+  var resp    = meta.approvalResponse;
+  var respMsg = meta.approvalMessage || '';
+  var sentAt  = meta.approvalSentAt  ? new Date(meta.approvalSentAt).toLocaleString()  : null;
+  var respAt  = meta.approvalRespondedAt ? new Date(meta.approvalRespondedAt).toLocaleString() : null;
+
   var html = '<div style="background:var(--bg3);border-radius:10px;padding:16px;margin-bottom:16px">' +
-    '<div style="display:flex;justify-content:space-between;margin-bottom:10px">' +
-    "<div><div style=\"font-size:13px;font-weight:600\">" + client.name + "</div><div style=\"font-size:12px;color:var(--t3)\">" + client.email + "</div></div>" +
-    "<div style=\"text-align:right\"><div style=\"font-size:11px;color:var(--t3)\">#EST-" + String(e.id).padStart(4, "0") + "</div><div style=\"font-size:11px;color:var(--t3)\">" + e.date + "</div></div>" +
-    "</div><div style=\"text-align:right;font-size:15px;font-weight:700;color:var(--acc)\">Total: " + fmt(e.grand) + "</div></div>" +
-    '<div style="font-size:13px;font-weight:600;margin-bottom:10px">Update Status:</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-    '<button class="btn btn-ok" style="justify-content:center;padding:12px" onclick="setEstStatus(' + e.id + ',\'approved\')">Approve</button>' +
-    '<button class="btn btn-o" style="justify-content:center;padding:12px;color:var(--err);border-color:var(--err)" onclick="setEstStatus(' + e.id + ',\'rejected\')">Reject</button>' +
-    "</div>";
-  if (e.status === "approved") {
-    html += '<div style="background:rgba(76,175,125,.1);border:1px solid var(--ok);border-radius:10px;padding:14px">' +
-      '<div style="font-weight:600;color:var(--ok);margin-bottom:8px">Approved - Ready to Invoice</div>' +
-      '<button class="btn btn-p" style="width:100%;justify-content:center;font-size:14px;padding:12px" onclick="closeM(\'estApprovalModal\');quickConv(' + e.id + ')">Convert to Invoice</button></div>';
+    '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+    '<div><div style="font-size:14px;font-weight:700">' + client.name + '</div>' +
+    '<div style="font-size:12px;color:var(--t3)">' + (client.email||'—') + '</div></div>' +
+    '<div style="text-align:right"><div style="font-size:12px;font-weight:600;color:var(--acc)">#EST-' + String(e.id).padStart(4,'0') + '</div>' +
+    '<div style="font-size:11px;color:var(--t3)">' + e.date + '</div></div></div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">' +
+    '<span style="font-size:12px;color:var(--t3)">Total</span>' +
+    '<span style="font-size:17px;font-weight:700;color:var(--acc)">' + fmt(e.grand) + '</span></div></div>';
+
+  // Approval trail
+  if (hasSent) {
+    html += '<div style="margin-bottom:16px">';
+    // Sent event
+    html += '<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">' +
+      '<div style="width:28px;height:28px;border-radius:50%;background:rgba(56,189,248,.15);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📧</div>' +
+      '<div><div style="font-size:13px;font-weight:600;color:var(--inf)">Sent for Approval</div>' +
+      (sentAt ? '<div style="font-size:11px;color:var(--t3)">' + sentAt + '</div>' : '') +
+      (meta.autoInvoice ? '<div style="font-size:11px;color:var(--ok);margin-top:2px">Auto-invoice ON</div>' : '<div style="font-size:11px;color:var(--t3);margin-top:2px">Manual approval mode</div>') +
+      '</div></div>';
+    // Response event
+    if (resp) {
+      var rIcon  = resp==='approved'?'✅':resp==='declined'?'❌':'💬';
+      var rLabel = resp==='approved'?'Customer Approved':resp==='declined'?'Customer Declined':'Customer Has a Question';
+      var rColor = resp==='approved'?'var(--ok)':resp==='declined'?'var(--err)':'var(--warn)';
+      html += '<div style="display:flex;gap:10px;align-items:flex-start">' +
+        '<div style="width:28px;height:28px;border-radius:50%;background:rgba(76,175,125,.12);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">' + rIcon + '</div>' +
+        '<div><div style="font-size:13px;font-weight:600;color:' + rColor + '">' + rLabel + '</div>' +
+        (respAt ? '<div style="font-size:11px;color:var(--t3)">' + respAt + '</div>' : '') +
+        (respMsg ? '<div style="font-size:12px;color:var(--t2);margin-top:4px;background:var(--bg);border-radius:6px;padding:6px 8px">' + respMsg + '</div>' : '') +
+        '</div></div>';
+    } else {
+      html += '<div style="display:flex;gap:10px;align-items:center;padding:10px;background:rgba(245,158,11,.08);border-radius:8px;border-left:3px solid var(--warn)">' +
+        '<span style="font-size:18px">⏳</span>' +
+        '<div style="font-size:13px;color:var(--warn)">Awaiting customer response</div></div>';
+    }
+    html += '</div>';
   }
-  document.getElementById("est-approval-body").innerHTML = html;
-  document.getElementById("estApprovalModal").classList.add("open");
+
+  // Action section
+  if (resp === 'approved' || e.status === 'approved') {
+    html += '<div style="background:rgba(76,175,125,.1);border:1px solid var(--ok);border-radius:10px;padding:14px;margin-bottom:12px">' +
+      '<div style="font-weight:600;color:var(--ok);margin-bottom:10px">✅ Approved — Ready to Invoice</div>' +
+      '<button class="btn btn-p" style="width:100%;justify-content:center;font-size:14px;padding:12px" onclick="closeM(\'estApprovalModal\');quickConv(' + e.id + ')">🧾 Convert to Invoice</button></div>';
+  } else if (resp === 'declined') {
+    html += '<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;color:var(--err)">❌ Customer declined this estimate. Consider revising and resending.</div>';
+    html += '<button class="btn btn-o" style="width:100%;justify-content:center;margin-bottom:8px" onclick="closeM(\'estApprovalModal\');openEstModal(findEst(' + e.id + '))">✏️ Edit & Revise Estimate</button>';
+    html += '<button class="btn btn-o" style="width:100%;justify-content:center;color:var(--inf);border-color:rgba(56,189,248,.4)" onclick="closeM(\'estApprovalModal\');_editEst=findEst('+e.id+');openSendApprovalDialog()">📧 Send Revised Version</button>';
+  } else if (resp === 'question') {
+    html += '<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;color:var(--warn)">💬 Customer has a question — follow up and then record the outcome below.</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">' +
+      '<button class="btn btn-ok btn-sm" style="justify-content:center" onclick="recordEstResponse(' + e.id + ',\'approved\')">✅ They Approved</button>' +
+      '<button class="btn btn-o btn-sm" style="justify-content:center;color:var(--err);border-color:rgba(239,68,68,.4)" onclick="recordEstResponse(' + e.id + ',\'declined\')">❌ They Declined</button>' +
+      '<button class="btn btn-p btn-sm" style="justify-content:center" onclick="closeM(\'estApprovalModal\');quickConv(' + e.id + ')">→ Invoice</button></div>';
+  } else {
+    // Not yet responded — show manual record section + resend
+    html += '<div style="font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">' +
+      (hasSent ? 'Record Customer Response' : 'Manual Status Update') + '</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
+      '<button class="btn btn-ok" style="justify-content:center;padding:11px" onclick="recordEstResponse(' + e.id + ',\'approved\')">✅ Approved</button>' +
+      '<button class="btn btn-o" style="justify-content:center;padding:11px;color:var(--warn);border-color:rgba(245,158,11,.4)" onclick="recordEstResponse(' + e.id + ',\'question\')">💬 Has Question</button>' +
+      '</div>' +
+      '<button class="btn btn-o" style="width:100%;justify-content:center;color:var(--err);border-color:rgba(239,68,68,.4);margin-bottom:10px" onclick="recordEstResponse(' + e.id + ',\'declined\')">❌ Declined</button>';
+    if (hasSent) {
+      html += '<button class="btn btn-o" style="width:100%;justify-content:center;color:var(--inf);border-color:rgba(56,189,248,.4)" onclick="closeM(\'estApprovalModal\');_editEst=findEst('+e.id+');openSendApprovalDialog()">📧 Resend Approval Email</button>';
+    } else {
+      html += '<button class="btn btn-o" style="width:100%;justify-content:center;color:var(--inf);border-color:rgba(56,189,248,.4)" onclick="closeM(\'estApprovalModal\');_editEst=findEst('+e.id+');openSendApprovalDialog()">📧 Send for Approval via Email</button>';
+    }
+  }
+
+  document.getElementById('est-approval-body').innerHTML = html;
+  document.getElementById('estApprovalModal').classList.add('open');
 }
 
 function setEstStatus(id, status) {
@@ -4235,6 +4371,397 @@ function quickConv(id) {
       renderEstimates();
       toast("Invoice #INV-" + String(newInv.id).padStart(4, "0") + " created!");
     });
+  });
+}
+
+// ── Estimate Approval Workflow ───────────────────────────────────
+
+function genApprovalToken() {
+  return Math.random().toString(36).substr(2,9) + Date.now().toString(36);
+}
+
+function getApprovalBaseURL() {
+  // Returns the app's base URL. Works both locally and when deployed.
+  var loc = window.location;
+  return loc.protocol + '//' + loc.host + loc.pathname;
+}
+
+function getEstMeta(est) {
+  try { var m = JSON.parse(est.description); if (m && m._v) return m; } catch(e){}
+  return {};
+}
+
+var _sapvEstId = null;
+
+function openSendApprovalDialog() {
+  // Must save/have an estimate to send
+  if (!_editEst) {
+    // Save as draft first then open dialog
+    saveEst('draft').then(function() {
+      var last = estimates[estimates.length - 1];
+      if (last) { _editEst = last; _openSapv(last.id); }
+    });
+    return;
+  }
+  // Save any pending edits first
+  saveEst(_editEst.status || 'draft').then(function() {
+    _openSapv(_editEst.id);
+  });
+}
+
+function _openSapv(estId) {
+  var est = findEst(estId);
+  if (!est) return;
+  _sapvEstId = estId;
+
+  // Find client
+  var client = null;
+  for (var i = 0; i < clients.length; i++) { if (clients[i].id === est.cid) { client = clients[i]; break; } }
+  var clientName  = client ? (client.name || '') : 'Customer';
+  var clientEmail = client ? (client.email || '') : '';
+
+  var meta = getEstMeta(est);
+  var svcLabel = meta.serviceType ? meta.serviceType.replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}) : 'Print Service';
+
+  // Summary block
+  document.getElementById('sapv-est-summary').innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div><div style="font-weight:700;font-size:14px">' + clientName + '</div>' +
+    '<div style="font-size:11px;color:var(--t3)">EST-' + String(est.id).padStart(4,'0') + ' &nbsp;·&nbsp; ' + svcLabel + '</div></div>' +
+    '<div style="font-size:18px;font-weight:700;color:var(--acc)">' + fmt(est.grand) + '</div></div>';
+
+  document.getElementById('sapv-email').value = clientEmail;
+
+  var defaultMsg = 'Hi ' + clientName + ',\n\nPlease review your estimate for ' + svcLabel + ' and let us know if you\'d like to proceed. We\'re happy to answer any questions!';
+  document.getElementById('sapv-msg').value = defaultMsg;
+
+  // Read saved auto toggle for this estimate
+  var autoOn = meta.autoInvoice || false;
+  document.getElementById('sapv-auto').checked = autoOn;
+  _updateSapvSlider(autoOn);
+
+  document.getElementById('sapv-auto').onchange = function() {
+    _updateSapvSlider(this.checked);
+    _updateSapvPreview();
+  };
+  document.getElementById('sapv-email').oninput = _updateSapvPreview;
+  document.getElementById('sapv-msg').oninput   = _updateSapvPreview;
+
+  _updateSapvPreview();
+  document.getElementById('sendApprovalModal').classList.add('open');
+}
+
+function _updateSapvSlider(on) {
+  var sl = document.getElementById('sapv-auto-slider');
+  if (sl) sl.style.background = on ? 'var(--ok)' : 'var(--bor)';
+}
+
+function _updateSapvPreview() {
+  var est = findEst(_sapvEstId);
+  if (!est) return;
+  var meta = getEstMeta(est);
+  var token = meta.approvalToken || '(token will be generated)';
+  var baseUrl = getApprovalBaseURL();
+  var approvalUrl = baseUrl + '?approve=' + token + '&eid=' + est.id;
+
+  var msg = document.getElementById('sapv-msg').value;
+  var autoOn = document.getElementById('sapv-auto').checked;
+
+  var scope = meta.scope || 'See details below';
+  var svcLabel = meta.serviceType ? meta.serviceType.replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}) : 'Print Service';
+
+  var preview =
+    'Subject: Estimate Ready for Your Approval — EST-' + String(est.id).padStart(4,'0') + '\n\n' +
+    msg + '\n\n' +
+    '──────────────────────\n' +
+    'ESTIMATE #EST-' + String(est.id).padStart(4,'0') + '\n' +
+    'Service: ' + svcLabel + '\n' +
+    'Scope:   ' + scope.substring(0,80) + (scope.length>80?'...':'') + '\n' +
+    'Date:    ' + est.date + '\n' +
+    'TOTAL:   ' + fmt(est.grand) + '\n' +
+    '──────────────────────\n\n' +
+    '👉 Click below to APPROVE, DECLINE, or ask a question:\n' +
+    approvalUrl + '\n\n' +
+    (autoOn ? '✅ Upon your approval, we will automatically send your invoice.\n\n' : '') +
+    'This estimate is valid for ' + (meta.validity||30) + ' days.\n\n' +
+    'Thank you for your business!\n' +
+    (currentUser ? currentUser.name : 'Your B2B Print Hub Team');
+
+  document.getElementById('sapv-preview').textContent = preview;
+}
+
+function doSendApproval() {
+  var est = findEst(_sapvEstId);
+  if (!est) return;
+  var toEmail = document.getElementById('sapv-email').value.trim();
+  if (!toEmail) { toast('Enter customer email', true); return; }
+
+  var autoOn = document.getElementById('sapv-auto').checked;
+  var meta = getEstMeta(est);
+
+  // Generate token if not already set
+  var token = meta.approvalToken || genApprovalToken();
+  meta.approvalToken   = token;
+  meta.approvalSentAt  = new Date().toISOString();
+  meta.autoInvoice     = autoOn;
+  meta.approvalResponse = null;
+  meta.approvalMessage  = null;
+
+  // Save updated meta + mark status as 'sent'
+  var updRow = {description: JSON.stringify(meta), status: 'sent'};
+  dbUpdate('estimates', est.id, updRow).then(function(updated) {
+    if (updated) {
+      for (var i = 0; i < estimates.length; i++) {
+        if (estimates[i].id === est.id) { estimates[i] = updated; break; }
+      }
+    }
+    // Now open mailto
+    var baseUrl = getApprovalBaseURL();
+    var approvalUrl = baseUrl + '?approve=' + token + '&eid=' + est.id;
+    var subject = encodeURIComponent('Estimate Ready for Your Approval — EST-' + String(est.id).padStart(4,'0'));
+    var body = document.getElementById('sapv-preview').textContent;
+    var mailto = 'mailto:' + encodeURIComponent(toEmail) + '?subject=' + subject + '&body=' + encodeURIComponent(body);
+    window.open(mailto, '_blank');
+    closeM('sendApprovalModal');
+    renderEstimates();
+    refreshApprovalBell();
+    toast('Email app opened — estimate marked as Sent');
+    logActivity('Send Estimate for Approval', 'Estimates', '#EST-' + String(est.id).padStart(4,'0') + ' → ' + toEmail);
+  });
+}
+
+// ── Record customer response manually (staff records what customer said) ──
+function recordEstResponse(estId, response) {
+  var est = findEst(estId);
+  if (!est) return;
+  var msg = '';
+  if (response === 'question') {
+    msg = prompt('Enter the customer\'s question or note:') || '';
+    if (!msg && response === 'question') return;
+  } else if (response === 'declined') {
+    msg = prompt('Reason for decline (optional):') || '';
+  }
+  var meta = getEstMeta(est);
+  meta.approvalResponse = response;
+  meta.approvalMessage  = msg;
+  meta.approvalRespondedAt = new Date().toISOString();
+
+  var newStatus = response === 'approved' ? 'approved' : response === 'declined' ? 'rejected' : 'sent';
+  dbUpdate('estimates', estId, {description: JSON.stringify(meta), status: newStatus}).then(function(updated) {
+    if (updated) {
+      for (var i = 0; i < estimates.length; i++) {
+        if (estimates[i].id === estId) { estimates[i] = updated; break; }
+      }
+    }
+    logActivity('Estimate Response Recorded', 'Estimates', '#EST-' + String(estId).padStart(4,'0') + ' → ' + response);
+    renderEstimates();
+    refreshApprovalBell();
+
+    // Auto-invoice if approved and flag is on
+    if (response === 'approved' && meta.autoInvoice) {
+      toast('Approved! Auto-creating invoice...');
+      setTimeout(function() { quickConv(estId); }, 600);
+    } else if (response === 'approved') {
+      toast('✅ Approved! Open the Approval dialog to convert to invoice.');
+      openEstApproval(estId);
+    } else if (response === 'declined') {
+      toast('Estimate marked as declined.');
+      closeM('estApprovalModal');
+    } else {
+      toast('Customer question recorded.');
+      openEstApproval(estId);
+    }
+  });
+}
+
+// ── Notification Bell ────────────────────────────────────────────
+function refreshApprovalBell() {
+  var pending = estimates.filter(function(e) {
+    if (e.status !== 'sent') return false;
+    var meta = getEstMeta(e);
+    return meta.approvalToken && !meta.approvalResponse;
+  });
+  var badge = document.getElementById('approval-badge');
+  if (!badge) return;
+  if (pending.length > 0) {
+    badge.textContent = pending.length;
+    badge.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function toggleApprovalNotifs() {
+  var drop = document.getElementById('approvalNotifDrop');
+  if (!drop) return;
+  if (drop.style.display !== 'none') { drop.style.display = 'none'; return; }
+
+  var pending = estimates.filter(function(e) {
+    if (e.status !== 'sent') return false;
+    var meta = getEstMeta(e);
+    return meta.approvalToken;
+  });
+
+  if (!pending.length) {
+    drop.innerHTML = '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">No estimates sent for approval</div>';
+  } else {
+    var html = '<div style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor)">Pending Approvals</div>';
+    pending.slice().reverse().forEach(function(e) {
+      var meta = getEstMeta(e);
+      var clientName = '—';
+      for (var i = 0; i < clients.length; i++) { if (clients[i].id === e.cid) { clientName = clients[i].name; break; } }
+      var resp = meta.approvalResponse;
+      var icon = resp === 'approved' ? '✅' : resp === 'declined' ? '❌' : resp === 'question' ? '💬' : '⏳';
+      var sentDate = meta.approvalSentAt ? new Date(meta.approvalSentAt).toLocaleDateString() : e.date;
+      html += '<div class="notif-item" onclick="toggleApprovalNotifs();openEstApproval('+e.id+')">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div><div style="font-weight:600;font-size:13px">' + icon + ' ' + clientName + '</div>' +
+        '<div style="font-size:11px;color:var(--t3);margin-top:2px">EST-' + String(e.id).padStart(4,'0') + ' &nbsp;·&nbsp; ' + fmt(e.grand) + '</div>' +
+        (resp ? '<div style="font-size:11px;color:var(--ok);margin-top:2px">' + (resp==='approved'?'Customer approved':'resp==="declined"?Customer declined':'Has a question') + '</div>' : '<div style="font-size:11px;color:var(--warn);margin-top:2px">Awaiting response · sent ' + sentDate + '</div>') +
+        '</div>' +
+        '<button class="btn btn-p btn-sm" onclick="event.stopPropagation();toggleApprovalNotifs();openEstApproval('+e.id+')">View</button>' +
+        '</div></div>';
+    });
+    drop.innerHTML = html;
+  }
+  drop.style.display = 'block';
+  // Close on outside click
+  setTimeout(function() {
+    document.addEventListener('click', function _close(ev) {
+      if (!document.getElementById('approvalBellWrap').contains(ev.target)) {
+        drop.style.display = 'none';
+        document.removeEventListener('click', _close);
+      }
+    });
+  }, 10);
+}
+
+// ── Public Approval Page (URL-based, no login needed) ────────────
+function checkApprovalURL() {
+  var params = new URLSearchParams(window.location.search);
+  var token  = params.get('approve');
+  var eid    = parseInt(params.get('eid') || '0');
+  if (!token || !eid) return false;
+
+  // Show approval screen immediately — no login
+  document.getElementById('approvalScreen').style.display = 'block';
+  document.getElementById('loadingScreen').style.display  = 'none';
+
+  // Query Supabase directly using the anon key (no auth required)
+  // Requires RLS policy: allow anon SELECT on estimates
+  var SUPA_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
+  var SUPA_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '';
+  if (!SUPA_URL) { renderApvError('Configuration error — contact the shop.'); return true; }
+
+  fetch(SUPA_URL + '/rest/v1/estimates?id=eq.' + eid + '&select=*', {
+    headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY}
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(rows) {
+    if (!rows || !rows.length) { renderApvError('Estimate not found. It may have expired or the link is invalid.'); return; }
+    var est = rows[0];
+    var meta = {};
+    try { var m = JSON.parse(est.description); if (m && m._v) meta = m; } catch(e){}
+    if (meta.approvalToken !== token) { renderApvError('This link is invalid or has expired. Please contact the shop for a new link.'); return; }
+    if (meta.approvalResponse) {
+      renderApvAlreadyDone(est, meta);
+    } else {
+      renderApvForm(est, meta, token, eid);
+    }
+  })
+  .catch(function() { renderApvError('Unable to load estimate. Please check your internet connection.'); });
+
+  return true;
+}
+
+function renderApvError(msg) {
+  document.getElementById('apv-body').innerHTML =
+    '<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:16px">❌</div>' +
+    '<div style="font-size:16px;font-weight:600;color:#e8eaf6;margin-bottom:8px">Something went wrong</div>' +
+    '<div style="font-size:13px;color:#9ea3c0">' + msg + '</div></div>';
+}
+
+function renderApvAlreadyDone(est, meta) {
+  var icon = meta.approvalResponse === 'approved' ? '✅' : meta.approvalResponse === 'declined' ? '❌' : '💬';
+  var label = meta.approvalResponse === 'approved' ? 'Approved' : meta.approvalResponse === 'declined' ? 'Declined' : 'Message Sent';
+  document.getElementById('apv-body').innerHTML =
+    '<div style="text-align:center;padding:30px"><div style="font-size:48px;margin-bottom:16px">' + icon + '</div>' +
+    '<div style="font-size:18px;font-weight:700;color:#e8eaf6;margin-bottom:8px">Already ' + label + '</div>' +
+    '<div style="font-size:13px;color:#9ea3c0">We already received your response for this estimate. The team has been notified.</div>' +
+    '<div style="margin-top:20px;font-size:13px;color:#9ea3c0">Questions? Call or text us directly.</div></div>';
+}
+
+function renderApvForm(est, meta, token, eid) {
+  var svcLabel = meta.serviceType ? meta.serviceType.replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}) : 'Print Service';
+  var scope = meta.scope || '—';
+  var items = est.items || [];
+  var itemsHtml = '';
+  items.forEach(function(it) {
+    itemsHtml += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #3a3d52;font-size:13px">' +
+      '<span style="color:#9ea3c0">' + (it.desc||it.svc||'Item') + ' × ' + (it.qty||1) + '</span>' +
+      '<span style="font-weight:600;color:#e8eaf6">$' + ((it.tot||it.price||0).toFixed(2)) + '</span></div>';
+  });
+
+  document.getElementById('apv-body').innerHTML =
+    '<div style="margin-bottom:20px">' +
+    '<div style="font-size:12px;color:#6b7099;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Estimate #EST-' + String(est.id).padStart(4,'0') + ' &nbsp;·&nbsp; ' + est.date + '</div>' +
+    '<div style="font-size:14px;font-weight:600;color:#a78bfa;margin-bottom:10px">' + svcLabel + '</div>' +
+    '<div style="font-size:13px;color:#9ea3c0;margin-bottom:14px">' + scope + '</div>' +
+    (itemsHtml ? '<div style="margin-bottom:14px">' + itemsHtml + '</div>' : '') +
+    '<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:15px;font-weight:700">' +
+    '<span style="color:#e8eaf6">Total</span><span style="color:#6c63ff">$' + (est.grand||0).toFixed(2) + '</span></div></div>' +
+    '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;color:#9ea3c0;margin-bottom:6px">Your name (optional)</label>' +
+    '<input id="apv-name" style="width:100%;padding:10px 12px;border:1px solid #3a3d52;border-radius:8px;background:#222539;color:#e8eaf6;font-size:14px" placeholder="Your name"/></div>' +
+    '<div style="margin-bottom:20px"><label style="display:block;font-size:12px;color:#9ea3c0;margin-bottom:6px">Message (optional)</label>' +
+    '<textarea id="apv-note" rows="3" style="width:100%;padding:10px 12px;border:1px solid #3a3d52;border-radius:8px;background:#222539;color:#e8eaf6;font-size:14px;resize:vertical" placeholder="Any notes, questions, or changes you\'d like..."></textarea></div>' +
+    '<button class="apv-btn" style="background:#4caf7d;color:#fff" onclick="submitApproval(' + eid + ',\'approved\',\'' + token + '\')">✅ Approve this Estimate</button>' +
+    '<button class="apv-btn" style="background:#222539;color:#e8eaf6;border:1px solid #3a3d52" onclick="submitApproval(' + eid + ',\'question\',\'' + token + '\')">💬 I Have a Question</button>' +
+    '<button class="apv-btn" style="background:#222539;color:#ef4444;border:1px solid rgba(239,68,68,.4)" onclick="submitApproval(' + eid + ',\'declined\',\'' + token + '\')">❌ Decline</button>';
+}
+
+function submitApproval(eid, response, token) {
+  var note = (document.getElementById('apv-note')||{}).value || '';
+  var name = (document.getElementById('apv-name')||{}).value || '';
+  if (response === 'question' && !note.trim()) {
+    alert('Please type your question in the message box above.');
+    return;
+  }
+  var SUPA_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
+  var SUPA_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '';
+
+  // First fetch to get current description, then update meta
+  fetch(SUPA_URL + '/rest/v1/estimates?id=eq.' + eid + '&select=description,status', {
+    headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY}
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(rows) {
+    var est = rows && rows[0];
+    var meta = {};
+    try { var m = JSON.parse(est.description); if (m && m._v) meta = m; } catch(e){}
+    meta.approvalResponse    = response;
+    meta.approvalMessage     = (name ? name + ': ' : '') + note;
+    meta.approvalRespondedAt = new Date().toISOString();
+    var newStatus = response === 'approved' ? 'approved' : response === 'declined' ? 'rejected' : 'sent';
+    return fetch(SUPA_URL + '/rest/v1/estimates?id=eq.' + eid, {
+      method: 'PATCH',
+      headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY,
+                'Content-Type': 'application/json', 'Prefer': 'return=minimal'},
+      body: JSON.stringify({description: JSON.stringify(meta), status: newStatus})
+    });
+  })
+  .then(function() {
+    var icon  = response === 'approved' ? '✅' : response === 'declined' ? '❌' : '💬';
+    var label = response === 'approved' ? 'Approved! The team has been notified and will be in touch soon.' :
+                response === 'declined' ? 'Declined. The team has been notified.' :
+                'Message sent! The team will follow up with you shortly.';
+    document.getElementById('apv-body').innerHTML =
+      '<div style="text-align:center;padding:30px"><div style="font-size:56px;margin-bottom:16px">' + icon + '</div>' +
+      '<div style="font-size:18px;font-weight:700;color:#e8eaf6;margin-bottom:10px">Thank you!</div>' +
+      '<div style="font-size:14px;color:#9ea3c0;line-height:1.6">' + label + '</div>' +
+      '<div style="margin-top:20px;font-size:12px;color:#6b7099">You can now close this page.</div></div>';
+  })
+  .catch(function() {
+    alert('Something went wrong submitting your response. Please try again or contact the shop directly.');
   });
 }
 
@@ -13352,6 +13879,8 @@ function bootApp() {
 }
 
 window.addEventListener("DOMContentLoaded", function () {
+  // Check if this is a customer approval link before starting the normal app
+  if (checkApprovalURL()) return;
   bootApp();
 });
 </script>
