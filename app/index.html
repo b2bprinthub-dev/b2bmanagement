@@ -4617,7 +4617,7 @@ function toggleApprovalNotifs() {
         '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
         '<div><div style="font-weight:600;font-size:13px">' + icon + ' ' + clientName + '</div>' +
         '<div style="font-size:11px;color:var(--t3);margin-top:2px">EST-' + String(e.id).padStart(4,'0') + ' &nbsp;·&nbsp; ' + fmt(e.grand) + '</div>' +
-        (resp ? '<div style="font-size:11px;color:var(--ok);margin-top:2px">' + (resp==='approved'?'Customer approved':'resp==="declined"?Customer declined':'Has a question') + '</div>' : '<div style="font-size:11px;color:var(--warn);margin-top:2px">Awaiting response · sent ' + sentDate + '</div>') +
+        (resp ? '<div style="font-size:11px;color:var(--ok);margin-top:2px">' + (resp==='approved'?'Customer approved':resp==='declined'?'Customer declined':'Has a question') + '</div>' : '<div style="font-size:11px;color:var(--warn);margin-top:2px">Awaiting response · sent ' + sentDate + '</div>') +
         '</div>' +
         '<button class="btn btn-p btn-sm" onclick="event.stopPropagation();toggleApprovalNotifs();openEstApproval('+e.id+')">View</button>' +
         '</div></div>';
