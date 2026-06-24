@@ -1571,6 +1571,18 @@ textarea.fc{resize:vertical;min-height:70px}
     <div class="tot-row"><span>Discount -$</span><span><input type="number" id="inv-disc" value="0" min="0" style="width:60px;background:var(--bg3);border:1px solid var(--bor);border-radius:5px;color:var(--t1);padding:2px 6px;font-size:12px" oninput="recalcInv()"/></span></div>
     <div class="tot-row tot-grand"><span>Grand Total</span><span id="inv-grand">$0.00</span></div>
   </div>
+
+  <!-- Payment History Panel (shown when editing an existing invoice) -->
+  <div id="inv-payment-panel" style="display:none;margin-top:14px">
+    <div style="font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Payment History</div>
+    <div id="inv-payment-history" style="margin-bottom:10px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:10px">
+      <div><div style="font-size:11px;color:var(--t3)">Amount Paid</div><div style="font-size:16px;font-weight:700;color:var(--ok)" id="inv-amount-paid">$0.00</div></div>
+      <div><div style="font-size:11px;color:var(--t3)">Balance Due</div><div style="font-size:16px;font-weight:700;color:var(--err)" id="inv-balance-due">$0.00</div></div>
+    </div>
+    <button class="btn btn-ok" style="width:100%;justify-content:center;padding:10px" id="inv-collect-btn" onclick="collectInvPaymentFromModal()">💰 Collect Payment</button>
+  </div>
+
   <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
     <button class="btn btn-o" onclick="saveInv('draft')">Draft</button>
     <button class="btn btn-o" onclick="saveInv('sent')">Sent</button>
@@ -2244,6 +2256,10 @@ textarea.fc{resize:vertical;min-height:70px}
   <div class="modal-t"><span>⚠️ Unconfirmed Transactions</span><button class="xbtn" onclick="closeM('pendingTxnModal')">&times;</button></div>
   <div style="font-size:13px;color:var(--t2);margin-bottom:14px">These transactions were initiated but may not have saved to the database due to a connection issue. Review and retry or dismiss each one.</div>
   <div id="pending-txn-list"></div>
+  <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bor);display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:12px;color:var(--t3)">If these are already recorded in the ledger, clear them.</div>
+    <button class="btn btn-o btn-sm" style="color:var(--err);border-color:rgba(239,68,68,.4)" onclick="clearAllPendingTxns()">🗑 Clear All</button>
+  </div>
 </div>
 </div>
 
@@ -3465,22 +3481,28 @@ function renderInvoices() {
   var html = "";
   for (var i = 0; i < rows.length; i++) {
     var iv = rows[i];
-    var bc = iv.status === "paid" ? "b-ok" : iv.status === "sent" ? "b-inf" : iv.status === "voided" ? "b-err" : "b-gray";
+    var bc = iv.status === "paid" ? "b-ok" : iv.status === "partial" ? "b-warn" : iv.status === "sent" ? "b-inf" : iv.status === "voided" ? "b-err" : "b-gray";
     var svcSet = {};
     var items = iv.items || [];
     var svcList = [];
     for (var s = 0; s < items.length; s++) {
       if (!svcSet[items[s].svc]) { svcSet[items[s].svc] = true; svcList.push(items[s].svc); }
     }
+    var amtPaid   = getInvAmountPaid(iv.id);
+    var balance   = Math.max(0, parseFloat(iv.grand||0) - amtPaid);
+    var balHtml   = (iv.status === 'partial' && balance > 0)
+      ? '<div style="font-size:11px;color:var(--warn);margin-top:2px">Paid: ' + fmt(amtPaid) + ' · Due: <strong>' + fmt(balance) + '</strong></div>'
+      : (iv.status === 'paid' ? '<div style="font-size:11px;color:var(--ok);margin-top:2px">Paid in full</div>' : '');
     html += '<tr><td style="font-weight:600;color:var(--acc)">#INV-' + String(iv.id).padStart(4, "0") + "</td>" +
-      '<td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:28px;height:28px;font-size:10px">' + inits(cName(iv.cid)) + "</div>" + cName(iv.cid) + "</div></td>" +
+      '<td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:28px;height:28px;font-size:10px">' + inits(cName(iv.cid)) + "</div><div>" + cName(iv.cid) + balHtml + "</div></div></td>" +
       '<td style="font-size:12px;color:var(--t3)">' + svcList.join(", ") + "</td>" +
       '<td style="color:var(--t3)">' + iv.date + "</td>" +
       '<td style="font-weight:600">' + fmt(iv.grand) + "</td>" +
       '<td><span class="badge ' + bc + '">' + iv.status + "</span></td>" +
-      '<td><div style="display:flex;gap:5px">' +
+      '<td><div style="display:flex;gap:5px;flex-wrap:wrap">' +
       '<button class="btn btn-o btn-sm" onclick="editInv(' + iv.id + ')">Edit</button>' +
       '<button class="btn btn-p btn-sm" onclick="exportPDF(' + iv.id + ')">PDF</button>' +
+      (iv.status !== 'paid' && iv.status !== 'voided' ? '<button class="btn btn-ok btn-sm" onclick="quickCollectPayment(' + iv.id + ')">💰 Pay</button>' : '') +
       (iv.status !== "voided" ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="voidInv(' + iv.id + ')">Void</button>' : "") +
       "</div></td></tr>";
   }
@@ -3502,7 +3524,86 @@ function openInvModal(inv) {
     addLI(null);
   }
   recalcInv();
+
+  // Payment history panel — only for existing invoices
+  var panel = document.getElementById('inv-payment-panel');
+  if (inv && inv.id && panel) {
+    panel.style.display = '';
+    renderInvPaymentHistory(inv);
+  } else if (panel) {
+    panel.style.display = 'none';
+  }
+
   document.getElementById("invModal").classList.add("open");
+}
+
+function renderInvPaymentHistory(inv) {
+  var paid = getInvAmountPaid(inv.id);
+  var balance = Math.max(0, parseFloat(inv.grand||0) - paid);
+
+  // Payment entries from transactions
+  var invTxns = transactions.filter(function(t) {
+    return t.invoice_id === inv.id && (t.type==='invoice_payment'||t.type==='sale') && t.status==='completed';
+  });
+  // Also check legacy expenses
+  var ref = 'INV-' + String(inv.id).padStart(4,'0');
+  var legacyExp = expenses.filter(function(e) {
+    return e.type==='invoice_payment' && e.reference===ref;
+  });
+
+  var histEl = document.getElementById('inv-payment-history');
+  var paidEl = document.getElementById('inv-amount-paid');
+  var balEl  = document.getElementById('inv-balance-due');
+  var btn    = document.getElementById('inv-collect-btn');
+
+  if (paidEl) paidEl.textContent = fmt(paid);
+  if (balEl)  { balEl.textContent = fmt(balance); balEl.style.color = balance <= 0 ? 'var(--ok)' : 'var(--err)'; }
+  if (btn)    btn.style.display = balance <= 0.01 ? 'none' : '';
+
+  var entries = invTxns.map(function(t) {
+    return {date: (t.created_at||'').substring(0,10), amount: parseFloat(t.amount||0), method: t.method||'', by: t.created_by_name||'', src:'txn'};
+  });
+  legacyExp.forEach(function(e) {
+    // Only add if not already covered by a transaction (avoid double-counting)
+    if (!invTxns.length) entries.push({date: e.date||'', amount: parseFloat(e.amount||0), method: e.method||'', by:'', src:'exp'});
+  });
+
+  if (!histEl) return;
+  if (!entries.length) {
+    histEl.innerHTML = '<div style="font-size:12px;color:var(--t3);padding:8px 0">No payments recorded yet.</div>';
+    return;
+  }
+  histEl.innerHTML = entries.map(function(e) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:rgba(76,175,125,.08);border-radius:8px;margin-bottom:5px">' +
+      '<div><div style="font-size:12px;font-weight:600;color:var(--ok)">💰 ' + fmt(e.amount) + ' — ' + (e.method||'—') + '</div>' +
+      '<div style="font-size:11px;color:var(--t3)">' + e.date + (e.by ? ' · ' + e.by : '') + '</div></div>' +
+      '<span class="badge b-ok">paid</span></div>';
+  }).join('');
+}
+
+function collectInvPaymentFromModal() {
+  if (!_editInv) return;
+  var invId = _editInv.id;
+  closeM('invModal');
+  setTimeout(function() { quickCollectPayment(invId); }, 150);
+}
+
+function quickCollectPayment(invId) {
+  _regSelInvId = invId;
+  openPOSRegister('inv');
+  // Pre-build the panel after modal opens
+  setTimeout(function() { buildRegInvPanel(); }, 100);
+}
+
+function clearAllPendingTxns() {
+  if (!confirm('Clear all unconfirmed transaction records from this device? Only do this if you are sure they were already saved or are duplicates.')) return;
+  try { localStorage.removeItem(PENDING_TXNS_KEY); } catch(e) {}
+  var badge = document.getElementById('pending-txn-badge');
+  if (badge) badge.style.display = 'none';
+  var alert = document.getElementById('pending-txn-alert');
+  if (alert) alert.style.display = 'none';
+  closeM('pendingTxnModal');
+  toast('Cleared unconfirmed transaction log');
 }
 function editInv(id) {
   for (var i = 0; i < invoices.length; i++) {
