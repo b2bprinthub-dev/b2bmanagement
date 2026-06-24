@@ -1416,25 +1416,133 @@ textarea.fc{resize:vertical;min-height:70px}
 </div>
 
 <div class="overlay" id="estModal">
-<div class="modal">
-  <div class="modal-t"><span id="estModalT">New Estimate</span><button class="xbtn" onclick="closeM('estModal')">&times;</button></div>
-  <div class="g2" style="margin-bottom:4px">
-    <div class="fg"><label class="fl">Client</label><select class="fc" id="est-cli"></select></div>
-    <div class="fg"><label class="fl">Date</label><input type="date" class="fc" id="est-date"/></div>
+<div class="modal" style="max-width:900px;width:96vw;max-height:92vh;overflow-y:auto;padding-bottom:24px">
+  <!-- Header -->
+  <div class="modal-t" style="position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--bor);margin:-20px -20px 18px;padding:14px 20px">
+    <span id="estModalT" style="font-size:16px;font-weight:700">New Estimate</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="est-status-pill" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#9ea3c020;color:var(--t3)">DRAFT</span>
+      <button class="xbtn" onclick="closeM('estModal')">&times;</button>
+    </div>
   </div>
-  <div class="fg"><label class="fl">Project Description</label><textarea class="fc" id="est-desc" placeholder="Describe the project..."></textarea></div>
-  <div class="fg"><label class="fl">Site Photos</label><input type="file" accept="image/*" multiple class="fc" onchange="handleEstPhotos(event)"/><div id="est-photo-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px"></div></div>
-  <div class="fl" style="margin-bottom:8px">Line Items</div>
+
+  <!-- Row 1: Client + Date + Validity + Status -->
+  <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:10px;margin-bottom:18px;align-items:end">
+    <div class="fg" style="margin:0">
+      <label class="fl">Client *</label>
+      <select class="fc" id="est-cli"></select>
+    </div>
+    <div class="fg" style="margin:0">
+      <label class="fl">Estimate Date</label>
+      <input type="date" class="fc" id="est-date" style="width:148px"/>
+    </div>
+    <div class="fg" style="margin:0">
+      <label class="fl">Valid (days)</label>
+      <input type="number" class="fc" id="est-validity" value="30" min="1" max="365" style="width:80px"/>
+    </div>
+    <div class="fg" style="margin:0">
+      <label class="fl">Status</label>
+      <select class="fc" id="est-status-sel" onchange="estUpdateStatusPill()" style="width:130px">
+        <option value="draft">Draft</option>
+        <option value="sent">Sent to Client</option>
+        <option value="approved">Approved</option>
+        <option value="declined">Declined</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Service Type Cards -->
+  <div style="margin-bottom:16px">
+    <div class="fl" style="margin-bottom:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2)">Service Type</div>
+    <div id="est-service-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px"></div>
+  </div>
+
+  <!-- Dynamic Specs Panel -->
+  <div id="est-specs-panel" style="margin-bottom:16px"></div>
+
+  <!-- Scope of Work -->
+  <div class="fg" style="margin-bottom:14px">
+    <label class="fl">Scope of Work <span style="font-size:10px;font-weight:400;color:var(--t3)">(shown on estimate/invoice)</span></label>
+    <textarea class="fc" id="est-scope" placeholder="Describe deliverables, what's included, and any specific project requirements..." style="min-height:72px"></textarea>
+  </div>
+
+  <!-- Reference Photos -->
+  <div class="fg" style="margin-bottom:14px">
+    <label class="fl">Reference / Site Photos</label>
+    <input type="file" accept="image/*" multiple class="fc" onchange="handleEstPhotos(event)"/>
+    <div id="est-photo-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:8px"></div>
+  </div>
+
+  <!-- Line Items -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <div class="fl" style="margin:0">Line Items</div>
+    <button class="btn btn-o btn-sm" id="est-autoseed-btn" onclick="estAutoSeedItems()" style="display:none;font-size:11px">⚡ Auto-generate from Specs</button>
+  </div>
   <table class="li-table"><thead><tr><th>Service</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th><th></th></tr></thead><tbody id="est-li-body"></tbody></table>
-  <button class="btn btn-o btn-sm" onclick="addEstLI(null)">+ Add Item</button>
-  <div class="tot-box">
-    <div class="tot-row"><span>Subtotal</span><span id="est-sub">$0.00</span></div>
-    <div class="tot-row"><span>Tax (8%)</span><span id="est-tax">$0.00</span></div>
-    <div class="tot-row tot-grand"><span>Estimate Total</span><span id="est-grand">$0.00</span></div>
+  <button class="btn btn-o btn-sm" onclick="addEstLI(null)" style="margin-top:6px">+ Add Item</button>
+
+  <!-- Financials + Terms -->
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;margin-top:18px;align-items:start">
+    <!-- Left: Terms / Notes -->
+    <div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="fg" style="margin:0">
+          <label class="fl">Payment Terms</label>
+          <select class="fc" id="est-terms">
+            <option value="50-deposit">50% Deposit Required</option>
+            <option value="net30">Net 30</option>
+            <option value="net15">Net 15</option>
+            <option value="due-on-delivery">Due on Delivery</option>
+            <option value="due-on-receipt">Due on Receipt</option>
+            <option value="custom">Custom (see scope)</option>
+          </select>
+        </div>
+        <div class="fg" style="margin:0;display:flex;flex-direction:column;justify-content:flex-end">
+          <label class="fl" style="margin-bottom:4px">Rush Job</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:6px 0">
+            <input type="checkbox" id="est-rush" onchange="recalcEst()"/>
+            <span style="color:var(--t2)">+20% rush surcharge</span>
+          </label>
+        </div>
+      </div>
+      <div class="fg" style="margin:0">
+        <label class="fl">Internal Notes <span style="font-size:10px;font-weight:400;color:var(--t3)">(not shown to client)</span></label>
+        <textarea class="fc" id="est-notes" placeholder="Cost breakdowns, supplier info, internal reminders..." style="min-height:64px"></textarea>
+      </div>
+    </div>
+    <!-- Right: Totals Box -->
+    <div class="tot-box" style="margin-top:0">
+      <div class="tot-row"><span>Subtotal</span><span id="est-sub">$0.00</span></div>
+      <div class="tot-row" style="align-items:center;gap:8px">
+        <span>Discount</span>
+        <div style="display:flex;align-items:center;gap:5px;margin-left:auto">
+          <input type="number" id="est-disc-val" value="0" min="0" step="0.01" style="width:64px;border:1px solid var(--bor);border-radius:6px;padding:3px 6px;background:var(--bg3);color:var(--t1);font-size:12px;text-align:right" oninput="recalcEst()"/>
+          <select id="est-disc-type" style="border:1px solid var(--bor);border-radius:6px;padding:3px 5px;background:var(--bg3);color:var(--t1);font-size:12px" onchange="recalcEst()">
+            <option value="pct">%</option>
+            <option value="flat">$</option>
+          </select>
+        </div>
+      </div>
+      <div class="tot-row" id="est-disc-row" style="display:none"><span style="color:var(--ok)">Discount Applied</span><span id="est-disc-amt" style="color:var(--ok)">-$0.00</span></div>
+      <div class="tot-row" id="est-rush-row" style="display:none"><span style="color:#f59e0b">Rush Surcharge (20%)</span><span id="est-rush-amt" style="color:#f59e0b">$0.00</span></div>
+      <div class="tot-row" style="align-items:center">
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="est-tax-on" checked onchange="recalcEst()"/>
+          <span>Tax</span>
+          <input type="number" id="est-tax-rate" value="8" min="0" max="30" step="0.1" style="width:44px;border:1px solid var(--bor);border-radius:6px;padding:3px 5px;background:var(--bg3);color:var(--t1);font-size:12px" oninput="recalcEst()"/>
+          <span style="font-size:11px;color:var(--t3)">%</span>
+        </div>
+        <span id="est-tax">$0.00</span>
+      </div>
+      <div class="tot-row tot-grand"><span>Estimate Total</span><span id="est-grand">$0.00</span></div>
+    </div>
   </div>
-  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
-    <button class="btn btn-o" onclick="saveEst()">Save</button>
-    <button class="btn btn-p" onclick="convEst()">Convert to Invoice</button>
+
+  <!-- Footer Actions -->
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid var(--bor)">
+    <button class="btn btn-o" onclick="saveEst('draft')">💾 Save Draft</button>
+    <button class="btn btn-o" style="color:#f59e0b;border-color:rgba(245,158,11,.4)" onclick="saveEst('sent')">📤 Mark as Sent</button>
+    <button class="btn btn-p" onclick="convEst()">🧾 Convert to Invoice</button>
   </div>
 </div>
 </div>
@@ -3370,128 +3478,604 @@ function exportEstPDF(id) {
   if (!e) { toast("Estimate not found", true); return; }
   var client = {name:"Unknown",address:"",phone:"",email:""};
   for (var c = 0; c < clients.length; c++) { if (clients[c].id === e.cid) { client = clients[c]; break; } }
-  var html = buildPDFHtml("ESTIMATE", "#EST-" + String(e.id).padStart(4, "0"), e.date, client, e.items || [], e.sub, e.tax, 0, e.grand, e.description, true);
+  // Extract human-readable scope from new JSON meta or fall back to plain description
+  var notes = e.description || '';
+  try { var m=JSON.parse(e.description); if(m._v) notes=m.scope||''; } catch(ex){}
+  var html = buildPDFHtml("ESTIMATE", "#EST-" + String(e.id).padStart(4, "0"), e.date, client, e.items || [], e.sub, e.tax, 0, e.grand, notes, true);
   openPrintWin(html);
   logActivity("Export PDF", "Estimates", "#EST-" + String(id).padStart(4, "0"));
   toast("Estimate PDF opened!");
 }
 
+/* ================================================================
+   ESTIMATE MODAL — Enhanced v2
+   Custom options stored in localStorage under EST_OPTS_KEY
+   Structured data packed into description as JSON {_v:2,...}
+   ================================================================ */
+
+var EST_OPTS_KEY = 'b2b_est_custom_opts';
+var _estService  = null;  // currently selected service id
+var _estSpecs    = {};    // current spec values
+
+// ── Custom Options Store ─────────────────────────────────────────
+function estGetCustomOpts() {
+  try { return JSON.parse(localStorage.getItem(EST_OPTS_KEY) || '{}'); } catch(e) { return {}; }
+}
+function estGetOptions(cat, defaults) {
+  var c = estGetCustomOpts();
+  var out = (defaults || []).slice();
+  (c[cat] || []).forEach(function(v){ if (out.indexOf(v) === -1) out.push(v); });
+  return out;
+}
+function estAddCustomOpt(cat, defaults, onDone) {
+  var v = prompt('Add new option to "' + cat + '":');
+  if (!v || !v.trim()) return;
+  v = v.trim();
+  var all = estGetCustomOpts();
+  if (!all[cat]) all[cat] = [];
+  if (all[cat].indexOf(v) === -1) all[cat].push(v);
+  localStorage.setItem(EST_OPTS_KEY, JSON.stringify(all));
+  if (onDone) onDone(v);
+}
+function estBuildSelect(id, cat, defaults, curVal, extraStyle) {
+  var opts = estGetOptions(cat, defaults);
+  if (curVal && opts.indexOf(curVal) === -1) opts.push(curVal);
+  var html = opts.map(function(o){
+    return '<option value="'+o+'"'+(o===curVal?' selected':'')+'>'+o+'</option>';
+  }).join('');
+  html += '<option value="__add__" style="color:var(--acc);font-weight:700">+ Add new…</option>';
+  return '<select class="fc" id="'+id+'" data-cat="'+cat+'" data-prev="'+(curVal||opts[0]||'')+'" onchange="estSelChange(this)" style="font-size:13px'+(extraStyle?';'+extraStyle:'')+'">' + html + '</select>';
+}
+function estSelChange(sel) {
+  if (sel.value !== '__add__') { sel.dataset.prev = sel.value; recalcEst(); return; }
+  var prev = sel.dataset.prev || '';
+  var cat  = sel.dataset.cat  || '';
+  var id   = sel.id;
+  var defs = []; // rebuild the same defaults based on cat — just re-render panel
+  sel.value = prev;
+  estAddCustomOpt(cat, defs, function(newVal) {
+    // Re-render specs panel so the new option appears everywhere
+    var savedSpecs = estGetSpecs();
+    savedSpecs[id.replace('esp-','')] = newVal;
+    _estSpecs = savedSpecs;
+    estRenderSpecsPanel();
+  });
+}
+
+// ── Status Pill ──────────────────────────────────────────────────
+function estUpdateStatusPill() {
+  var sel = document.getElementById('est-status-sel');
+  var pill = document.getElementById('est-status-pill');
+  if (!sel || !pill) return;
+  var v = sel.value;
+  var map = {draft:['DRAFT','#9ea3c0'],sent:['SENT','#38bdf8'],approved:['APPROVED','#4caf7d'],declined:['DECLINED','#ef4444']};
+  var info = map[v] || ['DRAFT','#9ea3c0'];
+  pill.textContent = info[0];
+  pill.style.background = info[1]+'22';
+  pill.style.color = info[1];
+}
+
+// ── Service Type Cards ───────────────────────────────────────────
+var EST_SERVICES = [
+  {id:'print',        label:'Print / Banners',    icon:'🖨️'},
+  {id:'vehicle-wrap', label:'Vehicle Wrap',        icon:'🚗'},
+  {id:'large-format', label:'Large Format Signs',  icon:'🪧'},
+  {id:'window-wrap',  label:'Window Wrap',         icon:'🪟'},
+  {id:'signs',        label:'Signs & Awnings',     icon:'🏪'},
+  {id:'web',          label:'Web Design',          icon:'💻'},
+  {id:'install',      label:'Installation',        icon:'🔧'},
+  {id:'design-only',  label:'Design Only',         icon:'🎨'},
+  {id:'other',        label:'Other',               icon:'📦'},
+];
+function estRenderServiceCards() {
+  var el = document.getElementById('est-service-cards');
+  if (!el) return;
+  el.innerHTML = EST_SERVICES.map(function(s){
+    var on = _estService === s.id;
+    return '<div onclick="estSelectService(\''+s.id+'\')" style="cursor:pointer;border:2px solid '+(on?'var(--acc)':'var(--bor)')+';border-radius:12px;padding:10px 6px;text-align:center;background:'+(on?'rgba(108,99,255,.1)':'var(--bg2)')+';transition:.15s;user-select:none">' +
+      '<div style="font-size:22px;margin-bottom:4px">'+s.icon+'</div>' +
+      '<div style="font-size:10px;font-weight:700;color:'+(on?'var(--acc)':'var(--t2)')+'">'+s.label+'</div>' +
+    '</div>';
+  }).join('');
+}
+function estSelectService(id) {
+  _estService = id;
+  _estSpecs   = {};
+  estRenderServiceCards();
+  estRenderSpecsPanel();
+  var btn = document.getElementById('est-autoseed-btn');
+  if (btn) btn.style.display = (id && id !== 'other') ? '' : 'none';
+}
+
+// ── Specs Panel ──────────────────────────────────────────────────
+function estFld(label, inputHtml) {
+  return '<div class="fg" style="margin:0"><label class="fl" style="font-size:11px;color:var(--t2)">'+label+'</label>'+inputHtml+'</div>';
+}
+function estChk(id, label, checked) {
+  return '<label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;color:var(--t2)">' +
+    '<input type="checkbox" id="'+id+'"'+(checked?' checked':'')+' onchange="recalcEst()"/> '+label+'</label>';
+}
+function estRenderSpecsPanel() {
+  var el = document.getElementById('est-specs-panel');
+  if (!el) return;
+  if (!_estService) { el.innerHTML = ''; return; }
+  var s = _estSpecs;
+  var html = '<div style="background:var(--bg2);border:1px solid var(--bor);border-radius:12px;padding:14px">' +
+    '<div style="font-size:11px;font-weight:700;color:var(--acc);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">📐 Job Specifications</div>';
+
+  if (_estService === 'print') {
+    var MAT_P = ['13oz Vinyl Banner','18oz Vinyl Banner','Mesh Vinyl Banner','20oz Blockout Banner','Paper Poster (80lb)','Canvas Print','Coroplast 4mm','Foam Board 3/8"','Backlit Film','Satin Photo Paper'];
+    var FIN_P = ['Matte','Gloss','Laminated — Matte','Laminated — Gloss','UV Coated','Aqueous Coated','None'];
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:10px">';
+    html += estFld('Width (inches)', '<input type="number" class="fc" id="esp-width" min="1" placeholder="36" style="font-size:13px" oninput="estCalcSqFt()" value="'+(s.width||'')+'"/>');
+    html += estFld('Height (inches)', '<input type="number" class="fc" id="esp-height" min="1" placeholder="48" style="font-size:13px" oninput="estCalcSqFt()" value="'+(s.height||'')+'"/>');
+    html += estFld('Quantity', '<input type="number" class="fc" id="esp-qty" min="1" value="'+(s.qty||1)+'" style="font-size:13px" oninput="estCalcSqFt()"/>');
+    html += estFld('Sq Ft (auto)', '<input type="number" class="fc" id="esp-sqft" placeholder="auto-calc" readonly style="font-size:13px;background:var(--bg3);color:var(--t3)" value="'+(s.sqft||'')+'"/>');
+    html += estFld('Material', estBuildSelect('esp-material','print_materials',MAT_P,s.material));
+    html += estFld('Finish', estBuildSelect('esp-finish','print_finishes',FIN_P,s.finish));
+    html += '</div>';
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    html += estChk('esp-doublesided','Double-sided (+50%)',s.doublesided);
+    html += estChk('esp-hemmed','Hemmed & Grommeted',s.hemmed);
+    html += estChk('esp-poles','Pole Pockets',s.poles);
+    html += estChk('esp-outdoor','Outdoor / UV Resistant',s.outdoor);
+    html += '</div>';
+    html += '<div id="esp-sqft-note" style="margin-top:8px;font-size:11px;color:var(--t3)">'+(s.sqft?'📐 Total: '+s.sqft+' sq ft':'')+'</div>';
+
+  } else if (_estService === 'vehicle-wrap') {
+    var VEH = ['Sedan','SUV / Crossover','Pickup Truck','Full-Size Van','Cargo Van','Box Truck','Semi Truck','Trailer','Motorcycle','Golf Cart'];
+    var COV = ['Full Wrap (100%)','Partial Wrap (50–75%)','Partial Wrap (25–50%)','Hood Only','Roof Only','Hood + Roof','Rear Only','Two Doors','Decals / Spot Graphics'];
+    var MAT_V = ['3M 1080 Cast Vinyl','Avery Dennison SW900','Arlon 3000LX','Hexis Bodyfence','KPMF K75400','Oracal 970RA','Custom/Other'];
+    var LAM   = ['3M Gloss Overlaminate','3M Matte Overlaminate','Avery Gloss Overlaminate','Avery Matte Overlaminate','No Overlaminate'];
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:10px">';
+    html += estFld('Vehicle Type', estBuildSelect('esp-vehicle-type','vehicle_types',VEH,s['vehicle-type']));
+    html += estFld('Coverage / Scope', estBuildSelect('esp-coverage','wrap_coverage',COV,s.coverage));
+    html += estFld('Est. Sq Ft', '<input type="number" class="fc" id="esp-sqft" min="1" placeholder="e.g. 300" style="font-size:13px" oninput="recalcEst()" value="'+(s.sqft||'')+'"/>');
+    html += estFld('Wrap Material', estBuildSelect('esp-material','wrap_materials',MAT_V,s.material));
+    html += estFld('Overlaminate', estBuildSelect('esp-laminate','wrap_laminates',LAM,s.laminate));
+    html += estFld('Color / Finish', '<input type="text" class="fc" id="esp-color" placeholder="e.g. Gloss Black" style="font-size:13px" value="'+(s.color||'')+'"/>');
+    html += '</div>';
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    html += estChk('esp-design-incl','Design Included',s['design-incl']);
+    html += estChk('esp-removal-incl','Old Wrap Removal',s['removal-incl']);
+    html += estChk('esp-warranty','5-Year Warranty',s.warranty);
+    html += '</div>';
+
+  } else if (_estService === 'large-format') {
+    var SUB = ['Aluminum Composite (ACM)','Aluminum Sheet','Corrugated Plastic (Coroplast)','Dibond','Foam Board PVC','Acrylic / Plexiglass','MDO Plywood','Sintra PVC Board','Gatorboard'];
+    var MNT = ['Standoffs (Brushed)','Wall Adhesive','French Cleat','Z-Bar / Snap Frame','Pole Mount','Stake / H-Frame','Hanging Kit','Free-Standing Base'];
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:10px">';
+    html += estFld('Width (inches)', '<input type="number" class="fc" id="esp-width" min="1" placeholder="48" style="font-size:13px" oninput="estCalcSqFt()" value="'+(s.width||'')+'"/>');
+    html += estFld('Height (inches)', '<input type="number" class="fc" id="esp-height" min="1" placeholder="96" style="font-size:13px" oninput="estCalcSqFt()" value="'+(s.height||'')+'"/>');
+    html += estFld('Quantity', '<input type="number" class="fc" id="esp-qty" min="1" value="'+(s.qty||1)+'" style="font-size:13px" oninput="estCalcSqFt()"/>');
+    html += estFld('Sq Ft (auto)', '<input type="number" class="fc" id="esp-sqft" readonly style="font-size:13px;background:var(--bg3);color:var(--t3)" value="'+(s.sqft||'')+'"/>');
+    html += estFld('Substrate', estBuildSelect('esp-substrate','lf_substrates',SUB,s.substrate));
+    html += estFld('Mounting Method', estBuildSelect('esp-mounting','lf_mounting',MNT,s.mounting));
+    html += '</div>';
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    html += estChk('esp-illuminated','Illuminated / Backlit',s.illuminated);
+    html += estChk('esp-outdoor','Outdoor Rated',s.outdoor);
+    html += estChk('esp-design-incl','Design Included',s['design-incl']);
+    html += estChk('esp-install-incl','Installation Included',s['install-incl']);
+    html += '</div>';
+    html += '<div id="esp-sqft-note" style="margin-top:8px;font-size:11px;color:var(--t3)">'+(s.sqft?'📐 Total: '+s.sqft+' sq ft':'')+'</div>';
+
+  } else if (_estService === 'window-wrap') {
+    var MAT_W = ['Perforated Vinyl (60/40)','Perforated Vinyl (50/50)','Clear Vinyl — Gloss','Frosted / Etched Vinyl','White Opaque Vinyl','One-Way Vision Film','Blackout Film'];
+    var FIN_W = ['Matte','Gloss','Satin','Frosted'];
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:10px">';
+    html += estFld('Width (inches)', '<input type="number" class="fc" id="esp-width" min="1" style="font-size:13px" oninput="estCalcSqFt()" value="'+(s.width||'')+'"/>');
+    html += estFld('Height (inches)', '<input type="number" class="fc" id="esp-height" min="1" style="font-size:13px" oninput="estCalcSqFt()" value="'+(s.height||'')+'"/>');
+    html += estFld('Qty (panels)', '<input type="number" class="fc" id="esp-qty" min="1" value="'+(s.qty||1)+'" style="font-size:13px" oninput="estCalcSqFt()"/>');
+    html += estFld('Sq Ft (auto)', '<input type="number" class="fc" id="esp-sqft" readonly style="font-size:13px;background:var(--bg3);color:var(--t3)" value="'+(s.sqft||'')+'"/>');
+    html += estFld('Material', estBuildSelect('esp-material','window_materials',MAT_W,s.material));
+    html += estFld('Finish', estBuildSelect('esp-finish','window_finishes',FIN_W,s.finish));
+    html += '</div>';
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    html += estChk('esp-outside','Outside-facing Application',s.outside);
+    html += estChk('esp-design-incl','Design Included',s['design-incl']);
+    html += estChk('esp-install-incl','Installation Included',s['install-incl']);
+    html += '</div>';
+    html += '<div id="esp-sqft-note" style="margin-top:8px;font-size:11px;color:var(--t3)">'+(s.sqft?'📐 Total: '+s.sqft+' sq ft':'')+'</div>';
+
+  } else if (_estService === 'signs') {
+    var SGN = ['Channel Letters (Illuminated)','Channel Letters (Non-illuminated)','Cabinet Sign (Light Box)','Monument Sign','Pylon Sign','Awning (Flat)','Awning (Dome / Barrel)','ADA Sign','Blade Sign','Directional Sign','Post & Panel','A-Frame','Yard Sign'];
+    var SUB_S = ['Aluminum Composite (ACM)','Aluminum Sheet','Acrylic','PVC Board','Stainless Steel','Galvanized Steel','Brass','Neon Tube','LED Module'];
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px;margin-bottom:10px">';
+    html += estFld('Sign Type', estBuildSelect('esp-sign-type','sign_types',SGN,s['sign-type']));
+    html += estFld('Width (inches)', '<input type="number" class="fc" id="esp-width" min="1" style="font-size:13px" oninput="estCalcSqFt()" value="'+(s.width||'')+'"/>');
+    html += estFld('Height (inches)', '<input type="number" class="fc" id="esp-height" min="1" style="font-size:13px" oninput="estCalcSqFt()" value="'+(s.height||'')+'"/>');
+    html += estFld('Quantity', '<input type="number" class="fc" id="esp-qty" min="1" value="'+(s.qty||1)+'" style="font-size:13px" oninput="estCalcSqFt()"/>');
+    html += estFld('Primary Material', estBuildSelect('esp-substrate','sign_materials',SUB_S,s.substrate));
+    html += estFld('Color / Finish Notes', '<input type="text" class="fc" id="esp-color" placeholder="e.g. Red acrylic, brushed" style="font-size:13px" value="'+(s.color||'')+'"/>');
+    html += '</div>';
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    html += estChk('esp-illuminated','Illuminated',s.illuminated);
+    html += estChk('esp-outdoor','Outdoor Rated',s.outdoor);
+    html += estChk('esp-design-incl','Design Included',s['design-incl']);
+    html += estChk('esp-permit-incl','Permit / Engineering',s['permit-incl']);
+    html += estChk('esp-install-incl','Installation Included',s['install-incl']);
+    html += '</div>';
+
+  } else if (_estService === 'web') {
+    var CMS  = ['WordPress','Webflow','Shopify','Squarespace','Wix','Custom (React)','Custom (HTML/CSS)','Next.js','Other'];
+    var HOST = ['Hosting Included (1yr)','Client Manages Hosting','WP Engine Managed','Cloudflare Pages','Vercel','No Hosting'];
+    var MAINT= ['Monthly Maintenance Plan','Quarterly Check-In','One-Time Launch Only','Client Manages'];
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:10px">';
+    html += estFld('No. of Pages', '<input type="number" class="fc" id="esp-pages" min="1" value="'+(s.pages||5)+'" style="font-size:13px"/>');
+    html += estFld('CMS / Platform', estBuildSelect('esp-cms','web_cms',CMS,s.cms));
+    html += estFld('Hosting', estBuildSelect('esp-hosting','web_hosting',HOST,s.hosting));
+    html += estFld('Maintenance', estBuildSelect('esp-maintenance','web_maintenance',MAINT,s.maintenance));
+    html += '</div>';
+    html += '<div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:6px">Features Included:</div>';
+    html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
+    var feats = ['E-Commerce','Contact Forms','Booking / Scheduling','SEO Package','Blog / News','Gallery / Portfolio','Google Analytics','Social Media Integration','Live Chat Widget','Multi-language'];
+    feats.forEach(function(f){
+      var key = 'feat-'+f.toLowerCase().replace(/[^a-z]/g,'-');
+      html += estChk('esp-'+key, f, s['esp-'+key]||s[key]);
+    });
+    html += '</div>';
+    html += '<div style="margin-top:10px">' + estFld('Custom Features / Notes', '<input type="text" class="fc" id="esp-custom-features" placeholder="Any extra functionality…" style="font-size:13px" value="'+(s['custom-features']||'')+'"/>') + '</div>';
+
+  } else if (_estService === 'install') {
+    var EQUIP = ['No Equipment Needed','Scissor Lift','Boom Lift (40ft)','Boom Lift (60ft)','Scaffolding','Bucket Truck','Ladder Only'];
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:10px">';
+    html += estFld('No. of Units', '<input type="number" class="fc" id="esp-units" min="1" value="'+(s.units||1)+'" style="font-size:13px"/>');
+    html += estFld('Est. Install Hours', '<input type="number" class="fc" id="esp-install-hours" min="0.5" step="0.5" value="'+(s['install-hours']||2)+'" style="font-size:13px"/>');
+    html += estFld('No. of Installers', '<input type="number" class="fc" id="esp-installers" min="1" value="'+(s.installers||2)+'" style="font-size:13px"/>');
+    html += estFld('Travel Distance (mi)', '<input type="number" class="fc" id="esp-travel-mi" min="0" value="'+(s['travel-mi']||0)+'" style="font-size:13px"/>');
+    html += estFld('Equipment Needed', estBuildSelect('esp-equipment','install_equipment',EQUIP,s.equipment));
+    html += estFld('Job Site Notes', '<input type="text" class="fc" id="esp-site-notes" placeholder="Floor, wall type, access…" style="font-size:13px" value="'+(s['site-notes']||'')+'"/>');
+    html += '</div>';
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    html += estChk('esp-overnight','Overnight Stay Required',s.overnight);
+    html += estChk('esp-permit-incl','Permit Required',s['permit-incl']);
+    html += estChk('esp-site-survey','Site Survey Included',s['site-survey']);
+    html += '</div>';
+
+  } else if (_estService === 'design-only') {
+    var DSVC = ['Logo Design','Flyer / Brochure','Business Card','Signage Artwork','Vehicle Wrap Design','Social Media Graphics','Presentation / Deck','T-Shirt / Apparel','Menu Design','Custom Illustration'];
+    var DFMT = ['AI (Adobe Illustrator)','PDF Print-Ready','EPS','PNG + SVG','PSD (Photoshop)','Figma File','All Formats'];
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px;margin-bottom:10px">';
+    html += estFld('Design Service', estBuildSelect('esp-design-type','design_types',DSVC,s['design-type']));
+    html += estFld('Deliverable Format', estBuildSelect('esp-format','design_formats',DFMT,s.format));
+    html += estFld('No. of Concepts', '<input type="number" class="fc" id="esp-concepts" min="1" value="'+(s.concepts||2)+'" style="font-size:13px"/>');
+    html += estFld('Revision Rounds', '<input type="number" class="fc" id="esp-revisions" min="0" value="'+(s.revisions||2)+'" style="font-size:13px"/>');
+    html += estFld('Turnaround (days)', '<input type="number" class="fc" id="esp-turnaround" min="1" value="'+(s.turnaround||5)+'" style="font-size:13px"/>');
+    html += estFld('Size / Dimensions', '<input type="text" class="fc" id="esp-size-note" placeholder="e.g. 11×17, A4, 1080×1080" style="font-size:13px" value="'+(s['size-note']||'')+'"/>');
+    html += '</div>';
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    html += estChk('esp-rush','Rush Delivery',s.rush);
+    html += estChk('esp-source-files','Source Files Included',s['source-files']);
+    html += estChk('esp-brand-guide','Brand Guide Included',s['brand-guide']);
+    html += '</div>';
+
+  } else {
+    // Other
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px">';
+    html += estFld('Width (inches)', '<input type="number" class="fc" id="esp-width" placeholder="optional" style="font-size:13px" oninput="estCalcSqFt()" value="'+(s.width||'')+'"/>');
+    html += estFld('Height (inches)', '<input type="number" class="fc" id="esp-height" placeholder="optional" style="font-size:13px" oninput="estCalcSqFt()" value="'+(s.height||'')+'"/>');
+    html += estFld('Quantity', '<input type="number" class="fc" id="esp-qty" min="1" value="'+(s.qty||1)+'" style="font-size:13px"/>');
+    var MAT_O = ['Vinyl','Aluminum','Acrylic','PVC','Fabric','Paper','Canvas','Metal','Wood','Plastic'];
+    html += estFld('Material', estBuildSelect('esp-material','other_materials',MAT_O,s.material));
+    html += estFld('Finish', estBuildSelect('esp-finish','other_finishes',['Matte','Gloss','Satin','None'],s.finish));
+    html += estFld('Additional Notes', '<input type="text" class="fc" id="esp-other-notes" placeholder="Specs, special requirements…" style="font-size:13px" value="'+(s['other-notes']||'')+'"/>');
+    html += '</div>';
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ── Sq Ft Auto-Calc ──────────────────────────────────────────────
+function estCalcSqFt() {
+  var w = parseFloat((document.getElementById('esp-width')||{}).value||0);
+  var h = parseFloat((document.getElementById('esp-height')||{}).value||0);
+  var q = parseFloat((document.getElementById('esp-qty')||{}).value||1);
+  if (!w || !h) return;
+  var sf = Math.round((w/12)*(h/12)*q*100)/100;
+  var sfEl = document.getElementById('esp-sqft');
+  if (sfEl) sfEl.value = sf;
+  var note = document.getElementById('esp-sqft-note');
+  if (note) note.textContent = '📐 '+w+'" × '+h+'" × '+q+' = '+sf+' sq ft total';
+}
+
+// ── Read current specs from DOM ──────────────────────────────────
+function estGetSpecs() {
+  var panel = document.getElementById('est-specs-panel');
+  if (!panel) return {};
+  var s = {};
+  panel.querySelectorAll('input,select').forEach(function(el) {
+    if (!el.id || el.value === '__add__') return;
+    var key = el.id.replace(/^esp-/,'');
+    s[key] = el.type === 'checkbox' ? el.checked : el.value;
+  });
+  return s;
+}
+
+// ── Auto-seed Line Items from Specs ─────────────────────────────
+function estAutoSeedItems() {
+  var s = estGetSpecs();
+  var items = [];
+  if (_estService === 'print') {
+    var w=parseFloat(s.width||0), h=parseFloat(s.height||0), q=parseFloat(s.qty||1);
+    var sf = w&&h ? Math.round((w/12)*(h/12)*q*100)/100 : 0;
+    var mat = s.material || 'Print';
+    var fin = s.finish||'';
+    var desc = q+'x '+(w||'?')+'″×'+(h||'?')+'″ '+(mat)+(fin&&fin!=='None'?' — '+fin:'');
+    items.push({svc:'Print / Banners',desc:desc,qty:sf||q,price:0});
+    if (s.doublesided==='true'||s.doublesided===true) items.push({svc:'Print / Banners',desc:'Double-Sided Surcharge',qty:1,price:0});
+    if (s.hemmed==='true'||s.hemmed===true) items.push({svc:'Print / Banners',desc:'Hemming & Grommets',qty:q,price:0});
+    if (s.poles==='true'||s.poles===true) items.push({svc:'Print / Banners',desc:'Pole Pockets',qty:q,price:0});
+  } else if (_estService === 'vehicle-wrap') {
+    var sf2 = parseFloat(s.sqft||0); var mat2 = s.material||'Wrap Film';
+    items.push({svc:'Window Wraps',desc:(s.coverage||'Vehicle Wrap')+' — '+mat2,qty:sf2||1,price:0});
+    if (s.laminate&&s.laminate!=='No Overlaminate') items.push({svc:'Window Wraps',desc:'Overlaminate — '+s.laminate,qty:sf2||1,price:0});
+    if (s['design-incl']==='true'||s['design-incl']===true) items.push({svc:'Design Only',desc:'Wrap Design',qty:1,price:0});
+    if (s['removal-incl']==='true'||s['removal-incl']===true) items.push({svc:'Install',desc:'Old Wrap Removal',qty:1,price:0});
+  } else if (_estService === 'large-format' || _estService === 'window-wrap') {
+    var ww=parseFloat(s.width||0), hh=parseFloat(s.height||0), qq=parseFloat(s.qty||1);
+    var sf3=ww&&hh?Math.round((ww/12)*(hh/12)*qq*100)/100:0;
+    items.push({svc:'Large Format Signs',desc:(qq>1?qq+'x ':'')+ww+'″×'+hh+'″ '+(s.substrate||s.material||''),qty:sf3||qq,price:0});
+    if (s.mounting) items.push({svc:'Large Format Signs',desc:'Mounting — '+s.mounting,qty:qq,price:0});
+    if (s['install-incl']==='true'||s['install-incl']===true) items.push({svc:'Install',desc:'Installation',qty:1,price:0});
+  } else if (_estService === 'signs') {
+    items.push({svc:'Signs & Awnings',desc:(s['sign-type']||'Sign')+(s.width?' — '+s.width+'″×'+s.height+'″':''),qty:parseFloat(s.qty||1),price:0});
+    if (s.illuminated==='true'||s.illuminated===true) items.push({svc:'Signs & Awnings',desc:'Illumination / LED Module',qty:1,price:0});
+    if (s['install-incl']==='true'||s['install-incl']===true) items.push({svc:'Install',desc:'Sign Installation',qty:1,price:0});
+    if (s['permit-incl']==='true'||s['permit-incl']===true) items.push({svc:'Other',desc:'Permit / Engineering Fee',qty:1,price:0});
+  } else if (_estService === 'web') {
+    items.push({svc:'Web Design',desc:(s.cms||'Website')+' — '+(s.pages||'?')+' Pages',qty:1,price:0});
+    if (s['feat-e-commerce']==='true'||s['feat-e-commerce']===true) items.push({svc:'Web Design',desc:'E-Commerce Integration',qty:1,price:0});
+    if (s.maintenance&&s.maintenance!=='One-Time Launch Only'&&s.maintenance!=='Client Manages') items.push({svc:'Web Design',desc:s.maintenance,qty:1,price:0});
+  } else if (_estService === 'install') {
+    var hrs=parseFloat(s['install-hours']||2), crew=parseFloat(s.installers||2);
+    items.push({svc:'Install',desc:'Installation Labor ('+crew+' installers)',qty:hrs,price:0});
+    if (parseFloat(s['travel-mi']||0)>0) items.push({svc:'Install',desc:'Travel / Mileage ('+s['travel-mi']+' mi)',qty:1,price:0});
+    if (s.equipment&&s.equipment!=='No Equipment Needed') items.push({svc:'Install',desc:'Equipment Rental — '+s.equipment,qty:1,price:0});
+  } else if (_estService === 'design-only') {
+    items.push({svc:'Design Only',desc:(s['design-type']||'Design Service')+' — '+(s.concepts||1)+' Concepts, '+(s.revisions||2)+' Revisions',qty:1,price:0});
+    if (s['source-files']==='true'||s['source-files']===true) items.push({svc:'Design Only',desc:'Source Files Package',qty:1,price:0});
+    if (s['brand-guide']==='true'||s['brand-guide']===true) items.push({svc:'Design Only',desc:'Brand Guide / Style Sheet',qty:1,price:0});
+  } else {
+    items.push({svc:'Other',desc:'',qty:1,price:0});
+  }
+  // Seed into table (clear and add)
+  document.getElementById('est-li-body').innerHTML = '';
+  items.forEach(function(it){ addEstLI(it); });
+  toast('✅ Line items generated — fill in prices!');
+}
+
+// ── Photo Handler ────────────────────────────────────────────────
 function handleEstPhotos(e) {
   var files = Array.from(e.target.files);
-  files.forEach(function (f) {
+  files.forEach(function(f) {
     var r = new FileReader();
-    r.onload = function (ev) {
+    r.onload = function(ev) {
       estPhotos.push(ev.target.result);
-      var grid = document.getElementById("est-photo-grid");
-      var html = "";
-      for (var i = 0; i < estPhotos.length; i++) {
-        html += '<img src="' + estPhotos[i] + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--bor)"/>';
-      }
-      grid.innerHTML = html;
+      estRenderPhotoGrid();
     };
     r.readAsDataURL(f);
   });
 }
+function estRenderPhotoGrid() {
+  var grid = document.getElementById('est-photo-grid');
+  if (!grid) return;
+  grid.innerHTML = estPhotos.map(function(src, i) {
+    return '<div style="position:relative">' +
+      '<img src="'+src+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--bor)"/>' +
+      '<button onclick="estPhotos.splice('+i+',1);estRenderPhotoGrid()" style="position:absolute;top:2px;right:2px;background:#ef4444;border:none;border-radius:50%;width:18px;height:18px;color:#fff;font-size:11px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center">×</button>' +
+    '</div>';
+  }).join('');
+}
 
+// ── Open Estimate Modal ──────────────────────────────────────────
 function openEstModal(est) {
   _editEst = est || null;
   estPhotos = est ? (est.photos || []).slice() : [];
+
+  // Parse structured meta from description field
+  var meta = {};
+  if (est && est.description) {
+    try {
+      var parsed = JSON.parse(est.description);
+      if (parsed && parsed._v) meta = parsed;
+    } catch(e) {}
+  }
+
+  _estService = meta.serviceType || null;
+  _estSpecs   = meta.specs || {};
+
   fillCli();
-  document.getElementById("estModalT").textContent = est ? "Edit Estimate" : "New Estimate";
-  document.getElementById("est-cli").value = est ? est.cid : "";
-  document.getElementById("est-date").value = est ? est.date : today();
-  document.getElementById("est-desc").value = est ? est.description : "";
-  document.getElementById("est-li-body").innerHTML = "";
+  document.getElementById('estModalT').textContent = est ? 'Edit Estimate' : 'New Estimate';
+  document.getElementById('est-cli').value          = est ? est.cid  : '';
+  document.getElementById('est-date').value         = est ? est.date : today();
+  document.getElementById('est-validity').value     = meta.validity  || 30;
+  document.getElementById('est-scope').value        = meta.scope     || (est && !meta._v ? (est.description||'') : '');
+  document.getElementById('est-notes').value        = meta.notes     || '';
+  document.getElementById('est-terms').value        = meta.terms     || '50-deposit';
+  document.getElementById('est-rush').checked       = !!meta.rush;
+  document.getElementById('est-tax-on').checked     = meta.taxOn !== false;
+  document.getElementById('est-tax-rate').value     = meta.taxRate   || 8;
+  document.getElementById('est-disc-val').value     = meta.discVal   || 0;
+  document.getElementById('est-disc-type').value    = meta.discType  || 'pct';
+
+  var statusSel = document.getElementById('est-status-sel');
+  if (statusSel) statusSel.value = est ? (est.status||'draft') : 'draft';
+  estUpdateStatusPill();
+
+  estRenderServiceCards();
+  estRenderSpecsPanel();
+  var btn = document.getElementById('est-autoseed-btn');
+  if (btn) btn.style.display = (_estService && _estService !== 'other') ? '' : 'none';
+
+  document.getElementById('est-li-body').innerHTML = '';
   if (est && est.items && est.items.length) {
     for (var i = 0; i < est.items.length; i++) addEstLI(est.items[i]);
   } else {
     addEstLI(null);
   }
-  var grid = document.getElementById("est-photo-grid");
-  var html = "";
-  for (var j = 0; j < estPhotos.length; j++) {
-    html += '<img src="' + estPhotos[j] + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--bor)"/>';
-  }
-  grid.innerHTML = html;
+
+  estRenderPhotoGrid();
   recalcEst();
-  document.getElementById("estModal").classList.add("open");
+  document.getElementById('estModal').classList.add('open');
 }
+
+// ── Line Item Row ────────────────────────────────────────────────
 function addEstLI(it) {
-  var tr = document.createElement("tr");
-  var opts = "";
-  for (var i = 0; i < SVCS.length; i++) {
-    opts += "<option" + (it && it.svc === SVCS[i] ? " selected" : "") + ">" + SVCS[i] + "</option>";
-  }
-  tr.innerHTML = '<td><select oninput="recalcEst()">' + opts + "</select></td>" +
-    '<td><input type="text" value="' + (it ? it.desc : "") + '" placeholder="Description" oninput="recalcEst()"/></td>' +
-    '<td><input type="number" value="' + (it ? it.qty : 1) + '" min="1" style="width:52px" oninput="recalcEst()"/></td>' +
-    '<td><input type="number" value="' + (it ? it.price : 0) + '" min="0" step="0.01" style="width:78px" oninput="recalcEst()"/></td>' +
-    '<td style="font-weight:600;color:var(--acc)">$' + (it ? (it.qty * it.price).toFixed(2) : "0.00") + "</td>" +
-    '<td><button onclick="this.closest(\'tr\').remove();recalcEst()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:18px">x</button></td>';
-  document.getElementById("est-li-body").appendChild(tr);
+  var tr = document.createElement('tr');
+  var allSvcs = estGetOptions('custom_services', SVCS);
+  var svcOpts = allSvcs.map(function(s){
+    return '<option'+(it&&it.svc===s?' selected':'')+'>'+s+'</option>';
+  }).join('') + '<option value="__add__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
+  tr.innerHTML =
+    '<td><select data-cat="custom_services" data-prev="'+(it?it.svc:SVCS[0])+'" onchange="estLiSvcChange(this)" style="font-size:12px">'+svcOpts+'</select></td>' +
+    '<td><input type="text" value="'+(it?it.desc.replace(/"/g,'&quot;'):'')+'" placeholder="Description" oninput="recalcEst()" style="font-size:12px"/></td>' +
+    '<td><input type="number" value="'+(it?it.qty:1)+'" min="0.01" step="0.01" style="width:58px;font-size:12px" oninput="recalcEst()"/></td>' +
+    '<td><input type="number" value="'+(it?it.price:0)+'" min="0" step="0.01" style="width:82px;font-size:12px" oninput="recalcEst()"/></td>' +
+    '<td style="font-weight:600;color:var(--acc);font-size:13px">$'+(it?(it.qty*it.price).toFixed(2):'0.00')+'</td>' +
+    '<td><button onclick="this.closest(\'tr\').remove();recalcEst()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:16px;padding:2px 6px">×</button></td>';
+  document.getElementById('est-li-body').appendChild(tr);
 }
+function estLiSvcChange(sel) {
+  if (sel.value !== '__add__') { sel.dataset.prev = sel.value; return; }
+  sel.value = sel.dataset.prev || SVCS[0];
+  estAddCustomOpt('custom_services', SVCS, function(newVal) {
+    SVCS.push(newVal);
+    // Rebuild this select
+    var allSvcs = estGetOptions('custom_services', SVCS);
+    var html = allSvcs.map(function(s){
+      return '<option'+(s===newVal?' selected':'')+'>'+s+'</option>';
+    }).join('') + '<option value="__add__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
+    sel.innerHTML = html;
+    sel.value = newVal;
+    sel.dataset.prev = newVal;
+  });
+}
+
+// ── Recalc Totals ────────────────────────────────────────────────
 function recalcEst() {
   var sub = 0;
-  var trs = document.querySelectorAll("#est-li-body tr");
+  var trs = document.querySelectorAll('#est-li-body tr');
   for (var i = 0; i < trs.length; i++) {
-    var ni = trs[i].querySelectorAll("input[type=number]");
-    var qty = parseFloat(ni[0] ? ni[0].value : 0) || 0;
+    var ni = trs[i].querySelectorAll('input[type=number]');
+    var qty   = parseFloat(ni[0] ? ni[0].value : 0) || 0;
     var price = parseFloat(ni[1] ? ni[1].value : 0) || 0;
     var tot = qty * price;
     sub += tot;
-    if (trs[i].cells[4]) trs[i].cells[4].textContent = "$" + tot.toFixed(2);
+    if (trs[i].cells[4]) trs[i].cells[4].textContent = '$' + tot.toFixed(2);
   }
-  var tax = sub * 0.08;
-  document.getElementById("est-sub").textContent = fmt(sub);
-  document.getElementById("est-tax").textContent = fmt(tax);
-  document.getElementById("est-grand").textContent = fmt(sub + tax);
+  // Discount
+  var discVal  = parseFloat((document.getElementById('est-disc-val')||{}).value||0)||0;
+  var discType = (document.getElementById('est-disc-type')||{}).value||'pct';
+  var discAmt  = discType==='pct' ? sub*(discVal/100) : Math.min(discVal,sub);
+  var afterDisc = sub - discAmt;
+  // Rush
+  var rush = (document.getElementById('est-rush')||{}).checked;
+  var rushAmt = rush ? afterDisc * 0.2 : 0;
+  var afterRush = afterDisc + rushAmt;
+  // Tax
+  var taxOn   = (document.getElementById('est-tax-on')||{}).checked !== false;
+  var taxRate = parseFloat((document.getElementById('est-tax-rate')||{}).value||8)||8;
+  var taxAmt  = taxOn ? afterRush * (taxRate/100) : 0;
+  var grand   = afterRush + taxAmt;
+
+  var $ = function(id){ return document.getElementById(id); };
+  if ($('est-sub'))  $('est-sub').textContent  = fmt(sub);
+  if ($('est-disc-row'))  { $('est-disc-row').style.display = discAmt>0?'':'none'; if ($('est-disc-amt')) $('est-disc-amt').textContent = '-'+fmt(discAmt); }
+  if ($('est-rush-row'))  { $('est-rush-row').style.display = rush?'':'none'; if ($('est-rush-amt')) $('est-rush-amt').textContent = fmt(rushAmt); }
+  if ($('est-tax'))  $('est-tax').textContent  = fmt(taxAmt);
+  if ($('est-grand')) $('est-grand').textContent = fmt(grand);
 }
+
+// ── Collect Items ────────────────────────────────────────────────
 function getEstItems() {
   var items = [];
-  var trs = document.querySelectorAll("#est-li-body tr");
+  var trs = document.querySelectorAll('#est-li-body tr');
   for (var i = 0; i < trs.length; i++) {
-    var sel = trs[i].querySelector("select");
-    var ni = trs[i].querySelectorAll("input");
-    var qty = parseFloat(ni[1] ? ni[1].value : 1) || 1;
-    var price = parseFloat(ni[2] ? ni[2].value : 0) || 0;
-    items.push({svc: sel ? sel.value : "", desc: ni[0] ? ni[0].value : "", qty: qty, price: price, tot: qty * price});
+    var sel  = trs[i].querySelector('select');
+    var inputs = trs[i].querySelectorAll('input');
+    var desc  = inputs[0] ? inputs[0].value : '';
+    var qty   = parseFloat(inputs[1] ? inputs[1].value : 1) || 1;
+    var price = parseFloat(inputs[2] ? inputs[2].value : 0) || 0;
+    items.push({svc: sel&&sel.value!=='__add__'?sel.value:SVCS[0], desc: desc, qty: qty, price: price, tot: qty*price});
   }
   return items;
 }
 
-function saveEst() {
-  var cid = parseInt(document.getElementById("est-cli").value);
-  if (!cid) { toast("Please select a client", true); return Promise.resolve(); }
+// ── Save Estimate ────────────────────────────────────────────────
+function saveEst(statusOverride) {
+  var cid = parseInt(document.getElementById('est-cli').value);
+  if (!cid) { toast('Please select a client', true); return Promise.resolve(); }
+
   var items = getEstItems();
   var sub = 0;
   for (var i = 0; i < items.length; i++) sub += items[i].tot;
-  var tax = sub * 0.08;
-  var row = {cid: cid, date: document.getElementById("est-date").value, description: document.getElementById("est-desc").value, items: items, sub: sub, tax: tax, grand: sub + tax, status: _editEst ? _editEst.status : "pending", photos: estPhotos};
+
+  var discVal  = parseFloat(document.getElementById('est-disc-val').value||0)||0;
+  var discType = document.getElementById('est-disc-type').value||'pct';
+  var discAmt  = discType==='pct' ? sub*(discVal/100) : Math.min(discVal,sub);
+  var afterDisc = sub - discAmt;
+  var rush     = document.getElementById('est-rush').checked;
+  var rushAmt  = rush ? afterDisc*0.2 : 0;
+  var afterRush = afterDisc + rushAmt;
+  var taxOn    = document.getElementById('est-tax-on').checked;
+  var taxRate  = parseFloat(document.getElementById('est-tax-rate').value||8)||8;
+  var taxAmt   = taxOn ? afterRush*(taxRate/100) : 0;
+  var grand    = afterRush + taxAmt;
+
+  var meta = {
+    _v:         2,
+    serviceType: _estService,
+    specs:       estGetSpecs(),
+    scope:       document.getElementById('est-scope').value,
+    terms:       document.getElementById('est-terms').value,
+    validity:    parseInt(document.getElementById('est-validity').value)||30,
+    notes:       document.getElementById('est-notes').value,
+    rush:        rush,
+    taxOn:       taxOn,
+    taxRate:     taxRate,
+    discVal:     discVal,
+    discType:    discType,
+  };
+
+  var status = statusOverride || (document.getElementById('est-status-sel')||{}).value || (_editEst ? _editEst.status : 'draft');
+  var row = {
+    cid:         cid,
+    date:        document.getElementById('est-date').value,
+    description: JSON.stringify(meta),
+    items:       items,
+    sub:         sub,
+    tax:         taxAmt,
+    grand:       grand,
+    status:      status,
+    photos:      estPhotos
+  };
 
   if (_editEst) {
-    return dbUpdate("estimates", _editEst.id, row).then(function (updated) {
-      if (updated) {
-        for (var j = 0; j < estimates.length; j++) { if (estimates[j].id === _editEst.id) estimates[j] = updated; }
-      }
-      logActivity("Edit Estimate", "Estimates", "#EST-" + String(_editEst.id).padStart(4, "0"));
-      closeM("estModal");
+    return dbUpdate('estimates', _editEst.id, row).then(function(updated) {
+      if (updated) { for (var j=0;j<estimates.length;j++) if(estimates[j].id===_editEst.id){estimates[j]=updated;break;} }
+      logActivity('Edit Estimate', 'Estimates', '#EST-'+String(_editEst.id).padStart(4,'0'));
+      closeM('estModal');
       renderEstimates();
-      toast("Estimate saved!");
+      toast('Estimate saved!');
     });
   } else {
-    return dbInsert("estimates", row).then(function (created) {
+    return dbInsert('estimates', row).then(function(created) {
       if (created) estimates.push(created);
-      logActivity("Create Estimate", "Estimates", cName(cid));
-      closeM("estModal");
+      logActivity('Create Estimate', 'Estimates', cName(cid));
+      closeM('estModal');
       renderEstimates();
-      toast("Estimate saved!");
+      toast('Estimate saved!');
     });
   }
 }
 function convEst() {
-  saveEst().then(function () {
-    var est = estimates[estimates.length - 1];
-    quickConv(est.id);
+  var cid = parseInt(document.getElementById('est-cli').value);
+  if (!cid) { toast('Please select a client', true); return; }
+  saveEst('approved').then(function() {
+    var est = _editEst ? findEst(_editEst.id) : estimates[estimates.length-1];
+    if (est) quickConv(est.id);
   });
 }
 
@@ -3500,31 +4084,37 @@ function renderEstimates() {
   if (!estimates.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty">No estimates yet</div></td></tr>'; return; }
   var rows = estimates.slice().reverse();
   var html = "";
+  var svcColors = {'print':'#6c63ff','vehicle-wrap':'#38bdf8','large-format':'#f59e0b','window-wrap':'#a78bfa','signs':'#f59e0b','web':'#4caf7d','install':'#ef4444','design-only':'#ec4899','other':'#9ea3c0'};
+  var svcIcons  = {'print':'🖨️','vehicle-wrap':'🚗','large-format':'🪧','window-wrap':'🪟','signs':'🏪','web':'💻','install':'🔧','design-only':'🎨','other':'📦'};
   for (var i = 0; i < rows.length; i++) {
     var e = rows[i];
-    var bc = e.status === "approved" ? "b-ok" : e.status === "rejected" ? "b-err" : e.status === "invoiced" ? "b-inf" : "b-warn";
-    var statusLabel = e.status === "invoiced" ? "Invoiced" : e.status;
+    // Parse meta
+    var meta = {}; try { var pm=JSON.parse(e.description); if(pm&&pm._v) meta=pm; } catch(ex){}
+    var scope = meta.scope || (e.description&&!meta._v?e.description:'—');
+    var svc   = meta.serviceType || '';
+    var svcBadge = svc ? '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:'+(svcColors[svc]||'#9ea3c0')+'20;color:'+(svcColors[svc]||'#9ea3c0')+';white-space:nowrap">'+(svcIcons[svc]||'')+'&nbsp;'+svc+'</span>' : '';
+
+    var statusMap = {draft:'b-warn',sent:'b-inf',approved:'b-ok',rejected:'b-err',declined:'b-err',invoiced:'b-inf',pending:'b-warn'};
+    var bc = statusMap[e.status] || 'b-warn';
+    var statusLabel = e.status==='invoiced'?'Invoiced':e.status;
+
     var actions = '<div style="display:flex;gap:5px;flex-wrap:wrap">' +
-      '<button class="btn btn-o btn-sm" onclick="openEstModal(findEst(' + e.id + '))">Edit</button>' +
-      '<button class="btn btn-o btn-sm" style="color:var(--inf)" onclick="exportEstPDF(' + e.id + ')">PDF</button>';
-    if (e.status !== "invoiced") {
-      actions += '<button class="btn btn-o btn-sm" style="color:var(--acc)" onclick="openEstApproval(' + e.id + ')">Approval</button>';
-    }
-    if (e.status === "approved") {
-      actions += '<button class="btn btn-p btn-sm" onclick="quickConv(' + e.id + ')">Invoice</button>';
-    } else if (e.status !== "invoiced") {
-      actions += '<button class="btn btn-ok btn-sm" onclick="quickConv(' + e.id + ')">To Inv</button>';
-    } else {
-      actions += '<span style="font-size:11px;color:var(--inf);font-weight:600">#INV-' + String(e.invoice_id || 0).padStart(4, "0") + "</span>";
-    }
-    actions += "</div>";
-    html += "<tr><td style=\"font-weight:600;color:var(--acc)\">#EST-" + String(e.id).padStart(4, "0") + "</td>" +
-      "<td>" + cName(e.cid) + "</td>" +
-      "<td style=\"font-size:12px;color:var(--t3);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">" + (e.description || "-") + "</td>" +
-      "<td style=\"color:var(--t3)\">" + e.date + "</td>" +
-      "<td style=\"font-weight:600\">" + fmt(e.grand) + "</td>" +
-      "<td><span class=\"badge " + bc + "\">" + statusLabel + "</span></td>" +
-      "<td>" + actions + "</td></tr>";
+      '<button class="btn btn-o btn-sm" onclick="openEstModal(findEst('+e.id+'))">Edit</button>' +
+      '<button class="btn btn-o btn-sm" style="color:var(--inf)" onclick="exportEstPDF('+e.id+')">PDF</button>';
+    if (e.status !== 'invoiced') actions += '<button class="btn btn-o btn-sm" style="color:var(--acc)" onclick="openEstApproval('+e.id+')">Approval</button>';
+    if (e.status === 'approved') actions += '<button class="btn btn-p btn-sm" onclick="quickConv('+e.id+')">→ Invoice</button>';
+    else if (e.status !== 'invoiced') actions += '<button class="btn btn-ok btn-sm" onclick="quickConv('+e.id+')">To Inv</button>';
+    else actions += '<span style="font-size:11px;color:var(--inf);font-weight:600">#INV-'+String(e.invoice_id||0).padStart(4,'0')+'</span>';
+    actions += '</div>';
+
+    html += '<tr>' +
+      '<td style="font-weight:600;color:var(--acc)">#EST-'+String(e.id).padStart(4,'0')+'</td>' +
+      '<td>'+cName(e.cid)+'</td>' +
+      '<td style="max-width:200px">'+svcBadge+'<div style="font-size:11px;color:var(--t3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+scope+'</div></td>' +
+      '<td style="color:var(--t3);white-space:nowrap">'+e.date+'</td>' +
+      '<td style="font-weight:600">'+fmt(e.grand)+'</td>' +
+      '<td><span class="badge '+bc+'">'+statusLabel+'</span></td>' +
+      '<td>'+actions+'</td></tr>';
   }
   tb.innerHTML = html;
 }
