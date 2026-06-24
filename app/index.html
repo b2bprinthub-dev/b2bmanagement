@@ -255,6 +255,10 @@ textarea.fc{resize:vertical;min-height:70px}
       <button class="nav-i" onclick="gotoPage('inventory',this)" data-perm="inventory"><span>📦</span>Inventory<span id="inv-alert-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto"></span></button>
       <button class="nav-i" onclick="gotoPage('crm',this)" data-perm="crm"><span>👥</span>CRM</button>
     </div>
+    <div class="nav-grp" id="nav-grp-finance">
+      <div class="nav-lbl">Finance</div>
+      <button class="nav-i" onclick="gotoPage('finance',this)" data-perm="invoices"><span>💳</span>Transaction Ledger<span id="pending-txn-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto">!</span></button>
+    </div>
     <div class="nav-grp">
       <div class="nav-lbl">Communication</div>
       <button class="nav-i" onclick="gotoPage('messages',this)" data-perm="messages" id="msg-nav-btn"><span>💬</span>Messages<span id="msg-badge-nav" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto"></span></button>
@@ -1340,6 +1344,69 @@ textarea.fc{resize:vertical;min-height:70px}
       </div>
     </div>
 
+    <!-- ── Finance / Transaction Ledger Page ── -->
+    <div class="page" id="page-finance">
+      <!-- Pending txn safety alert -->
+      <div id="pending-txn-alert" style="display:none;background:rgba(239,68,68,.12);border:1px solid var(--err);border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-weight:700;color:var(--err);font-size:13px">⚠️ Unconfirmed Transactions Detected</div>
+          <div style="font-size:12px;color:var(--t2);margin-top:3px" id="pending-txn-alert-msg">Some transactions may not have saved due to a connection issue.</div>
+        </div>
+        <button class="btn btn-o btn-sm" style="color:var(--err);border-color:var(--err);white-space:nowrap" onclick="showPendingTxnDetail()">Review</button>
+      </div>
+
+      <!-- KPI Bar -->
+      <div class="g4" style="margin-bottom:18px" id="fin-kpi-bar">
+        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Today Revenue</div><div style="font-size:22px;font-weight:700;color:var(--ok);margin-top:4px" id="fin-today-rev">$0.00</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Today Transactions</div><div style="font-size:22px;font-weight:700;color:var(--acc);margin-top:4px" id="fin-today-count">0</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Pending / Failed</div><div style="font-size:22px;font-weight:700;color:var(--warn);margin-top:4px" id="fin-pending-count">0</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Refunds Today</div><div style="font-size:22px;font-weight:700;color:var(--err);margin-top:4px" id="fin-refunds-today">$0.00</div></div>
+      </div>
+
+      <!-- Filter + Search bar -->
+      <div class="card" style="padding:14px;margin-bottom:16px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <input class="fc" id="fin-search" placeholder="Search customer, invoice, type, amount…" oninput="renderFinancePage()" style="flex:1;min-width:200px"/>
+          <select class="fc" id="fin-type" onchange="renderFinancePage()" style="width:160px">
+            <option value="">All Types</option>
+            <option value="sale">POS Sale</option>
+            <option value="invoice_payment">Invoice Payment</option>
+            <option value="deposit">Deposit</option>
+            <option value="expense">Expense</option>
+            <option value="refund">Refund</option>
+            <option value="void">Void</option>
+          </select>
+          <select class="fc" id="fin-status" onchange="renderFinancePage()" style="width:140px">
+            <option value="">All Status</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+            <option value="voided">Voided</option>
+            <option value="refunded">Refunded</option>
+          </select>
+          <select class="fc" id="fin-period" onchange="renderFinancePage()" style="width:130px">
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+          </select>
+          <button class="btn btn-o btn-sm" onclick="openReconcileModal()">🧮 Reconcile</button>
+          <button class="btn btn-o btn-sm" onclick="exportFinanceCSV()">⬇ CSV</button>
+        </div>
+      </div>
+
+      <!-- Transaction table -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <table>
+          <thead><tr>
+            <th>TXN ID</th><th>Date/Time</th><th>Type</th><th>Customer</th>
+            <th>Reference</th><th>Method</th><th>Amount</th><th>Status</th><th>By</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="fin-tbody"><tr><td colspan="10"><div class="empty">Loading…</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="page" id="page-settings">
       <div class="settings-tabs">
         <button class="settings-tab active" onclick="switchSettingsTab('users',this)">Users</button>
@@ -2155,6 +2222,39 @@ textarea.fc{resize:vertical;min-height:70px}
 </div>
 </div>
 
+<!-- ══ Transaction Detail Modal ══════════════════════════════════ -->
+<div class="overlay" id="txnDetailModal">
+<div class="modal" style="max-width:480px">
+  <div class="modal-t"><span>💳 Transaction Detail</span><button class="xbtn" onclick="closeM('txnDetailModal')">&times;</button></div>
+  <div id="txn-detail-body"></div>
+</div>
+</div>
+
+<!-- ══ Reconcile Modal ══════════════════════════════════════════ -->
+<div class="overlay" id="reconcileModal">
+<div class="modal" style="max-width:480px">
+  <div class="modal-t"><span>🧮 End-of-Day Reconciliation</span><button class="xbtn" onclick="closeM('reconcileModal')">&times;</button></div>
+  <div id="reconcile-body"></div>
+</div>
+</div>
+
+<!-- ══ Pending Txn Review Modal ════════════════════════════════ -->
+<div class="overlay" id="pendingTxnModal">
+<div class="modal" style="max-width:520px">
+  <div class="modal-t"><span>⚠️ Unconfirmed Transactions</span><button class="xbtn" onclick="closeM('pendingTxnModal')">&times;</button></div>
+  <div style="font-size:13px;color:var(--t2);margin-bottom:14px">These transactions were initiated but may not have saved to the database due to a connection issue. Review and retry or dismiss each one.</div>
+  <div id="pending-txn-list"></div>
+</div>
+</div>
+
+<!-- ══ Refund / Void Modal ══════════════════════════════════════ -->
+<div class="overlay" id="refundModal">
+<div class="modal" style="max-width:440px">
+  <div class="modal-t"><span>↩️ Refund / Void Transaction</span><button class="xbtn" onclick="closeM('refundModal')">&times;</button></div>
+  <div id="refund-body"></div>
+</div>
+</div>
+
 <!-- ══ POS Cash Register Modal ══════════════════════════════════ -->
 <div class="overlay" id="posRegisterModal">
 <div class="modal" style="max-width:580px;width:95vw">
@@ -2217,6 +2317,7 @@ var appMessages = [];
 var _currentThreadId = null;
 var posItems = [];
 var expenses  = [];
+var transactions = [];
 var activityLog = [];
 var invItems = [];
 var invTxns  = [];
@@ -2659,7 +2760,8 @@ function loadAppData() {
     dbGet("inventory_transactions", {order: "created_at", asc: false, limit: 500}),
     dbGet("purchase_orders", {order: "created_at", asc: false}),
     dbGet("suppliers", {order: "name"}),
-    dbGet("expenses",  {order: "created_at", asc: false, limit: 1000}).catch(function(){ return []; })
+    dbGet("expenses",  {order: "created_at", asc: false, limit: 1000}).catch(function(){ return []; }),
+    dbGet("transactions", {order: "created_at", asc: false, limit: 2000}).catch(function(){ return []; })
   ]).then(function (results) {
     appRoles     = results[0];
     appUsers     = results[1];
@@ -2678,8 +2780,10 @@ function loadAppData() {
     purchaseOrders = results[14] || [];
     suppliers    = results[15] || [];
     expenses     = results[16] || [];
+    transactions = results[17] || [];
     updateMsgBadge();
     updateInvAlertBadge();
+    checkPendingTxns();
     return dbGet("activity_log", {order: "created_at", asc: false, limit: 200});
   }).then(function (log) {
     activityLog = log;
@@ -2727,6 +2831,7 @@ function gotoPage(p, el) {
   else if (p === "designer") renderDesignerStudio();
   else if (p === "messages") renderMessagesPage();
   else if (p === "crm") renderCRM();
+  else if (p === "finance") renderFinancePage();
   else if (p === "analytics") renderAnalytics();
   else if (p === "myreports") renderMyReports();
   else if (p === "inventory") renderInventory();
@@ -4807,6 +4912,414 @@ function submitApproval(eid, response, token) {
   });
 }
 
+/* ═══════════════════════════════════════════════════════════
+   FINANCIAL LEDGER — Transaction safety, tracking, reconciliation
+   ═══════════════════════════════════════════════════════════ */
+
+var PENDING_TXNS_KEY = 'b2b_pending_txns';
+
+// ── LocalStorage safety net ──────────────────────────────────────
+function pendingTxnSave(localId, data) {
+  try {
+    var p = JSON.parse(localStorage.getItem(PENDING_TXNS_KEY) || '[]');
+    p.push({localId: localId, data: data, ts: new Date().toISOString(), status: 'pending'});
+    localStorage.setItem(PENDING_TXNS_KEY, JSON.stringify(p));
+  } catch(e) {}
+}
+function pendingTxnClear(localId) {
+  try {
+    var p = JSON.parse(localStorage.getItem(PENDING_TXNS_KEY) || '[]');
+    localStorage.setItem(PENDING_TXNS_KEY, JSON.stringify(p.filter(function(x){ return x.localId !== localId; })));
+  } catch(e) {}
+}
+function pendingTxnFail(localId, err) {
+  try {
+    var p = JSON.parse(localStorage.getItem(PENDING_TXNS_KEY) || '[]');
+    p.forEach(function(x){ if (x.localId === localId) { x.status = 'failed'; x.error = String(err); } });
+    localStorage.setItem(PENDING_TXNS_KEY, JSON.stringify(p));
+  } catch(e) {}
+}
+function checkPendingTxns() {
+  try {
+    var p = JSON.parse(localStorage.getItem(PENDING_TXNS_KEY) || '[]');
+    var badge = document.getElementById('pending-txn-badge');
+    if (p.length > 0) {
+      if (badge) { badge.textContent = p.length; badge.style.display = ''; }
+      var alert = document.getElementById('pending-txn-alert');
+      if (alert) {
+        alert.style.display = 'flex';
+        var msg = document.getElementById('pending-txn-alert-msg');
+        if (msg) msg.textContent = p.length + ' transaction(s) may not have saved. Open Transaction Ledger to review.';
+      }
+    } else {
+      if (badge) badge.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+// ── Central transaction logger ───────────────────────────────────
+function logTxn(type, amount, method, invoiceId, clientId, notes, refTxnId) {
+  var localId = 'txn_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  var row = {
+    type:              type,
+    status:            'completed',
+    amount:            amount,
+    method:            method || '',
+    invoice_id:        invoiceId || null,
+    client_id:         clientId || null,
+    user_id:           currentUser ? currentUser.id : null,
+    created_by_name:   currentUser ? currentUser.name : 'System',
+    notes:             notes || '',
+    local_id:          localId,
+    reference:         invoiceId ? 'INV-' + String(invoiceId).padStart(4,'0') : '',
+    ref_transaction_id: refTxnId || null
+  };
+  pendingTxnSave(localId, row);
+  return dbInsert('transactions', row).then(function(created) {
+    pendingTxnClear(localId);
+    if (created) transactions.unshift(created);
+    return created;
+  }).catch(function(err) {
+    pendingTxnFail(localId, err);
+    checkPendingTxns();
+    console.error('[TXN FAILED]', type, amount, err);
+    return null;
+  });
+}
+
+// ── Invoice payment helpers ──────────────────────────────────────
+function getInvAmountPaid(invId) {
+  // Sum from transactions table first, fall back to expenses
+  var fromTxns = transactions.filter(function(t){
+    return t.invoice_id === invId && (t.type === 'invoice_payment' || t.type === 'sale') && t.status === 'completed';
+  }).reduce(function(s,t){ return s + parseFloat(t.amount||0); }, 0);
+  if (fromTxns > 0) return fromTxns;
+  var ref = 'INV-' + String(invId).padStart(4,'0');
+  return expenses.filter(function(e){ return e.type==='invoice_payment' && e.reference===ref; })
+    .reduce(function(s,e){ return s + parseFloat(e.amount||0); }, 0);
+}
+function getInvBalance(inv) {
+  return Math.max(0, parseFloat(inv.grand||0) - getInvAmountPaid(inv.id));
+}
+function calcInvPaymentStatus(inv, paidSoFar) {
+  var grand = parseFloat(inv.grand||0);
+  if (paidSoFar <= 0)          return 'unpaid';
+  if (paidSoFar >= grand - 0.01) return 'paid';
+  return 'partial';
+}
+
+// ── Finance page renderer ────────────────────────────────────────
+function renderFinancePage() {
+  var td = today();
+  var search  = (document.getElementById('fin-search')  || {}).value || '';
+  var typeF   = (document.getElementById('fin-type')    || {}).value || '';
+  var statusF = (document.getElementById('fin-status')  || {}).value || '';
+  var period  = (document.getElementById('fin-period')  || {}).value || 'today';
+
+  var now = new Date();
+  var rows = transactions.filter(function(t) {
+    var d = (t.created_at || '').substring(0,10);
+    if (period === 'today' && d !== td) return false;
+    if (period === 'week') {
+      var wStart = new Date(now); wStart.setDate(now.getDate() - now.getDay());
+      if (new Date(d) < wStart) return false;
+    }
+    if (period === 'month' && d.substring(0,7) !== td.substring(0,7)) return false;
+    if (typeF   && t.type   !== typeF)   return false;
+    if (statusF && t.status !== statusF) return false;
+    if (search) {
+      var q = search.toLowerCase();
+      var cname = t.client_id ? cName(t.client_id).toLowerCase() : '';
+      if (cname.indexOf(q) < 0 &&
+          (t.reference||'').toLowerCase().indexOf(q) < 0 &&
+          (t.type||'').toLowerCase().indexOf(q) < 0 &&
+          (t.method||'').toLowerCase().indexOf(q) < 0 &&
+          (t.notes||'').toLowerCase().indexOf(q) < 0 &&
+          String(t.amount||'').indexOf(q) < 0) return false;
+    }
+    return true;
+  });
+
+  // KPIs
+  var todayTxns    = transactions.filter(function(t){ return (t.created_at||'').substring(0,10)===td && t.status==='completed'; });
+  var todayRev     = todayTxns.filter(function(t){ return t.type==='sale'||t.type==='invoice_payment'||t.type==='deposit'; }).reduce(function(s,t){ return s+parseFloat(t.amount||0); },0);
+  var pendingCount = transactions.filter(function(t){ return t.status==='pending'||t.status==='failed'; }).length;
+  try { pendingCount += JSON.parse(localStorage.getItem(PENDING_TXNS_KEY)||'[]').length; } catch(e){}
+  var refundsToday = todayTxns.filter(function(t){ return t.type==='refund'||t.type==='void'; }).reduce(function(s,t){ return s+parseFloat(t.amount||0); },0);
+
+  var el = function(id){ return document.getElementById(id); };
+  if (el('fin-today-rev'))    el('fin-today-rev').textContent    = fmt(todayRev);
+  if (el('fin-today-count'))  el('fin-today-count').textContent  = todayTxns.length;
+  if (el('fin-pending-count'))el('fin-pending-count').textContent= pendingCount;
+  if (el('fin-refunds-today'))el('fin-refunds-today').textContent= fmt(refundsToday);
+
+  var typeColors = {sale:'var(--ok)',invoice_payment:'var(--acc)',deposit:'var(--inf)',expense:'var(--warn)',refund:'var(--err)',void:'var(--err)'};
+  var typeIcons  = {sale:'🛒',invoice_payment:'💰',deposit:'📥',expense:'📤',refund:'↩️',void:'🚫'};
+  var statusColors = {completed:'b-ok',pending:'b-warn',failed:'b-err',voided:'b-gray',refunded:'b-inf'};
+
+  var tb = document.getElementById('fin-tbody');
+  if (!tb) return;
+  if (!rows.length) { tb.innerHTML = '<tr><td colspan="10"><div class="empty">No transactions found</div></td></tr>'; return; }
+
+  tb.innerHTML = rows.map(function(t) {
+    var clientLabel = t.client_id ? cName(t.client_id) : 'Walk-in';
+    var icon  = typeIcons[t.type]  || '💳';
+    var color = typeColors[t.type] || 'var(--t2)';
+    var bc    = statusColors[t.status] || 'b-gray';
+    var dt    = t.created_at ? new Date(t.created_at).toLocaleString() : '—';
+    var isNeg = t.type==='refund'||t.type==='void'||t.type==='expense';
+    var canRefund = canEditPayment() && t.status==='completed' && (t.type==='sale'||t.type==='invoice_payment');
+    return '<tr>' +
+      '<td style="font-family:monospace;font-size:11px;color:var(--t3)">#' + String(t.id).padStart(6,'0') + '</td>' +
+      '<td style="font-size:12px;color:var(--t3);white-space:nowrap">' + dt + '</td>' +
+      '<td><span style="font-size:12px;font-weight:600;color:'+color+'">' + icon + ' ' + (t.type||'').replace(/_/g,' ') + '</span></td>' +
+      '<td style="font-size:13px">' + clientLabel + '</td>' +
+      '<td style="font-size:12px;color:var(--t3)">' + (t.reference||'—') + '</td>' +
+      '<td style="font-size:12px">' + (t.method||'—') + '</td>' +
+      '<td style="font-weight:700;color:' + (isNeg?'var(--err)':'var(--ok)') + '">' + (isNeg?'-':'') + fmt(t.amount) + '</td>' +
+      '<td><span class="badge ' + bc + '">' + (t.status||'—') + '</span></td>' +
+      '<td style="font-size:11px;color:var(--t3)">' + (t.created_by_name||'—') + '</td>' +
+      '<td><div style="display:flex;gap:4px">' +
+        '<button class="btn btn-o btn-sm" onclick="openTxnDetail(' + t.id + ')">View</button>' +
+        (canRefund ? '<button class="btn btn-o btn-sm" style="color:var(--err);border-color:rgba(239,68,68,.4)" onclick="openRefundModal(' + t.id + ')">↩ Refund</button>' : '') +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
+}
+
+// ── Transaction detail ───────────────────────────────────────────
+function openTxnDetail(id) {
+  var t = transactions.find(function(x){ return x.id===id; });
+  if (!t) return;
+  var inv = t.invoice_id ? invoices.find(function(i){ return i.id===t.invoice_id; }) : null;
+  var clientLabel = t.client_id ? cName(t.client_id) : 'Walk-in';
+  var dt = t.created_at ? new Date(t.created_at).toLocaleString() : '—';
+  var typeColors = {sale:'var(--ok)',invoice_payment:'var(--acc)',deposit:'var(--inf)',expense:'var(--warn)',refund:'var(--err)',void:'var(--err)'};
+
+  var html =
+    '<div style="background:var(--bg3);border-radius:10px;padding:16px;margin-bottom:16px">' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:12px">' +
+    '<div style="font-family:monospace;font-size:12px;color:var(--t3)">TXN #' + String(t.id).padStart(6,'0') + '</div>' +
+    '<span class="badge ' + ({completed:'b-ok',pending:'b-warn',failed:'b-err',voided:'b-gray',refunded:'b-inf'}[t.status]||'b-gray') + '">' + t.status + '</span>' +
+    '</div>' +
+    _txnRow('Type',        (t.type||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();})) +
+    _txnRow('Amount',      '<span style="font-weight:700;font-size:16px;color:var(--ok)">' + fmt(t.amount) + '</span>') +
+    _txnRow('Method',      t.method||'—') +
+    _txnRow('Customer',    clientLabel) +
+    _txnRow('Reference',   t.reference||'—') +
+    _txnRow('Date/Time',   dt) +
+    _txnRow('Processed by', t.created_by_name||'—') +
+    (t.notes ? _txnRow('Notes', t.notes) : '') +
+    (t.error_detail ? _txnRow('Error', '<span style="color:var(--err)">' + t.error_detail + '</span>') : '') +
+    '</div>' +
+    (inv ? '<div style="background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:14px;margin-bottom:14px">' +
+      '<div style="font-size:12px;font-weight:600;color:var(--acc);margin-bottom:8px">Linked Invoice</div>' +
+      _txnRow('Invoice', '#INV-' + String(inv.id).padStart(4,'0')) +
+      _txnRow('Invoice Total', fmt(inv.grand)) +
+      _txnRow('Amount Paid', fmt(getInvAmountPaid(inv.id))) +
+      _txnRow('Balance Due', '<span style="font-weight:700;color:' + (getInvBalance(inv)>0?'var(--err)':'var(--ok)') + '">' + fmt(getInvBalance(inv)) + '</span>') +
+      '</div>' : '') +
+    (t.ref_transaction_id ? '<div style="font-size:12px;color:var(--t3)">↩ Linked to original TXN #' + String(t.ref_transaction_id).padStart(6,'0') + '</div>' : '');
+
+  document.getElementById('txn-detail-body').innerHTML = html;
+  document.getElementById('txnDetailModal').classList.add('open');
+}
+function _txnRow(label, val) {
+  return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bor);font-size:13px">' +
+    '<span style="color:var(--t3)">' + label + '</span><span>' + val + '</span></div>';
+}
+
+// ── Refund / Void flow ───────────────────────────────────────────
+function openRefundModal(txnId) {
+  var t = transactions.find(function(x){ return x.id===txnId; });
+  if (!t) return;
+  var clientLabel = t.client_id ? cName(t.client_id) : 'Walk-in';
+  var html =
+    '<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px;margin-bottom:16px">' +
+    '<div style="font-weight:700;color:var(--err);margin-bottom:6px">↩️ You are about to refund:</div>' +
+    '<div style="font-size:14px;font-weight:600">' + clientLabel + ' — ' + fmt(t.amount) + '</div>' +
+    '<div style="font-size:12px;color:var(--t3);margin-top:4px">TXN #' + String(t.id).padStart(6,'0') + ' · ' + (t.type||'').replace(/_/g,' ') + ' · ' + (t.method||'') + '</div>' +
+    '</div>' +
+    '<div class="fg"><label class="fl">Refund Amount</label>' +
+    '<input class="fc" type="number" id="refund-amount" value="' + t.amount + '" min="0.01" max="' + t.amount + '" step="0.01"/></div>' +
+    '<div class="fg"><label class="fl">Reason (required)</label>' +
+    '<textarea class="fc" id="refund-reason" rows="2" placeholder="Customer returned item, duplicate charge, etc."></textarea></div>' +
+    '<div class="fg"><label class="fl">Refund Method</label>' + payMethodSel('refund-method') + '</div>' +
+    '<div style="background:rgba(245,158,11,.08);border-left:3px solid var(--warn);padding:10px 12px;border-radius:6px;font-size:12px;color:var(--warn);margin-bottom:16px">' +
+    '⚠️ Refunds are permanent and create an audit trail. This action will be logged with your name and timestamp.' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+    '<button class="btn btn-o" onclick="closeM(\'refundModal\')">Cancel</button>' +
+    '<button class="btn" style="background:var(--err);color:#fff" onclick="processRefund(' + txnId + ')">↩ Process Refund</button>' +
+    '</div>';
+  document.getElementById('refund-body').innerHTML = html;
+  document.getElementById('refundModal').classList.add('open');
+}
+
+function processRefund(origTxnId) {
+  var orig = transactions.find(function(x){ return x.id===origTxnId; });
+  if (!orig) return;
+  var amount = parseFloat((document.getElementById('refund-amount')||{}).value||0);
+  var reason = ((document.getElementById('refund-reason')||{}).value||'').trim();
+  var method = (document.getElementById('refund-method')||{}).value||'';
+  if (!amount || amount <= 0) { toast('Enter refund amount', true); return; }
+  if (!reason) { toast('Reason is required for refunds', true); return; }
+
+  logTxn('refund', amount, method, orig.invoice_id, orig.client_id,
+    'Refund of TXN #' + String(origTxnId).padStart(6,'0') + ': ' + reason, origTxnId)
+  .then(function() {
+    // If linked to invoice, adjust payment status
+    if (orig.invoice_id) {
+      var inv = invoices.find(function(i){ return i.id===orig.invoice_id; });
+      if (inv) {
+        var paid = getInvAmountPaid(orig.invoice_id);
+        var newStatus = calcInvPaymentStatus(inv, paid);
+        dbUpdate('invoices', inv.id, {payment_status: newStatus}).then(function(u){
+          if (u) { var idx=invoices.findIndex(function(i){return i.id===inv.id;}); if(idx>-1) invoices[idx]=u; }
+        });
+      }
+    }
+    // Void original txn
+    dbUpdate('transactions', origTxnId, {status:'refunded'}).then(function(u){
+      if (u) { var idx=transactions.findIndex(function(t){return t.id===origTxnId;}); if(idx>-1) transactions[idx]=u; }
+    });
+    logActivity('Refund', 'Finance', fmt(amount) + ' — ' + reason);
+    closeM('refundModal');
+    closeM('txnDetailModal');
+    toast('↩️ Refund of ' + fmt(amount) + ' processed');
+    renderFinancePage();
+  });
+}
+
+// ── End-of-Day Reconciliation ────────────────────────────────────
+function openReconcileModal() {
+  var td = today();
+  var todayTxns = transactions.filter(function(t){
+    return (t.created_at||'').substring(0,10)===td && t.status==='completed';
+  });
+  var cashIn  = todayTxns.filter(function(t){ return (t.method||'').toLowerCase()==='cash' && (t.type==='sale'||t.type==='invoice_payment'||t.type==='deposit'); }).reduce(function(s,t){ return s+parseFloat(t.amount||0); },0);
+  var cardIn  = todayTxns.filter(function(t){ return (t.method||'').toLowerCase().indexOf('card')>-1 && (t.type==='sale'||t.type==='invoice_payment'||t.type==='deposit'); }).reduce(function(s,t){ return s+parseFloat(t.amount||0); },0);
+  var cashOut = todayTxns.filter(function(t){ return (t.method||'').toLowerCase()==='cash' && t.type==='expense'; }).reduce(function(s,t){ return s+parseFloat(t.amount||0); },0);
+  var refunds = todayTxns.filter(function(t){ return t.type==='refund'; }).reduce(function(s,t){ return s+parseFloat(t.amount||0); },0);
+  var expectedCash = cashIn - cashOut - refunds;
+
+  var html =
+    '<div style="font-size:12px;color:var(--t3);margin-bottom:14px">Date: <strong style="color:var(--t1)">' + td + '</strong></div>' +
+    '<div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:16px">' +
+    '<div style="font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">System Totals Today</div>' +
+    _txnRow('Cash In (sales + payments)', fmt(cashIn)) +
+    _txnRow('Card / Digital In', fmt(cardIn)) +
+    _txnRow('Cash Out (expenses)', fmt(cashOut)) +
+    _txnRow('Refunds', fmt(refunds)) +
+    '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;font-weight:700;border-top:1px solid var(--bor);margin-top:4px">' +
+    '<span>Expected Cash in Drawer</span><span style="color:var(--ok)">' + fmt(expectedCash) + '</span></div>' +
+    '</div>' +
+    '<div class="fg"><label class="fl">Actual Cash Counted in Drawer</label>' +
+    '<input class="fc" type="number" id="rec-actual-cash" min="0" step="0.01" placeholder="0.00" oninput="updateReconcileResult()" style="font-size:18px;font-weight:700"/></div>' +
+    '<div id="rec-result" style="border-radius:10px;padding:14px;margin-bottom:16px;text-align:center;font-size:15px;font-weight:700;display:none"></div>' +
+    '<div class="fg"><label class="fl">Notes</label><textarea class="fc" id="rec-notes" rows="2" placeholder="Any discrepancies or comments…"></textarea></div>' +
+    '<input type="hidden" id="rec-expected" value="' + expectedCash + '"/>' +
+    '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+    '<button class="btn btn-o" onclick="closeM(\'reconcileModal\')">Cancel</button>' +
+    '<button class="btn btn-p" onclick="saveReconciliation()">💾 Save Reconciliation</button></div>';
+
+  document.getElementById('reconcile-body').innerHTML = html;
+  document.getElementById('reconcileModal').classList.add('open');
+}
+
+function updateReconcileResult() {
+  var expected = parseFloat((document.getElementById('rec-expected')||{}).value||0);
+  var actual   = parseFloat((document.getElementById('rec-actual-cash')||{}).value||0);
+  var diff     = actual - expected;
+  var el = document.getElementById('rec-result');
+  if (!el || isNaN(actual)) return;
+  el.style.display = 'block';
+  if (Math.abs(diff) < 0.01) {
+    el.style.background = 'rgba(76,175,125,.12)'; el.style.color = 'var(--ok)';
+    el.textContent = '✅ Drawer balanced!';
+  } else if (diff > 0) {
+    el.style.background = 'rgba(245,158,11,.12)'; el.style.color = 'var(--warn)';
+    el.textContent = '⚠️ Overage: +' + fmt(diff) + ' — extra cash in drawer';
+  } else {
+    el.style.background = 'rgba(239,68,68,.12)'; el.style.color = 'var(--err)';
+    el.textContent = '❌ Shortage: ' + fmt(diff) + ' — drawer is short';
+  }
+}
+
+function saveReconciliation() {
+  var expected = parseFloat((document.getElementById('rec-expected')||{}).value||0);
+  var actual   = parseFloat((document.getElementById('rec-actual-cash')||{}).value||0);
+  var notes    = (document.getElementById('rec-notes')||{}).value||'';
+  if (isNaN(actual)) { toast('Enter the actual cash amount', true); return; }
+  var diff = actual - expected;
+  var detail = 'EOD Reconciliation — Expected: ' + fmt(expected) + ' | Actual: ' + fmt(actual) + ' | Diff: ' + (diff>=0?'+':'') + fmt(diff) + (notes?' | '+notes:'');
+  logActivity('Reconciliation', 'Finance', detail);
+  logTxn('reconciliation', actual, 'cash', null, null, detail);
+  closeM('reconcileModal');
+  toast('✅ Reconciliation saved');
+}
+
+// ── Pending txn review ───────────────────────────────────────────
+function showPendingTxnDetail() {
+  try {
+    var pending = JSON.parse(localStorage.getItem(PENDING_TXNS_KEY) || '[]');
+    var html = pending.length ? pending.map(function(p) {
+      return '<div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<span style="font-weight:600;font-size:13px">' + (p.data.type||'').replace(/_/g,' ') + ' — ' + fmt(p.data.amount) + '</span>' +
+        '<span class="badge ' + (p.status==='failed'?'b-err':'b-warn') + '">' + p.status + '</span></div>' +
+        '<div style="font-size:11px;color:var(--t3)">' + new Date(p.ts).toLocaleString() + '</div>' +
+        (p.error ? '<div style="font-size:11px;color:var(--err);margin-top:4px">' + p.error + '</div>' : '') +
+        '<div style="display:flex;gap:8px;margin-top:10px">' +
+        '<button class="btn btn-p btn-sm" onclick="retryPendingTxn(\'' + p.localId + '\')">↺ Retry</button>' +
+        '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="dismissPendingTxn(\'' + p.localId + '\')">Dismiss</button>' +
+        '</div></div>';
+    }).join('') : '<div class="empty">No pending transactions</div>';
+    document.getElementById('pending-txn-list').innerHTML = html;
+  } catch(e) {}
+  document.getElementById('pendingTxnModal').classList.add('open');
+}
+
+function retryPendingTxn(localId) {
+  try {
+    var pending = JSON.parse(localStorage.getItem(PENDING_TXNS_KEY) || '[]');
+    var entry = pending.find(function(p){ return p.localId === localId; });
+    if (!entry) return;
+    dbInsert('transactions', entry.data).then(function(created) {
+      if (created) { transactions.unshift(created); pendingTxnClear(localId); toast('✅ Transaction recovered!'); }
+      checkPendingTxns(); showPendingTxnDetail(); renderFinancePage();
+    }).catch(function() { toast('Still failing — check connection', true); });
+  } catch(e) {}
+}
+
+function dismissPendingTxn(localId) {
+  if (!confirm('Dismiss this unconfirmed transaction? It will be removed from the safety net.')) return;
+  pendingTxnClear(localId);
+  checkPendingTxns();
+  showPendingTxnDetail();
+}
+
+// ── Export CSV ───────────────────────────────────────────────────
+function exportFinanceCSV() {
+  var rows = [['TXN ID','Date','Type','Customer','Reference','Method','Amount','Status','By','Notes']];
+  transactions.forEach(function(t) {
+    rows.push([
+      '#' + String(t.id).padStart(6,'0'),
+      (t.created_at||'').substring(0,19).replace('T',' '),
+      t.type||'',
+      t.client_id ? cName(t.client_id) : 'Walk-in',
+      t.reference||'',
+      t.method||'',
+      t.amount||0,
+      t.status||'',
+      t.created_by_name||'',
+      (t.notes||'').replace(/,/g,';')
+    ]);
+  });
+  var csv = rows.map(function(r){ return r.map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  downloadDataUrl('data:text/csv;charset=utf-8,' + encodeURIComponent(csv), 'transactions-' + today() + '.csv');
+}
+
 function getPosCats() {
   var cats = ["All"];
   for (var i = 0; i < posItems.length; i++) {
@@ -5199,9 +5712,11 @@ function completeSale(method, change) {
   dbInsert("invoices", row).then(function (created) {
     if (created) {
       invoices.push(created);
-      logActivity("POS Sale", "POS", (cid ? cName(cid) : 'Walk-in') + " - " + fmt(t.grand) + " - " + method);
-      // Deduct inventory for matched items
       deductInventoryForItems(items, created.id, 'pos', null);
+      // Log to transaction ledger with localStorage safety net
+      logTxn('sale', t.grand, method, created.id, cid,
+        'POS Sale' + (orderNotes ? ' | ' + orderNotes : '') + (t.taxExempt ? ' [TAX EXEMPT]' : '') + (t.tip > 0 ? ' [Tip: ' + fmt(t.tip) + ']' : ''));
+      logActivity("POS Sale", "POS", (cid ? cName(cid) : 'Walk-in') + " - " + fmt(t.grand) + " - " + method);
     }
     showReceipt(created || row, method, change, t);
     clearCart();
@@ -5497,41 +6012,47 @@ function regCollectInvoicePayment() {
   if (!_regSelInvId) return;
   var inv = invoices.find(function(i){ return i.id===_regSelInvId; });
   if (!inv) return;
-  var amount  = parseFloat((document.getElementById('reg-inv-amount')||{}).value||0);
-  var method  = (document.getElementById('reg-inv-method')||{}).value||'';
-  var notes   = (document.getElementById('reg-inv-notes')||{}).value||'';
-  if (!amount || amount <= 0) { toast('Enter a valid amount',true); return; }
+  var amount = parseFloat((document.getElementById('reg-inv-amount')||{}).value||0);
+  var method = (document.getElementById('reg-inv-method')||{}).value||'';
+  var notes  = (document.getElementById('reg-inv-notes')||{}).value||'';
+  if (!amount || amount <= 0) { toast('Enter a valid amount', true); return; }
 
-  var ref = 'INV-'+String(inv.id).padStart(4,'0');
-  var alreadyPaid = expenses.filter(function(e){ return e.type==='invoice_payment'&&e.reference===ref; })
-    .reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
-  var newTotal = alreadyPaid + amount;
-  var invGrand = parseFloat(inv.grand||0);
-  var newStatus = newTotal >= invGrand ? 'paid' : 'partial';
+  var ref        = 'INV-' + String(inv.id).padStart(4,'0');
+  var invGrand   = parseFloat(inv.grand||0);
+  // Calculate from transactions + legacy expenses
+  var alreadyPaid = getInvAmountPaid(inv.id);
+  var newTotal    = alreadyPaid + amount;
+  var newStatus   = newTotal >= invGrand - 0.01 ? 'paid' : 'partial';
+  var newAmtPaid  = Math.min(newTotal, invGrand);
 
-  var row = {
-    date:       today(),
-    type:       'invoice_payment',
-    category:   'Invoice Payment',
-    vendor:     cName(inv.cid),
-    client_id:  inv.cid,
-    amount:     amount,
-    method:     method,
-    reference:  ref,
-    notes:      notes,
+  // 1. Log to expense table (legacy compatibility)
+  var expRow = {
+    date: today(), type: 'invoice_payment', category: 'Invoice Payment',
+    vendor: inv.cid ? cName(inv.cid) : 'Walk-in', client_id: inv.cid,
+    amount: amount, method: method, reference: ref, notes: notes,
     created_by: currentUser ? currentUser.id : null
   };
-
-  dbInsert('expenses', row).then(function(created){
+  dbInsert('expenses', expRow).then(function(created) {
     if (created) expenses.unshift(created);
-    return dbUpdate('invoices', inv.id, {status: newStatus});
-  }).then(function(updated){
-    if (updated) { var idx=invoices.findIndex(function(i){return i.id===inv.id;}); if(idx>-1) invoices[idx]=updated; }
-    logActivity('Invoice Payment', 'POS', ref+' — '+fmt(amount)+' via '+method);
-    toast('✅ Payment recorded — '+ref+' marked '+newStatus);
+  });
+
+  // 2. Log to transactions ledger (new — safety net included)
+  logTxn('invoice_payment', amount, method, inv.id, inv.cid,
+    ref + (notes ? ' | ' + notes : ''));
+
+  // 3. Update invoice: status + amount_paid
+  dbUpdate('invoices', inv.id, {status: newStatus, amount_paid: newAmtPaid, payment_status: newStatus}).then(function(updated) {
+    if (updated) {
+      var idx = invoices.findIndex(function(i){ return i.id===inv.id; });
+      if (idx > -1) invoices[idx] = updated;
+    }
+    logActivity('Invoice Payment', 'POS', ref + ' — ' + fmt(amount) + ' via ' + method + ' | Paid: ' + fmt(newAmtPaid) + ' / ' + fmt(invGrand));
+    var balLeft = invGrand - newAmtPaid;
+    toast('✅ ' + fmt(amount) + ' recorded — ' + ref + ' ' + newStatus + (balLeft > 0.01 ? ' · Balance: ' + fmt(balLeft) : ' · PAID IN FULL'));
     closeM('posRegisterModal');
     renderPOSTodayBar();
-    if (curPage==='invoices') renderInvoices();
+    if (curPage === 'invoices') renderInvoices();
+    if (curPage === 'finance')  renderFinancePage();
   });
 }
 
@@ -5601,10 +6122,12 @@ function regRecordDeposit() {
   };
   dbInsert('expenses', row).then(function(created){
     if (created) expenses.unshift(created);
+    logTxn('deposit', amount, method, null, clientId, cat + (link?' ['+link+']':'') + (notes?' | '+notes:''));
     logActivity('Deposit Recorded', 'POS', fmt(amount)+' via '+method+(link?' ['+link+']':''));
     toast('✅ Deposit of '+fmt(amount)+' recorded!');
     closeM('posRegisterModal');
     renderPOSTodayBar();
+    if (curPage==='finance') renderFinancePage();
   });
 }
 
@@ -5667,10 +6190,12 @@ function regRecordExpense() {
   };
   dbInsert('expenses', row).then(function(created){
     if (created) expenses.unshift(created);
+    logTxn('expense', amount, method, null, null, cat + (vendor?' — '+vendor:'') + (ref?' ['+ref+']':'') + (notes?' | '+notes:''));
     logActivity('Expense Recorded', 'POS', cat+' — '+fmt(amount)+(vendor?' / '+vendor:''));
     toast('📤 Expense of '+fmt(amount)+' recorded!');
     closeM('posRegisterModal');
     renderPOSTodayBar();
+    if (curPage==='finance') renderFinancePage();
   });
 }
 function showReceipt(inv, method, change, totals) {
