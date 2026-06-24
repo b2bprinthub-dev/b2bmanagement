@@ -1521,9 +1521,20 @@ textarea.fc{resize:vertical;min-height:70px}
 
   <!-- Row 1: Client + Date + Validity + Status -->
   <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:10px;margin-bottom:18px;align-items:end">
-    <div class="fg" style="margin:0">
+    <div class="fg" style="margin:0;position:relative" id="est-cli-wrap">
       <label class="fl">Client *</label>
-      <select class="fc" id="est-cli"></select>
+      <div style="display:flex;gap:6px;align-items:center">
+        <div style="position:relative;flex:1">
+          <input class="fc" id="est-cli-input" data-cid="" autocomplete="off"
+            placeholder="Search by name, phone, email, business…"
+            oninput="estCustSearch(this.value)"
+            onfocus="estCustSearch(this.value)"
+            style="padding-right:28px"/>
+          <button id="est-cli-clear" onclick="estCustClear()"
+            style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;line-height:1">×</button>
+          <div id="est-cli-drop" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:1px solid var(--bor);border-radius:10px;z-index:300;max-height:240px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
+        </div>
+      </div>
     </div>
     <div class="fg" style="margin:0">
       <label class="fl">Estimate Date</label>
@@ -2731,7 +2742,7 @@ function fillCli() {
     if (clients[i].archived) continue;
     opts += '<option value="' + clients[i].id + '">' + clients[i].name + "</option>";
   }
-  var ids = ["inv-cli", "est-cli", "job-cli"];
+  var ids = ["inv-cli", "job-cli"];
   for (var j = 0; j < ids.length; j++) {
     var el = document.getElementById(ids[j]);
     if (el) el.innerHTML = opts;
@@ -4014,7 +4025,12 @@ function openEstModal(est) {
 
   fillCli();
   document.getElementById('estModalT').textContent = est ? 'Edit Estimate' : 'New Estimate';
-  document.getElementById('est-cli').value          = est ? est.cid  : '';
+  // Reset client lookup
+  estCustClear();
+  if (est && est.cid) {
+    var _ec = null; for (var _i=0;_i<clients.length;_i++){if(clients[_i].id===est.cid){_ec=clients[_i];break;}}
+    if (_ec) estCustSelect(_ec.id, _ec.name, _ec.company);
+  }
   document.getElementById('est-date').value         = est ? est.date : today();
   document.getElementById('est-validity').value     = meta.validity  || 30;
   document.getElementById('est-scope').value        = meta.scope     || (est && !meta._v ? (est.description||'') : '');
@@ -4131,8 +4147,11 @@ function getEstItems() {
 
 // ── Save Estimate ────────────────────────────────────────────────
 function saveEst(statusOverride) {
-  var cid = parseInt(document.getElementById('est-cli').value);
-  if (!cid) { toast('Please select a client', true); return Promise.resolve(); }
+  var _estCliEl = document.getElementById('est-cli-input');
+  var cid = _estCliEl ? (parseInt(_estCliEl.dataset.cid)||0) : 0;
+  var isWalkin = _estCliEl && _estCliEl.dataset.cid === 'walkin';
+  if (!cid && !isWalkin) { toast('Please select a client', true); return Promise.resolve(); }
+  if (isWalkin) cid = null;
 
   var items = getEstItems();
   var sub = 0;
@@ -4818,6 +4837,114 @@ function posCustClear() {
   if (clr)  clr.style.display = 'none';
   if (wrap) wrap.querySelector('div').style.borderColor = 'var(--bor)';
 }
+
+// ── Estimate Client Searchable Lookup ────────────────────────────
+function estCustSearch(q) {
+  var drop = document.getElementById('est-cli-drop');
+  if (!drop) return;
+  q = (q || '').toLowerCase().trim();
+
+  var matches = clients.filter(function(c) {
+    if (c.archived) return false;
+    return !q ||
+      (c.name    || '').toLowerCase().indexOf(q) > -1 ||
+      (c.company || '').toLowerCase().indexOf(q) > -1 ||
+      (c.phone   || '').toLowerCase().indexOf(q) > -1 ||
+      (c.email   || '').toLowerCase().indexOf(q) > -1;
+  }).slice(0, 30);
+
+  var html = '';
+
+  // Walk-in option always at top
+  html += '<div onclick="estCustSelect(\'walkin\',\'Walk-in Customer\',\'\')" ' +
+    'style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:8px" ' +
+    'onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'">' +
+    '<span style="font-size:16px">🚶</span>' +
+    '<div><div style="font-size:13px;font-weight:600;color:var(--t1)">Walk-in Customer</div>' +
+    '<div style="font-size:11px;color:var(--t3)">No account — one-time or anonymous</div></div></div>';
+
+  if (matches.length) {
+    matches.forEach(function(c) {
+      var sub = [c.company, c.phone, c.email].filter(Boolean).join(' · ');
+      html += '<div onclick="estCustSelect(' + c.id + ',\'' + (c.name||'').replace(/'/g,"\\'") + '\',\'' + (c.company||'').replace(/'/g,"\\'") + '\')" ' +
+        'style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--bor)" ' +
+        'onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--t1)">' + (c.name||'') + '</div>' +
+        (sub ? '<div style="font-size:11px;color:var(--t3);margin-top:1px">' + sub + '</div>' : '') +
+        '</div>';
+    });
+  } else if (q) {
+    html += '<div style="padding:12px 14px;text-align:center;color:var(--t3);font-size:12px">No clients match "' + q + '"</div>';
+  }
+
+  // Add new client button always at bottom
+  html += '<div onclick="estCustAddNew()" ' +
+    'style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(108,99,255,.06)" ' +
+    'onmouseover="this.style.background=\'rgba(108,99,255,.15)\'" onmouseout="this.style.background=\'rgba(108,99,255,.06)\'">' +
+    '<span style="font-size:16px">➕</span>' +
+    '<div style="font-size:13px;font-weight:600;color:var(--acc)">Add New Client' +
+    (q ? ' — "' + q + '"' : '') + '</div></div>';
+
+  drop.innerHTML = html;
+  drop.style.display = '';
+
+  // Close on outside click
+  setTimeout(function() {
+    document.addEventListener('click', function _estClose(ev) {
+      var wrap = document.getElementById('est-cli-wrap');
+      if (wrap && !wrap.contains(ev.target)) {
+        drop.style.display = 'none';
+        document.removeEventListener('click', _estClose);
+      }
+    });
+  }, 10);
+}
+
+function estCustSelect(id, name, company) {
+  var inp  = document.getElementById('est-cli-input');
+  var clr  = document.getElementById('est-cli-clear');
+  var drop = document.getElementById('est-cli-drop');
+  if (!inp) return;
+  var display = name + (company ? ' — ' + company : '');
+  inp.value = display;
+  inp.dataset.cid = String(id);
+  if (clr)  clr.style.display = '';
+  if (drop) drop.style.display = 'none';
+  // Highlight the field border
+  inp.style.borderColor = 'var(--acc)';
+}
+
+function estCustClear() {
+  var inp  = document.getElementById('est-cli-input');
+  var clr  = document.getElementById('est-cli-clear');
+  var drop = document.getElementById('est-cli-drop');
+  if (inp)  { inp.value = ''; inp.dataset.cid = ''; inp.style.borderColor = ''; }
+  if (clr)  clr.style.display = 'none';
+  if (drop) drop.style.display = 'none';
+}
+
+function estCustAddNew() {
+  // Grab whatever they typed as a pre-fill for the name
+  var inp = document.getElementById('est-cli-input');
+  var typed = inp ? inp.value.trim() : '';
+  var drop = document.getElementById('est-cli-drop');
+  if (drop) drop.style.display = 'none';
+
+  // Open the new client modal, pre-fill name if typed
+  _editCli = null;
+  document.getElementById('cliModalT').textContent = 'New Client';
+  document.getElementById('cli-name').value  = typed;
+  document.getElementById('cli-email').value = '';
+  document.getElementById('cli-phone').value = '';
+  document.getElementById('cli-addr').value  = '';
+  document.getElementById('cli-notes').value = '';
+
+  // After saving, auto-select the new client in the estimate lookup
+  _estCliCallback = true;
+  document.getElementById('cliModal').classList.add('open');
+}
+
+var _estCliCallback = false; // flag to auto-select after new client saved
 
 function renderPOS() {
   fillCli();
@@ -9986,8 +10113,10 @@ function createDocFromJob(type, jobId) {
     openEstModal(null);
     setTimeout(function() {
       // Set client
-      var cliEl = document.getElementById('est-cli');
-      if (cliEl && j.cid) cliEl.value = j.cid;
+      if (j.cid) {
+        var _jc = null; for (var _ji=0;_ji<clients.length;_ji++){if(clients[_ji].id===j.cid){_jc=clients[_ji];break;}}
+        if (_jc) estCustSelect(_jc.id, _jc.name, _jc.company);
+      }
       // Set scope
       var scopeEl = document.getElementById('est-scope');
       if (scopeEl) scopeEl.value = j.description || j.title;
@@ -11185,6 +11314,11 @@ function saveCli() {
       renderCRM();
       fillCli();
       toast("Client saved!");
+      // Auto-select into estimate lookup if opened from estimate modal
+      if (_estCliCallback && created) {
+        _estCliCallback = false;
+        estCustSelect(created.id, created.name, created.company || '');
+      }
     });
   }
 }
