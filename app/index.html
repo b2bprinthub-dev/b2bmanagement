@@ -360,7 +360,20 @@ textarea.fc{resize:vertical;min-height:70px}
         <div style="background:var(--bg2);border-left:1px solid var(--bor);display:flex;flex-direction:column;overflow:hidden">
           <!-- Order header -->
           <div style="padding:12px 14px;border-bottom:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between;gap:8px">
-            <select class="fc" id="pos-cust" style="font-size:12px;padding:5px 8px;flex:1"></select>
+            <!-- Searchable customer lookup -->
+            <div id="pos-cust-wrap" style="flex:1;position:relative">
+              <div style="display:flex;align-items:center;gap:4px;border:1px solid var(--bor);border-radius:8px;background:var(--bg3);padding:0 6px">
+                <span style="font-size:13px;color:var(--t3)">👤</span>
+                <input id="pos-cust-input" data-cid="" placeholder="Walk-in / Search customer…"
+                  autocomplete="off"
+                  style="flex:1;border:none;background:transparent;color:var(--t1);font-size:12px;padding:6px 4px;outline:none;min-width:0"
+                  oninput="posCustSearch(this.value)"
+                  onfocus="posCustSearch(this.value)"
+                  onblur="setTimeout(function(){var d=document.getElementById('pos-cust-drop');if(d)d.style.display='none';},180)"/>
+                <button id="pos-cust-clear" onclick="posCustClear()" style="display:none;background:none;border:none;color:var(--t3);cursor:pointer;font-size:14px;padding:0 2px;line-height:1">×</button>
+              </div>
+              <div id="pos-cust-drop" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:1px solid var(--bor);border-radius:10px;max-height:240px;overflow-y:auto;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.3)"></div>
+            </div>
             <button onclick="openHeldOrders()" title="Held Orders" style="background:none;border:1px solid var(--bor);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:13px;color:var(--warn)">⏸ <span id="pos-held-count"></span></button>
             <button onclick="clearCart()" title="Clear Order" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:18px">🗑</button>
           </div>
@@ -2641,7 +2654,7 @@ function fillCli() {
     if (clients[i].archived) continue;
     opts += '<option value="' + clients[i].id + '">' + clients[i].name + "</option>";
   }
-  var ids = ["inv-cli", "est-cli", "job-cli", "pos-cust"];
+  var ids = ["inv-cli", "est-cli", "job-cli"];
   for (var j = 0; j < ids.length; j++) {
     var el = document.getElementById(ids[j]);
     if (el) el.innerHTML = opts;
@@ -4225,6 +4238,53 @@ function getPosCats() {
   }
   return cats;
 }
+// ── POS Customer Searchable Lookup ───────────────────────────────
+function posCustSearch(q) {
+  var drop = document.getElementById('pos-cust-drop');
+  if (!drop) return;
+  q = (q || '').toLowerCase().trim();
+  var matches = clients.filter(function(c) {
+    return !q ||
+      (c.name    || '').toLowerCase().indexOf(q) > -1 ||
+      (c.company || '').toLowerCase().indexOf(q) > -1 ||
+      (c.phone   || '').toLowerCase().indexOf(q) > -1 ||
+      (c.email   || '').toLowerCase().indexOf(q) > -1;
+  }).slice(0, 30);
+
+  if (!matches.length) {
+    drop.innerHTML = '<div style="padding:14px;text-align:center;color:var(--t3);font-size:12px">No customers found</div>';
+  } else {
+    drop.innerHTML = matches.map(function(c) {
+      var sub = [c.company, c.phone, c.email].filter(Boolean).join(' · ');
+      return '<div onclick="posCustSelect(' + c.id + ',\'' + (c.name||'').replace(/'/g,"\\'") + '\')" ' +
+        'style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--bor)" ' +
+        'onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--t1)">' + (c.name||'') + '</div>' +
+        (sub ? '<div style="font-size:11px;color:var(--t3);margin-top:1px">' + sub + '</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+  drop.style.display = '';
+}
+function posCustSelect(id, name) {
+  var inp   = document.getElementById('pos-cust-input');
+  var clr   = document.getElementById('pos-cust-clear');
+  var drop  = document.getElementById('pos-cust-drop');
+  var wrap  = document.getElementById('pos-cust-wrap');
+  if (inp)  { inp.value = name; inp.dataset.cid = id; }
+  if (clr)  clr.style.display = '';
+  if (drop) drop.style.display = 'none';
+  if (wrap) wrap.querySelector('div').style.borderColor = 'var(--acc)';
+}
+function posCustClear() {
+  var inp  = document.getElementById('pos-cust-input');
+  var clr  = document.getElementById('pos-cust-clear');
+  var wrap = document.getElementById('pos-cust-wrap');
+  if (inp)  { inp.value = ''; inp.dataset.cid = ''; inp.focus(); }
+  if (clr)  clr.style.display = 'none';
+  if (wrap) wrap.querySelector('div').style.borderColor = 'var(--bor)';
+}
+
 function renderPOS() {
   fillCli();
   buildPosCatTabs();
@@ -4442,8 +4502,8 @@ function confirmCashPayment() {
 }
 function completeSale(method, change) {
   var t = getOrderTotals();
-  var custVal = parseInt(document.getElementById("pos-cust").value);
-  var cid = custVal || null;
+  var custEl = document.getElementById("pos-cust-input");
+  var cid = custEl && custEl.dataset.cid ? parseInt(custEl.dataset.cid) || null : null;
   var orderNotes = (document.getElementById('pos-order-notes') || {}).value || '';
   var items = [];
   for (var i = 0; i < cart.length; i++) {
