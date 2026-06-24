@@ -4494,18 +4494,18 @@ function _updateSapvPreview() {
   var svcLabel = meta.serviceType ? meta.serviceType.replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}) : 'Print Service';
 
   var preview =
-    'Subject: Estimate Ready for Your Approval — EST-' + String(est.id).padStart(4,'0') + '\n\n' +
     msg + '\n\n' +
-    '──────────────────────\n' +
+    '- - - - - - - - - - - - - - - - -\n' +
     'ESTIMATE #EST-' + String(est.id).padStart(4,'0') + '\n' +
-    'Service: ' + svcLabel + '\n' +
-    'Scope:   ' + scope.substring(0,80) + (scope.length>80?'...':'') + '\n' +
-    'Date:    ' + est.date + '\n' +
-    'TOTAL:   ' + fmt(est.grand) + '\n' +
-    '──────────────────────\n\n' +
-    '👉 Click below to APPROVE, DECLINE, or ask a question:\n' +
+    'Service : ' + svcLabel + '\n' +
+    'Scope   : ' + scope.substring(0,80) + (scope.length>80?'...':'') + '\n' +
+    'Date    : ' + est.date + '\n' +
+    'TOTAL   : ' + fmt(est.grand) + '\n' +
+    '- - - - - - - - - - - - - - - - -\n\n' +
+    'To APPROVE, DECLINE, or ask a question, copy and paste\n' +
+    'the link below into your browser:\n\n' +
     approvalUrl + '\n\n' +
-    (autoOn ? '✅ Upon your approval, we will automatically send your invoice.\n\n' : '') +
+    (autoOn ? 'Upon your approval we will send your invoice automatically.\n\n' : '') +
     'This estimate is valid for ' + (meta.validity||30) + ' days.\n\n' +
     'Thank you for your business!\n' +
     (currentUser ? currentUser.name : 'Your B2B Print Hub Team');
@@ -4541,10 +4541,11 @@ function doSendApproval() {
     // Now open mailto
     var baseUrl = getApprovalBaseURL();
     var approvalUrl = baseUrl + '?approve=' + token + '&eid=' + est.id;
-    var subject = encodeURIComponent('Estimate Ready for Your Approval — EST-' + String(est.id).padStart(4,'0'));
+    var subject = encodeURIComponent('Estimate Ready for Your Approval - EST-' + String(est.id).padStart(4,'0'));
     var body = document.getElementById('sapv-preview').textContent;
-    var mailto = 'mailto:' + encodeURIComponent(toEmail) + '?subject=' + subject + '&body=' + encodeURIComponent(body);
-    window.open(mailto, '_blank');
+    // Do NOT encode the email address — mailto: uses raw address
+    var mailto = 'mailto:' + toEmail + '?subject=' + subject + '&body=' + encodeURIComponent(body);
+    window.location.href = mailto;
     closeM('sendApprovalModal');
     renderEstimates();
     refreshApprovalBell();
