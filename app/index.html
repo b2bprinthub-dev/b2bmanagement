@@ -10,6 +10,9 @@
 <title>B2B Print Hub</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0f1117;--bg2:#1a1d2e;--bg3:#222539;--sur:#2a2d3e;--bor:#3a3d52;--t1:#e8eaf6;--t2:#9ea3c0;--t3:#6b7099;--acc:#6c63ff;--ok:#4caf7d;--warn:#f59e0b;--err:#ef4444;--inf:#38bdf8}
@@ -1003,6 +1006,7 @@ textarea.fc{resize:vertical;min-height:70px}
         <button class="inv-tab" onclick="setInvTab('suppliers',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap">🏭 Suppliers</button>
         <button class="inv-tab" onclick="setInvTab('pos',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap">🛒 PO History</button>
         <button class="inv-tab" onclick="setInvTab('valuation',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap">💰 Valuation</button>
+        <button class="inv-tab" onclick="setInvTab('pricelist',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap">🏷️ Price List</button>
       </div>
 
       <!-- Search + filter bar -->
@@ -1027,6 +1031,7 @@ textarea.fc{resize:vertical;min-height:70px}
       <div id="inv-pane-transactions" style="display:none"></div>
       <div id="inv-pane-pos"          style="display:none"></div>
       <div id="inv-pane-valuation"    style="display:none"></div>
+      <div id="inv-pane-pricelist"   style="display:none"></div>
     </div>
 
     <!-- ─── Inventory Item Modal ─────────────────────────── -->
@@ -2777,7 +2782,8 @@ function loadAppData() {
     dbGet("purchase_orders", {order: "created_at", asc: false}),
     dbGet("suppliers", {order: "name"}),
     dbGet("expenses",  {order: "created_at", asc: false, limit: 1000}).catch(function(){ return []; }),
-    dbGet("transactions", {order: "created_at", asc: false, limit: 2000}).catch(function(){ return []; })
+    dbGet("transactions", {order: "created_at", asc: false, limit: 2000}).catch(function(){ return []; }),
+    dbGet("price_list",  {order: "created_at", asc: false}).catch(function(){ return []; })
   ]).then(function (results) {
     appRoles     = results[0];
     appUsers     = results[1];
@@ -2797,6 +2803,7 @@ function loadAppData() {
     suppliers    = results[15] || [];
     expenses     = results[16] || [];
     transactions = results[17] || [];
+    _plItems     = (results[18] || []).filter(function(r){ return !r.deleted; });
     updateMsgBadge();
     updateInvAlertBadge();
     checkPendingTxns();
@@ -12758,7 +12765,7 @@ function setInvTab(tab, el) {
     b.style.color = 'var(--t3)'; b.style.borderBottomColor = 'transparent';
   });
   if (el) { el.style.color = 'var(--acc)'; el.style.borderBottomColor = 'var(--acc)'; }
-  ['items','low','suppliers','transactions','pos','valuation'].forEach(function(t){
+  ['items','low','suppliers','transactions','pos','valuation','pricelist'].forEach(function(t){
     var p = document.getElementById('inv-pane-'+t);
     if (p) p.style.display = t===tab ? '' : 'none';
   });
@@ -12815,6 +12822,7 @@ function renderInventoryTab() {
   else if (_invTab === 'transactions') renderInvTxns();
   else if (_invTab === 'pos')          renderInvPOs();
   else if (_invTab === 'valuation')    renderInvValuation();
+  else if (_invTab === 'pricelist')   renderInvPriceList();
 }
 
 // ── Items tab ─────────────────────────────────────────────────
@@ -12961,6 +12969,538 @@ function renderInvValuation() {
       return '<tr style="border-bottom:1px solid var(--bor)"><td style="padding:7px 10px;font-size:12px;font-weight:500">'+item.name+'</td><td style="padding:7px 10px;font-size:11px;color:var(--t3)">'+(item.sku||'—')+'</td><td style="padding:7px 10px;font-size:12px">'+parseFloat(item.qty_on_hand||0)+'</td><td style="padding:7px 10px;font-size:11px;color:var(--t3)">'+(item.unit||'each')+'</td><td style="padding:7px 10px;font-size:12px">'+fmt(item.cost_price||0)+'</td><td style="padding:7px 10px;font-size:12px;font-weight:600">'+fmt(cv2)+'</td><td style="padding:7px 10px;font-size:12px">'+fmt(item.sell_price||0)+'</td><td style="padding:7px 10px;font-size:12px">'+fmt(rv2)+'</td><td style="padding:7px 10px;font-size:12px;font-weight:600;color:'+(m2>=30?'#4caf7d':m2>=15?'#f59e0b':'#ef4444')+'">'+m2.toFixed(1)+'%</td></tr>';
     }).join('')+'</tbody></table></div></div></div>';
 }
+
+// ── PRICE LIST ────────────────────────────────────────────────
+var _plItems     = [];   // all price_list rows from DB
+var _plPending   = [];   // parsed rows awaiting review
+var _plSupFilter = 'all';
+var _plStatusFilter = 'all';
+var _plSearch    = '';
+var _plSelIds    = {};   // selected row ids for bulk ops
+var _plDefaultMargin = 35; // default margin %
+
+function renderInvPriceList() {
+  var pane = document.getElementById('inv-pane-pricelist');
+  if (!pane) return;
+
+  var approved = _plItems.filter(function(r){ return r.status==='approved'; });
+  var pending  = _plItems.filter(function(r){ return r.status==='pending'; });
+  var suppliers = [...new Set(_plItems.map(function(r){ return r.supplier||''; }).filter(Boolean))].sort();
+
+  // filter
+  var filtered = _plItems.filter(function(r){
+    if (_plStatusFilter !== 'all' && r.status !== _plStatusFilter) return false;
+    if (_plSupFilter !== 'all' && r.supplier !== _plSupFilter) return false;
+    if (_plSearch) {
+      var q = _plSearch.toLowerCase();
+      return (r.description||'').toLowerCase().includes(q) || (r.sku||'').toLowerCase().includes(q) || (r.supplier||'').toLowerCase().includes(q) || (r.category||'').toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  var allSelected = filtered.length > 0 && filtered.every(function(r){ return _plSelIds[r.id]; });
+
+  pane.innerHTML =
+    // KPI row
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px">' +
+    [
+      {l:'Total Items', v: _plItems.length, c:'#6c63ff'},
+      {l:'Approved',    v: approved.length, c:'#4caf7d'},
+      {l:'Pending Review', v: pending.length, c:'#f59e0b'},
+      {l:'Suppliers',   v: suppliers.length, c:'#38bdf8'}
+    ].map(function(k){
+      return '<div class="card" style="padding:12px;border-top:3px solid '+k.c+';cursor:pointer" onclick="setPlStatusFilter(\''+(k.l==='Pending Review'?'pending':k.l==='Approved'?'approved':'all')+'\')"><div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">'+k.l+'</div><div style="font-size:22px;font-weight:800;color:'+k.c+'">'+k.v+'</div></div>';
+    }).join('') + '</div>' +
+
+    // Upload zone
+    '<div class="card" style="margin-bottom:16px;padding:0;overflow:hidden">' +
+      '<div style="padding:14px 16px;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;align-items:center">' +
+        '<div><b style="font-size:14px">📤 Import Price List</b><div style="font-size:11px;color:var(--t3);margin-top:2px">Supports Excel (.xlsx/.xls), CSV, PDF, Word (.docx)</div></div>' +
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<span style="font-size:11px;color:var(--t3)">Default margin:</span>' +
+          '<input type="number" id="pl-margin-input" value="'+_plDefaultMargin+'" min="0" max="500" style="width:55px;background:var(--bg3);border:1px solid var(--bor);border-radius:6px;color:var(--t1);padding:4px 8px;font-size:13px" onchange="_plDefaultMargin=parseFloat(this.value)||35"/> %' +
+        '</div>' +
+      '</div>' +
+      '<div id="pl-drop-zone" style="margin:16px;border:2px dashed var(--bor);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;position:relative" ' +
+        'onclick="document.getElementById(\'pl-file-input\').click()" ' +
+        'ondragover="event.preventDefault();this.style.borderColor=\'var(--acc)\';this.style.background=\'rgba(99,102,241,.07)\'" ' +
+        'ondragleave="this.style.borderColor=\'var(--bor)\';this.style.background=\'\'" ' +
+        'ondrop="plHandleDrop(event)">' +
+        '<div style="font-size:36px;margin-bottom:8px">📂</div>' +
+        '<div style="font-size:14px;font-weight:600;margin-bottom:4px">Drop your price list file here</div>' +
+        '<div style="font-size:12px;color:var(--t3)">or click to browse — Excel, CSV, PDF, Word supported</div>' +
+        '<input type="file" id="pl-file-input" style="display:none" accept=".xlsx,.xls,.csv,.pdf,.doc,.docx" onchange="plHandleFile(this.files[0])">' +
+      '</div>' +
+      '<div id="pl-parse-status" style="padding:0 16px 12px;font-size:12px;color:var(--t3);display:none"></div>' +
+    '</div>' +
+
+    // Pending review queue
+    (_plPending.length ? plRenderReviewQueue() : '') +
+
+    // Filter + search bar
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">' +
+      '<input class="fc" id="pl-search" placeholder="Search description, SKU, supplier…" value="'+(_plSearch||'')+'" oninput="_plSearch=this.value;renderInvPriceList()" style="flex:1;min-width:200px;max-width:320px;padding:7px 12px;font-size:13px"/>' +
+      '<select class="fc" onchange="_plSupFilter=this.value;renderInvPriceList()" style="padding:7px 10px;font-size:13px;width:auto"><option value="all">All Suppliers</option>'+suppliers.map(function(s){return '<option value="'+s+'" '+(s===_plSupFilter?'selected':'')+'>'+s+'</option>';}).join('')+'</select>' +
+      '<select class="fc" onchange="_plStatusFilter=this.value;renderInvPriceList()" style="padding:7px 10px;font-size:13px;width:auto"><option value="all">All Status</option><option value="approved" '+(_plStatusFilter==='approved'?'selected':'')+'>Approved</option><option value="pending" '+(_plStatusFilter==='pending'?'selected':'')+'>Pending</option></select>' +
+      '<button class="btn btn-o btn-sm" onclick="plExportCSV()">⬇ Export CSV</button>' +
+    '</div>' +
+
+    // Bulk action bar (shows when items selected)
+    '<div id="pl-bulk-bar" style="display:'+(Object.keys(_plSelIds).length?'flex':'none')+';gap:8px;align-items:center;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px">' +
+      '<span style="font-size:13px;font-weight:600;color:var(--acc)">'+Object.keys(_plSelIds).length+' selected</span>' +
+      '<button class="btn btn-ok btn-sm" onclick="plBulkApprove()">✅ Approve All</button>' +
+      '<button class="btn btn-o btn-sm" onclick="plBulkSetMargin()">📊 Set Margin %</button>' +
+      '<button class="btn btn-o btn-sm" style="color:var(--err);border-color:rgba(239,68,68,.4)" onclick="plBulkDelete()">🗑 Delete</button>' +
+      '<button class="btn btn-o btn-sm" onclick="_plSelIds={};renderInvPriceList()">✕ Clear</button>' +
+    '</div>' +
+
+    // Main table
+    '<div class="card" style="padding:0;overflow:hidden">' +
+      '<div style="overflow-x:auto">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="border-bottom:2px solid var(--bor)">' +
+        '<th style="padding:10px 12px;text-align:center;width:36px"><input type="checkbox" '+(allSelected?'checked':'')+' onchange="plToggleAll(this.checked,'+JSON.stringify(filtered.map(function(r){return r.id;}))+')"/></th>' +
+        ['Supplier','SKU','Description','Category','Unit','Cost Price','Sale Price','Margin','Status',''].map(function(h){
+          return '<th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">'+h+'</th>';
+        }).join('') +
+      '</tr></thead>' +
+      '<tbody>' +
+      (filtered.length ? filtered.map(function(r){
+        var cost = parseFloat(r.cost_price||0);
+        var sale = parseFloat(r.sale_price||0);
+        var margin = cost > 0 ? ((sale - cost) / cost * 100) : 0;
+        var mc = margin >= 30 ? '#4caf7d' : margin >= 15 ? '#f59e0b' : '#ef4444';
+        var sc = r.status==='approved' ? 'b-ok' : 'b-warn';
+        return '<tr style="border-bottom:1px solid var(--bor);'+(r.status==='pending'?'background:rgba(245,158,11,.04)':'')+'">' +
+          '<td style="padding:8px 12px;text-align:center"><input type="checkbox" '+(_plSelIds[r.id]?'checked':'')+' onchange="plToggleSel('+r.id+',this.checked)"/></td>' +
+          '<td style="padding:8px 12px;font-weight:500;white-space:nowrap">'+(r.supplier||'—')+'</td>' +
+          '<td style="padding:8px 12px;color:var(--t3);font-size:11px;white-space:nowrap">'+(r.sku||'—')+'</td>' +
+          '<td style="padding:8px 12px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+r.description+'">'+r.description+'</td>' +
+          '<td style="padding:8px 12px;color:var(--t3)">'+(r.category||'—')+'</td>' +
+          '<td style="padding:8px 12px;color:var(--t3)">'+(r.unit||'each')+'</td>' +
+          '<td style="padding:8px 12px;font-weight:600">'+fmt(cost)+'</td>' +
+          '<td style="padding:8px 12px"><input type="number" value="'+sale.toFixed(2)+'" min="0" step="0.01" style="width:80px;background:var(--bg2);border:1px solid var(--bor);border-radius:5px;color:var(--t1);padding:3px 6px;font-size:12px" onchange="plUpdateSalePrice('+r.id+',this.value)" onblur="plUpdateSalePrice('+r.id+',this.value)"/></td>' +
+          '<td style="padding:8px 12px;font-weight:700;color:'+mc+'">'+margin.toFixed(1)+'%</td>' +
+          '<td style="padding:8px 12px"><span class="badge '+sc+'">'+r.status+'</span></td>' +
+          '<td style="padding:8px 12px;white-space:nowrap">' +
+            (r.status==='pending' ? '<button class="btn btn-ok btn-sm" style="margin-right:4px" onclick="plApproveOne('+r.id+')">✅</button>' : '') +
+            '<button class="btn btn-o btn-sm" onclick="plDeleteOne('+r.id+')" style="color:var(--err)">🗑</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('') : '<tr><td colspan="10" style="padding:40px;text-align:center;color:var(--t3)">No price list items yet. Import a file above to get started.</td></tr>') +
+      '</tbody></table></div></div>';
+}
+
+function plRenderReviewQueue() {
+  if (!_plPending.length) return '';
+  return '<div class="card" style="margin-bottom:16px;padding:0;overflow:hidden;border:2px solid rgba(245,158,11,.4)">' +
+    '<div style="padding:12px 16px;background:rgba(245,158,11,.08);border-bottom:1px solid rgba(245,158,11,.2);display:flex;justify-content:space-between;align-items:center">' +
+      '<div><b>📋 Review Extracted Items ('+_plPending.length+')</b><div style="font-size:11px;color:var(--t3);margin-top:2px">Verify columns, set sale prices, then approve to save</div></div>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button class="btn btn-o btn-sm" onclick="plApproveAllPending()">✅ Approve All</button>' +
+        '<button class="btn btn-o btn-sm" onclick="plOpenColumnMapper()">🔧 Remap Columns</button>' +
+        '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="_plPending=[];renderInvPriceList()">✕ Discard</button>' +
+      '</div>' +
+    '</div>' +
+    '<div style="overflow-x:auto;max-height:340px;overflow-y:auto">' +
+    '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+    '<thead style="position:sticky;top:0;background:var(--bg2)"><tr>' +
+      ['#','Supplier','SKU','Description','Category','Unit','Cost Price','Sale Price','Margin','✕'].map(function(h){
+        return '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;border-bottom:1px solid var(--bor);white-space:nowrap">'+h+'</th>';
+      }).join('') +
+    '</tr></thead><tbody>' +
+    _plPending.map(function(r, i){
+      var cost = parseFloat(r.cost_price||0);
+      var sale = parseFloat(r.sale_price||0);
+      var margin = cost > 0 ? ((sale-cost)/cost*100) : 0;
+      var mc = margin >= 30 ? '#4caf7d' : margin >= 15 ? '#f59e0b' : '#ef4444';
+      return '<tr style="border-bottom:1px solid var(--bor)">' +
+        '<td style="padding:6px 10px;color:var(--t3)">'+(i+1)+'</td>' +
+        '<td style="padding:6px 10px"><input value="'+(r.supplier||'')+'" style="width:90px;background:var(--bg3);border:1px solid var(--bor);border-radius:4px;color:var(--t1);padding:2px 5px;font-size:11px" onchange="_plPending['+i+'].supplier=this.value"/></td>' +
+        '<td style="padding:6px 10px"><input value="'+(r.sku||'')+'" style="width:70px;background:var(--bg3);border:1px solid var(--bor);border-radius:4px;color:var(--t1);padding:2px 5px;font-size:11px" onchange="_plPending['+i+'].sku=this.value"/></td>' +
+        '<td style="padding:6px 10px"><input value="'+(r.description||'')+'" style="width:180px;background:var(--bg3);border:1px solid var(--bor);border-radius:4px;color:var(--t1);padding:2px 5px;font-size:11px" onchange="_plPending['+i+'].description=this.value"/></td>' +
+        '<td style="padding:6px 10px"><input value="'+(r.category||'')+'" style="width:90px;background:var(--bg3);border:1px solid var(--bor);border-radius:4px;color:var(--t1);padding:2px 5px;font-size:11px" onchange="_plPending['+i+'].category=this.value"/></td>' +
+        '<td style="padding:6px 10px"><input value="'+(r.unit||'each')+'" style="width:55px;background:var(--bg3);border:1px solid var(--bor);border-radius:4px;color:var(--t1);padding:2px 5px;font-size:11px" onchange="_plPending['+i+'].unit=this.value"/></td>' +
+        '<td style="padding:6px 10px"><input type="number" value="'+cost.toFixed(2)+'" style="width:65px;background:var(--bg3);border:1px solid var(--bor);border-radius:4px;color:var(--t1);padding:2px 5px;font-size:11px" onchange="var v=parseFloat(this.value)||0;_plPending['+i+'].cost_price=v;_plPending['+i+'].sale_price=+(v*(1+_plDefaultMargin/100)).toFixed(2);renderInvPriceList()"/></td>' +
+        '<td style="padding:6px 10px"><input type="number" value="'+sale.toFixed(2)+'" style="width:65px;background:var(--bg3);border:1px solid var(--bor);border-radius:4px;color:var(--t1);padding:2px 5px;font-size:11px" onchange="_plPending['+i+'].sale_price=parseFloat(this.value)||0;renderInvPriceList()"/></td>' +
+        '<td style="padding:6px 10px;font-weight:700;color:'+mc+'">'+margin.toFixed(1)+'%</td>' +
+        '<td style="padding:6px 10px"><button class="btn btn-o btn-sm" style="color:var(--err);padding:2px 6px" onclick="_plPending.splice('+i+',1);renderInvPriceList()">✕</button></td>' +
+      '</tr>';
+    }).join('') +
+    '</tbody></table></div></div>';
+}
+
+// ── File Handling ─────────────────────────────────────────────
+function plHandleDrop(e) {
+  e.preventDefault();
+  var dz = document.getElementById('pl-drop-zone');
+  if (dz) { dz.style.borderColor='var(--bor)'; dz.style.background=''; }
+  var file = e.dataTransfer.files[0];
+  if (file) plHandleFile(file);
+}
+
+function plHandleFile(file) {
+  if (!file) return;
+  plSetStatus('⏳ Reading <b>'+file.name+'</b>…', '#f59e0b');
+  var ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    plParseCSV(file);
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    plParseExcel(file);
+  } else if (ext === 'pdf') {
+    plParsePDF(file);
+  } else if (ext === 'docx') {
+    plParseDocx(file);
+  } else {
+    plSetStatus('❌ Unsupported file type. Use Excel, CSV, PDF, or Word (.docx)', '#ef4444');
+  }
+}
+
+function plSetStatus(msg, color) {
+  var el = document.getElementById('pl-parse-status');
+  if (!el) return;
+  el.style.display = '';
+  el.style.color = color || 'var(--t3)';
+  el.innerHTML = msg;
+}
+
+function plParseCSV(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    var rows = text.split(/\r?\n/).filter(Boolean);
+    if (rows.length < 2) { plSetStatus('❌ CSV appears empty', '#ef4444'); return; }
+    var headers = rows[0].split(',').map(function(h){ return h.replace(/"/g,'').trim().toLowerCase(); });
+    var data = rows.slice(1).map(function(row){
+      var cols = row.match(/(".*?"|[^,]+)/g)||[];
+      var obj = {};
+      headers.forEach(function(h,i){ obj[h] = (cols[i]||'').replace(/"/g,'').trim(); });
+      return obj;
+    }).filter(function(r){ return Object.values(r).some(Boolean); });
+    plOpenColumnMapper(headers, data, file.name);
+  };
+  reader.readAsText(file);
+}
+
+function plParseExcel(file) {
+  if (typeof XLSX === 'undefined') { plSetStatus('❌ Excel library not loaded yet — try again in a moment', '#ef4444'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var data = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if (!data.length) { plSetStatus('❌ No data found in sheet', '#ef4444'); return; }
+      var headers = Object.keys(data[0]).map(function(h){ return h.trim().toLowerCase(); });
+      var rows = data.map(function(row){
+        var obj = {};
+        Object.keys(row).forEach(function(k){ obj[k.trim().toLowerCase()] = String(row[k]).trim(); });
+        return obj;
+      });
+      plOpenColumnMapper(headers, rows, file.name);
+    } catch(err) {
+      plSetStatus('❌ Could not parse Excel file: '+err.message, '#ef4444');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function plParsePDF(file) {
+  if (typeof pdfjsLib === 'undefined') { plSetStatus('❌ PDF library not loaded yet — try again in a moment', '#ef4444'); return; }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    pdfjsLib.getDocument({data: new Uint8Array(e.target.result)}).promise.then(function(pdf) {
+      var pages = [];
+      var total = pdf.numPages;
+      for (var p = 1; p <= Math.min(total, 50); p++) pages.push(p);
+      plSetStatus('⏳ Extracting text from '+total+' page(s)…', '#f59e0b');
+      Promise.all(pages.map(function(pn){
+        return pdf.getPage(pn).then(function(page){
+          return page.getTextContent().then(function(tc){
+            return tc.items.map(function(item){ return item.str; }).join(' ');
+          });
+        });
+      })).then(function(pageTexts) {
+        var fullText = pageTexts.join('\n');
+        var rows = plExtractRowsFromText(fullText);
+        if (!rows.length) {
+          plSetStatus('⚠️ Could not auto-detect table structure. Showing raw text preview for manual entry.', '#f59e0b');
+          plShowRawTextFallback(fullText);
+          return;
+        }
+        var headers = Object.keys(rows[0]).map(function(h){ return h.toLowerCase(); });
+        plOpenColumnMapper(headers, rows, file.name);
+      });
+    }).catch(function(err){ plSetStatus('❌ PDF error: '+err.message,'#ef4444'); });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function plParseDocx(file) {
+  if (typeof mammoth === 'undefined') { plSetStatus('❌ Word library not loaded yet — try again in a moment', '#ef4444'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    mammoth.extractRawText({arrayBuffer: e.target.result}).then(function(result){
+      var rows = plExtractRowsFromText(result.value);
+      if (!rows.length) {
+        plSetStatus('⚠️ Could not detect table structure in Word doc. Try copy-pasting into Excel/CSV instead.', '#f59e0b');
+        plShowRawTextFallback(result.value);
+        return;
+      }
+      var headers = Object.keys(rows[0]).map(function(h){ return h.toLowerCase(); });
+      plOpenColumnMapper(headers, rows, file.name);
+    }).catch(function(err){ plSetStatus('❌ Word error: '+err.message,'#ef4444'); });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function plExtractRowsFromText(text) {
+  // Try to detect tab-separated or multi-space columns typical in price lists
+  var lines = text.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+  if (!lines.length) return [];
+  // Detect separator (tabs or 2+ spaces)
+  var hasTabs = lines.some(function(l){ return l.includes('\t'); });
+  var sep = hasTabs ? '\t' : /  +/;
+  var rows = lines.map(function(l){ return hasTabs ? l.split('\t') : l.split(/  +/); });
+  var maxCols = Math.max.apply(null, rows.map(function(r){ return r.length; }));
+  if (maxCols < 2) return []; // can't parse
+  var headers = rows[0].map(function(h){ return h.toLowerCase().trim()||'col'+Math.random(); });
+  return rows.slice(1).filter(function(r){ return r.length >= 2; }).map(function(r){
+    var obj = {};
+    headers.forEach(function(h,i){ obj[h] = (r[i]||'').trim(); });
+    return obj;
+  });
+}
+
+function plShowRawTextFallback(text) {
+  var pane = document.getElementById('inv-pane-pricelist');
+  if (!pane) return;
+  var pre = document.createElement('div');
+  pre.className = 'card';
+  pre.style.cssText = 'margin-top:12px;padding:14px;max-height:300px;overflow-y:auto';
+  pre.innerHTML = '<div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--warn)">⚠️ Raw Extracted Text — Copy relevant rows into a CSV and re-import</div>' +
+    '<pre style="font-size:11px;color:var(--t2);white-space:pre-wrap;word-break:break-all">'+text.substring(0,4000)+(text.length>4000?'\n\n…(truncated)':'')+'</pre>';
+  pane.appendChild(pre);
+}
+
+// ── Column Mapper Modal ───────────────────────────────────────
+var _plMapHeaders = [];
+var _plMapData    = [];
+var _plMapFile    = '';
+var _plMap        = {};   // target field -> header key
+
+function plOpenColumnMapper(headers, data, filename) {
+  _plMapHeaders = headers || _plMapHeaders;
+  _plMapData    = data    || _plMapData;
+  _plMapFile    = filename|| _plMapFile;
+
+  // Auto-detect common column names
+  var autoMap = {
+    description: ['description','desc','product','item','name','product name','item name','material','service'],
+    sku:         ['sku','code','item code','product code','part','part no','part number','ref','reference','#'],
+    cost_price:  ['cost','cost price','unit cost','price','net','net price','buy price','wholesale','our price','dealer'],
+    supplier:    ['supplier','vendor','brand','manufacturer','source'],
+    category:    ['category','cat','type','group','dept','department','class'],
+    unit:        ['unit','uom','unit of measure','um','per','pack','each']
+  };
+
+  _plMap = {};
+  Object.keys(autoMap).forEach(function(field){
+    var match = _plMapHeaders.find(function(h){
+      return autoMap[field].some(function(k){ return h.toLowerCase().includes(k); });
+    });
+    if (match) _plMap[field] = match;
+  });
+
+  var fields = [
+    {key:'description', label:'Description *', required:true},
+    {key:'sku',         label:'SKU / Code'},
+    {key:'cost_price',  label:'Cost Price *', required:true},
+    {key:'supplier',    label:'Supplier'},
+    {key:'category',    label:'Category'},
+    {key:'unit',        label:'Unit'}
+  ];
+
+  var opts = '<option value="">— skip —</option>' + _plMapHeaders.map(function(h){ return '<option value="'+h+'">'+h+'</option>'; }).join('');
+
+  var html = '<div style="font-size:13px;margin-bottom:12px">File: <b>'+(_plMapFile||'unknown')+'</b> · <span style="color:var(--acc)">'+_plMapData.length+' rows detected</span></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">' +
+    fields.map(function(f){
+      var sel = '<select id="plmap-'+f.key+'" class="fc" style="padding:7px 10px;font-size:13px">' +
+        opts.replace('value="'+(_plMap[f.key]||'')+'"','value="'+(_plMap[f.key]||'')+'" selected') + '</select>';
+      return '<div><label class="fl" style="margin-bottom:4px">'+f.label+'</label>'+sel+'</div>';
+    }).join('') + '</div>' +
+    '<div style="margin-bottom:14px"><label class="fl" style="margin-bottom:6px">Supplier name (if not in file)</label><input id="plmap-sup-override" class="fc" placeholder="e.g. Acme Print Supplies" value="'+(_plMap._supOverride||'')+'"/></div>' +
+    '<div style="font-size:11px;color:var(--t3);margin-bottom:14px">Preview (first 3 rows):<div style="overflow-x:auto;margin-top:6px"><table style="width:100%;border-collapse:collapse;font-size:11px">' +
+    '<thead><tr>'+_plMapHeaders.map(function(h){ return '<th style="padding:4px 8px;border:1px solid var(--bor);background:var(--bg3);font-weight:700">'+h+'</th>'; }).join('')+'</tr></thead><tbody>' +
+    _plMapData.slice(0,3).map(function(r){ return '<tr>'+_plMapHeaders.map(function(h){ return '<td style="padding:4px 8px;border:1px solid var(--bor)">'+((r[h]||'').substring(0,40))+'</td>'; }).join('')+'</tr>'; }).join('') +
+    '</tbody></table></div></div>' +
+    '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+      '<button class="btn btn-o" onclick="closeM(\'plMapModal\')">Cancel</button>' +
+      '<button class="btn btn-p" onclick="plApplyColumnMap()">✅ Import '+_plMapData.length+' Items</button>' +
+    '</div>';
+
+  var modal = document.getElementById('plMapModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.className = 'overlay';
+    modal.id = 'plMapModal';
+    modal.innerHTML = '<div class="modal" style="max-width:680px"><div class="modal-t"><span>🔧 Map Columns</span><button class="xbtn" onclick="closeM(\'plMapModal\')">&times;</button></div><div id="plMapModalBody"></div></div>';
+    document.body.appendChild(modal);
+  }
+  document.getElementById('plMapModalBody').innerHTML = html;
+  // Set select values after render
+  setTimeout(function(){
+    fields.forEach(function(f){
+      var sel = document.getElementById('plmap-'+f.key);
+      if (sel && _plMap[f.key]) sel.value = _plMap[f.key];
+    });
+  }, 50);
+  modal.classList.add('open');
+  plSetStatus('✅ <b>'+_plMapData.length+' rows</b> extracted from <b>'+_plMapFile+'</b> — map the columns below', '#4caf7d');
+}
+
+function plApplyColumnMap() {
+  var fields = ['description','sku','cost_price','supplier','category','unit'];
+  var map = {};
+  fields.forEach(function(f){
+    var sel = document.getElementById('plmap-'+f);
+    if (sel) map[f] = sel.value;
+  });
+  var supOverride = (document.getElementById('plmap-sup-override')||{}).value||'';
+
+  if (!map.description) { alert('Please map the Description column'); return; }
+  if (!map.cost_price)  { alert('Please map the Cost Price column');  return; }
+
+  _plPending = _plMapData.map(function(row){
+    var cost = parseFloat((row[map.cost_price]||'').replace(/[$,]/g,'')) || 0;
+    var sale = +(cost * (1 + _plDefaultMargin / 100)).toFixed(2);
+    return {
+      description: row[map.description]||'',
+      sku:         map.sku ? row[map.sku]||'' : '',
+      cost_price:  cost,
+      sale_price:  sale,
+      supplier:    supOverride || (map.supplier ? row[map.supplier]||'' : ''),
+      category:    map.category ? row[map.category]||'' : '',
+      unit:        map.unit ? row[map.unit]||'each' : 'each',
+      status:      'pending'
+    };
+  }).filter(function(r){ return r.description && r.cost_price > 0; });
+
+  closeM('plMapModal');
+  plSetStatus('✅ <b>'+_plPending.length+' items</b> ready for review', '#4caf7d');
+  renderInvPriceList();
+}
+
+// ── Approve / Save ────────────────────────────────────────────
+function plApproveAllPending() {
+  if (!_plPending.length) return;
+  var total = _plPending.length; var done = 0; var failed = 0;
+  plSetStatus('⏳ Saving '+total+' items to database…', '#f59e0b');
+  Promise.all(_plPending.map(function(r){
+    var row = Object.assign({}, r, {status:'approved', approved_by: currentUser ? currentUser.name : '', approved_at: new Date().toISOString()});
+    return dbInsert('price_list', row).then(function(created){
+      if (created) { _plItems.unshift(created); done++; }
+    }).catch(function(){ failed++; });
+  })).then(function(){
+    _plPending = [];
+    plSetStatus((failed ? '⚠️ ' : '✅ ') + done + ' items saved' + (failed ? ', '+failed+' failed' : '') + '.', failed ? '#f59e0b' : '#4caf7d');
+    renderInvPriceList();
+  });
+}
+
+function plApproveOne(id) {
+  dbUpdate('price_list', id, {status:'approved', approved_by: currentUser?currentUser.name:'', approved_at: new Date().toISOString()}).then(function(){
+    var r = _plItems.find(function(x){ return x.id===id; });
+    if (r) { r.status='approved'; r.approved_by=currentUser?currentUser.name:''; }
+    renderInvPriceList();
+  });
+}
+
+function plUpdateSalePrice(id, val) {
+  var price = parseFloat(val)||0;
+  var r = _plItems.find(function(x){ return x.id===id; });
+  if (!r || r.sale_price === price) return;
+  r.sale_price = price;
+  dbUpdate('price_list', id, {sale_price: price});
+}
+
+function plDeleteOne(id) {
+  if (!confirm('Delete this price list item?')) return;
+  dbUpdate('price_list', id, {deleted: true}).then(function(){
+    _plItems = _plItems.filter(function(r){ return r.id!==id; });
+    delete _plSelIds[id];
+    renderInvPriceList();
+  });
+}
+
+// ── Bulk Operations ───────────────────────────────────────────
+function plToggleSel(id, checked) {
+  if (checked) _plSelIds[id]=true; else delete _plSelIds[id];
+  var bar = document.getElementById('pl-bulk-bar');
+  if (bar) {
+    var count = Object.keys(_plSelIds).length;
+    bar.style.display = count ? 'flex' : 'none';
+    var sp = bar.querySelector('span');
+    if (sp) sp.textContent = count + ' selected';
+  }
+}
+
+function plToggleAll(checked, ids) {
+  ids.forEach(function(id){ if (checked) _plSelIds[id]=true; else delete _plSelIds[id]; });
+  renderInvPriceList();
+}
+
+function plBulkApprove() {
+  var ids = Object.keys(_plSelIds).map(Number);
+  if (!ids.length) return;
+  Promise.all(ids.map(function(id){
+    return dbUpdate('price_list', id, {status:'approved', approved_by: currentUser?currentUser.name:'', approved_at: new Date().toISOString()}).then(function(){
+      var r = _plItems.find(function(x){ return x.id===id; });
+      if (r) r.status='approved';
+    });
+  })).then(function(){ _plSelIds={}; renderInvPriceList(); });
+}
+
+function plBulkSetMargin() {
+  var pct = parseFloat(prompt('Set margin % for selected items (e.g. 35 = cost + 35%):', _plDefaultMargin));
+  if (isNaN(pct)) return;
+  var ids = Object.keys(_plSelIds).map(Number);
+  Promise.all(ids.map(function(id){
+    var r = _plItems.find(function(x){ return x.id===id; });
+    if (!r) return;
+    var newSale = +(parseFloat(r.cost_price||0) * (1 + pct/100)).toFixed(2);
+    r.sale_price = newSale;
+    return dbUpdate('price_list', id, {sale_price: newSale});
+  })).then(function(){ _plSelIds={}; renderInvPriceList(); });
+}
+
+function plBulkDelete() {
+  var ids = Object.keys(_plSelIds).map(Number);
+  if (!ids.length || !confirm('Delete '+ids.length+' items?')) return;
+  Promise.all(ids.map(function(id){
+    return dbUpdate('price_list', id, {deleted:true}).then(function(){
+      _plItems = _plItems.filter(function(r){ return r.id!==id; });
+    });
+  })).then(function(){ _plSelIds={}; renderInvPriceList(); });
+}
+
+function plExportCSV() {
+  var rows = _plItems.filter(function(r){ return !r.deleted; });
+  var headers = ['Supplier','SKU','Description','Category','Unit','Cost Price','Sale Price','Margin %','Status'];
+  var csv = headers.join(',') + '\n' + rows.map(function(r){
+    var cost = parseFloat(r.cost_price||0); var sale = parseFloat(r.sale_price||0);
+    var margin = cost > 0 ? ((sale-cost)/cost*100).toFixed(1) : '0';
+    return [r.supplier||'',r.sku||'','"'+(r.description||'').replace(/"/g,'""')+'"',r.category||'',r.unit||'each',cost.toFixed(2),sale.toFixed(2),margin,r.status||''].join(',');
+  }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'price_list_'+new Date().toISOString().substring(0,10)+'.csv';
+  a.click();
+}
+
+function setPlStatusFilter(s) { _plStatusFilter = s; renderInvPriceList(); }
 
 // ── CRUD ──────────────────────────────────────────────────────
 function openInvItemModal(id) {
