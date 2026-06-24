@@ -4961,13 +4961,18 @@ function getMyJobs() {
   if (!currentUser) return [];
   var myId = currentUser.id;
   return jobs.filter(function(j) {
+    if (j.archived) return false;
+    // Designer claiming — primary source of truth
+    if (j.claimed_by == myId) return true;
+    if (j.co_designer_id == myId) return true;
+    // Installer payment assignment
     var pay = findJobPayment(j.id);
     if (pay && pay.installer_user_id == myId) return true;
-    // Fallback: match by team member name
+    // Members array (name-based fallback for legacy records)
     if (j.members && j.members.length) {
       for (var mi = 0; mi < j.members.length; mi++) {
         var tm = getMember(j.members[mi]);
-        if (tm && tm.name === currentUser.name) return true;
+        if (tm && tm.name && currentUser.name && tm.name.toLowerCase() === currentUser.name.toLowerCase()) return true;
       }
     }
     return false;
