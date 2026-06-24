@@ -415,6 +415,13 @@ textarea.fc{resize:vertical;min-height:70px}
             <button class="btn btn-o" style="justify-content:center;padding:9px;font-size:12px" onclick="posCheckout('split')">⇄ Split</button>
             <button class="btn btn-o" style="justify-content:center;padding:9px;font-size:12px;color:var(--warn)" onclick="holdOrder()">⏸ Hold</button>
           </div>
+          <!-- Register actions -->
+          <div style="padding:0 14px 12px;display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;padding:4px 0 2px;border-top:1px solid var(--bor)">Record / Collect</div>
+            <button class="btn btn-o" style="justify-content:center;padding:8px;font-size:12px;font-weight:700;color:#4caf7d;border-color:rgba(76,175,125,.35)" onclick="openPOSRegister('inv')">💰 Collect Invoice Payment</button>
+            <button class="btn btn-o" style="justify-content:center;padding:8px;font-size:12px;font-weight:700;color:#38bdf8;border-color:rgba(56,189,248,.35)" onclick="openPOSRegister('dep')">📥 Record Deposit</button>
+            <button class="btn btn-o" style="justify-content:center;padding:8px;font-size:12px;font-weight:700;color:#f59e0b;border-color:rgba(245,158,11,.35)" onclick="openPOSRegister('exp')">📤 Record Expense / Payout</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2046,6 +2053,32 @@ textarea.fc{resize:vertical;min-height:70px}
 </div>
 </div>
 
+<!-- ══ POS Cash Register Modal ══════════════════════════════════ -->
+<div class="overlay" id="posRegisterModal">
+<div class="modal" style="max-width:580px;width:95vw">
+  <div class="modal-t">
+    <span style="font-size:15px;font-weight:700">🏦 Cash Register</span>
+    <button class="xbtn" onclick="closeM('posRegisterModal')">&times;</button>
+  </div>
+  <!-- Tab strip -->
+  <div style="display:flex;border-bottom:1px solid var(--bor);margin:-4px -4px 16px">
+    <button id="reg-tab-inv" onclick="setRegTab('inv',this)"
+      style="flex:1;padding:10px 6px;border:none;border-bottom:3px solid var(--acc);background:none;color:var(--acc);font-size:12px;font-weight:700;cursor:pointer">
+      💰 Invoice Payment
+    </button>
+    <button id="reg-tab-dep" onclick="setRegTab('dep',this)"
+      style="flex:1;padding:10px 6px;border:none;border-bottom:3px solid transparent;background:none;color:var(--t2);font-size:12px;font-weight:700;cursor:pointer">
+      📥 Deposit
+    </button>
+    <button id="reg-tab-exp" onclick="setRegTab('exp',this)"
+      style="flex:1;padding:10px 6px;border:none;border-bottom:3px solid transparent;background:none;color:var(--t2);font-size:12px;font-weight:700;cursor:pointer">
+      📤 Expense / Payout
+    </button>
+  </div>
+  <div id="reg-body"></div>
+</div>
+</div>
+
 <div id="toast">Done <span id="toast-msg"></span></div>
 
 <script>
@@ -2081,6 +2114,7 @@ var jobNotes = [];
 var appMessages = [];
 var _currentThreadId = null;
 var posItems = [];
+var expenses  = [];
 var activityLog = [];
 var invItems = [];
 var invTxns  = [];
@@ -2521,7 +2555,8 @@ function loadAppData() {
     dbGet("inventory", {order: "name"}),
     dbGet("inventory_transactions", {order: "created_at", asc: false, limit: 500}),
     dbGet("purchase_orders", {order: "created_at", asc: false}),
-    dbGet("suppliers", {order: "name"})
+    dbGet("suppliers", {order: "name"}),
+    dbGet("expenses",  {order: "created_at", asc: false, limit: 1000}).catch(function(){ return []; })
   ]).then(function (results) {
     appRoles     = results[0];
     appUsers     = results[1];
@@ -2539,6 +2574,7 @@ function loadAppData() {
     invTxns      = results[13] || [];
     purchaseOrders = results[14] || [];
     suppliers    = results[15] || [];
+    expenses     = results[16] || [];
     updateMsgBadge();
     updateInvAlertBadge();
     return dbGet("activity_log", {order: "created_at", asc: false, limit: 200});
@@ -4491,22 +4527,407 @@ function refundPOSSale(id) {
 function renderPOSTodayBar() {
   var el = document.getElementById('pos-today-bar');
   if (!el) return;
+  var td = today();
   var todaySales = invoices.filter(function(inv) {
-    return inv.notes && inv.notes.indexOf('POS Sale') === 0 && inv.date === today() && inv.status !== 'voided';
+    return inv.notes && inv.notes.indexOf('POS Sale') === 0 && inv.date === td && inv.status !== 'voided';
   });
-  var todayTotal = todaySales.reduce(function(s,i){ return s + parseFloat(i.grand||0); }, 0);
-  var todayCash = todaySales.filter(function(i){ return (i.notes||'').indexOf('cash')>-1; }).reduce(function(s,i){ return s+parseFloat(i.grand||0); },0);
-  var todayCard = todaySales.filter(function(i){ return (i.notes||'').indexOf('card')>-1&&(i.notes||'').indexOf('cash')<0; }).reduce(function(s,i){ return s+parseFloat(i.grand||0); },0);
+  var todayTotal = todaySales.reduce(function(s,i){ return s+parseFloat(i.grand||0); },0);
+  var todayCash  = todaySales.filter(function(i){ return (i.notes||'').indexOf('cash')>-1; }).reduce(function(s,i){ return s+parseFloat(i.grand||0); },0);
+  var todayCard  = todaySales.filter(function(i){ return (i.notes||'').indexOf('card')>-1&&(i.notes||'').indexOf('cash')<0; }).reduce(function(s,i){ return s+parseFloat(i.grand||0); },0);
+  // Expenses / deposits / invoice payments today
+  var todayExp  = expenses.filter(function(e){ return e.type==='expense'         && e.date===td; }).reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
+  var todayDep  = expenses.filter(function(e){ return e.type==='deposit'         && e.date===td; }).reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
+  var todayInvP = expenses.filter(function(e){ return e.type==='invoice_payment' && e.date===td; }).reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
+  var netCash   = todayTotal + todayDep + todayInvP - todayExp;
   el.innerHTML =
-    posStat('Today\'s Sales', todaySales.length + ' orders', '#6c63ff') +
-    posStat('Today\'s Revenue', fmt(todayTotal), '#4caf7d') +
-    posStat('Cash Collected', fmt(todayCash), '#f59e0b') +
-    posStat('Card Collected', fmt(todayCard), '#38bdf8');
+    posStat('Today\'s Sales',     todaySales.length+' orders', '#6c63ff') +
+    posStat('POS Revenue',        fmt(todayTotal),  '#4caf7d') +
+    posStat('Cash',               fmt(todayCash),   '#f59e0b') +
+    posStat('Card',               fmt(todayCard),   '#38bdf8') +
+    posStat('Inv. Collected',     fmt(todayInvP),   '#4caf7d') +
+    posStat('Deposits In',        fmt(todayDep),    '#a78bfa') +
+    posStat('Expenses Out',       fmt(todayExp),    '#ef4444') +
+    posStat('Net Cash Today',     fmt(netCash),     netCash>=0?'#4caf7d':'#ef4444');
 }
 function posStat(label, val, color) {
-  return '<div class="card" style="padding:10px 14px;flex:1;min-width:120px">' +
-    '<div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">' + label + '</div>' +
-    '<div style="font-size:18px;font-weight:700;color:' + color + '">' + val + '</div></div>';
+  return '<div class="card" style="padding:10px 14px;flex:1;min-width:110px">' +
+    '<div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">'+label+'</div>' +
+    '<div style="font-size:17px;font-weight:700;color:'+color+'">'+val+'</div></div>';
+}
+
+/* ================================================================
+   CASH REGISTER — Invoice Payment / Deposit / Expense
+   ================================================================ */
+
+var EXP_OPTS_KEY = 'b2b_exp_custom_opts';
+function expGetOptions(cat, defaults) {
+  try {
+    var c = JSON.parse(localStorage.getItem(EXP_OPTS_KEY)||'{}');
+    var out = (defaults||[]).slice();
+    (c[cat]||[]).forEach(function(v){ if(out.indexOf(v)===-1) out.push(v); });
+    return out;
+  } catch(e) { return defaults||[]; }
+}
+function expAddCustomOpt(cat, defaults, selId) {
+  var v = prompt('Add new option:');
+  if (!v || !v.trim()) return;
+  v = v.trim();
+  try {
+    var all = JSON.parse(localStorage.getItem(EXP_OPTS_KEY)||'{}');
+    if (!all[cat]) all[cat] = [];
+    if (all[cat].indexOf(v)===-1) all[cat].push(v);
+    localStorage.setItem(EXP_OPTS_KEY, JSON.stringify(all));
+  } catch(e){}
+  var sel = document.getElementById(selId);
+  if (sel) {
+    var opt = document.createElement('option');
+    opt.value = opt.textContent = v;
+    sel.insertBefore(opt, sel.lastChild);
+    sel.value = v;
+  }
+}
+function expBuildSelect(id, cat, defaults, style) {
+  var opts = expGetOptions(cat, defaults);
+  return '<select class="fc" id="'+id+'" style="font-size:13px'+(style?';'+style:'')+'">' +
+    opts.map(function(o){ return '<option>'+o+'</option>'; }).join('') +
+    '<option value="__add__" style="color:var(--acc);font-weight:700">+ Add new…</option>' +
+    '</select>';
+}
+function expSelChange(sel, cat, defaults) {
+  if (sel.value !== '__add__') return;
+  sel.value = sel.options[0].value;
+  expAddCustomOpt(cat, defaults, sel.id);
+}
+
+var _regTab = 'inv';
+
+function openPOSRegister(tab) {
+  _regTab = tab || 'inv';
+  document.getElementById('posRegisterModal').classList.add('open');
+  setRegTab(_regTab, document.getElementById('reg-tab-'+_regTab));
+}
+
+function setRegTab(tab, btn) {
+  _regTab = tab;
+  ['inv','dep','exp'].forEach(function(t) {
+    var b = document.getElementById('reg-tab-'+t);
+    if (!b) return;
+    b.style.borderBottomColor  = t===tab ? 'var(--acc)' : 'transparent';
+    b.style.color              = t===tab ? 'var(--acc)' : 'var(--t2)';
+  });
+  var body = document.getElementById('reg-body');
+  if (!body) return;
+  if (tab === 'inv') body.innerHTML = buildRegInvPanel();
+  if (tab === 'dep') body.innerHTML = buildRegDepPanel();
+  if (tab === 'exp') body.innerHTML = buildRegExpPanel();
+}
+
+// ── PAYMENT METHODS helper ───────────────────────────────────────
+var PAY_METHODS = ['Cash','Card (Credit/Debit)','Check','Zelle','ACH / Bank Transfer','Venmo','PayPal','Wire Transfer','Other'];
+function payMethodSel(id) {
+  return expBuildSelect(id, 'pay_methods', PAY_METHODS);
+}
+
+// ── TAB 1: Invoice Payment ────────────────────────────────────────
+function buildRegInvPanel() {
+  var openInvs = invoices.filter(function(inv){
+    return inv.status !== 'paid' && inv.status !== 'voided' && inv.status !== 'draft';
+  }).sort(function(a,b){ return b.id - a.id; });
+
+  var html = '<div style="margin-bottom:12px">' +
+    '<label class="fl">Search Invoice</label>' +
+    '<input class="fc" id="reg-inv-search" placeholder="Client name or #INV-…" oninput="regFilterInvoices()" style="font-size:13px"/>' +
+    '</div>';
+
+  html += '<div id="reg-inv-list" style="max-height:220px;overflow-y:auto;border:1px solid var(--bor);border-radius:10px;margin-bottom:14px">';
+  if (!openInvs.length) {
+    html += '<div style="padding:24px;text-align:center;color:var(--t3);font-size:13px">No open invoices found</div>';
+  } else {
+    html += openInvs.slice(0,40).map(function(inv){
+      var bal = parseFloat(inv.grand||0);
+      var alreadyPaid = expenses.filter(function(e){ return e.type==='invoice_payment'&&e.reference==='INV-'+String(inv.id).padStart(4,'0'); })
+        .reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
+      var due = Math.max(0, bal - alreadyPaid);
+      var sc = {pending:'#38bdf8','in-progress':'#f59e0b',partial:'#a78bfa'};
+      return '<div onclick="regSelectInvoice('+inv.id+')" id="reg-inv-row-'+inv.id+'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bor);cursor:pointer;transition:.1s" onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'">' +
+        '<div style="flex:1">' +
+          '<div style="font-size:13px;font-weight:600">' + cName(inv.cid) + ' <span style="font-size:11px;font-weight:400;color:var(--t3)">#INV-'+String(inv.id).padStart(4,'0')+'</span></div>' +
+          '<div style="font-size:11px;color:var(--t3)">' + (inv.date||'') + (alreadyPaid>0?' · Partial paid: '+fmt(alreadyPaid):'') + '</div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<div style="font-size:14px;font-weight:700;color:'+(due<bal?'#a78bfa':'var(--t1)')+'">'+fmt(due)+' due</div>' +
+          '<div style="font-size:10px;color:var(--t3)">of '+fmt(bal)+' total</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  html += '</div>';
+
+  html += '<div id="reg-inv-form" style="display:none">' +
+    '<div style="background:var(--bg2);border:1px solid var(--bor);border-radius:10px;padding:12px;margin-bottom:12px" id="reg-inv-summary"></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+      '<div class="fg" style="margin:0"><label class="fl">Amount to Collect</label>' +
+        '<input class="fc" type="number" id="reg-inv-amount" min="0.01" step="0.01" style="font-size:15px;font-weight:700" oninput="regCheckFull()"/>' +
+      '</div>' +
+      '<div class="fg" style="margin:0"><label class="fl">Payment Method</label>' + payMethodSel('reg-inv-method') + '</div>' +
+    '</div>' +
+    '<div class="fg" style="margin:0 0 12px">' +
+      '<label class="fl">Notes (optional)</label>' +
+      '<input class="fc" id="reg-inv-notes" placeholder="e.g. Paid in full, check #1234" style="font-size:13px"/>' +
+    '</div>' +
+    '<div id="reg-inv-change" style="display:none;background:rgba(76,175,125,.1);border:1px solid rgba(76,175,125,.3);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-weight:700;color:#4caf7d;font-size:14px"></div>' +
+    '<div style="display:flex;gap:10px">' +
+      '<button class="btn btn-o" style="flex:1;justify-content:center" onclick="regClearInvoice()">← Back</button>' +
+      '<button class="btn btn-p" style="flex:2;justify-content:center;font-size:14px;font-weight:700" onclick="regCollectInvoicePayment()">✅ Record Payment</button>' +
+    '</div>' +
+  '</div>';
+
+  return html;
+}
+
+var _regSelInvId = null;
+
+function regFilterInvoices() {
+  var q = ((document.getElementById('reg-inv-search')||{}).value||'').toLowerCase();
+  document.querySelectorAll('[id^="reg-inv-row-"]').forEach(function(row){
+    var id = parseInt(row.id.replace('reg-inv-row-',''));
+    var inv = invoices.find(function(i){ return i.id===id; });
+    if (!inv) return;
+    var match = !q || cName(inv.cid).toLowerCase().indexOf(q)>-1 || ('#inv-'+String(inv.id).padStart(4,'0')).indexOf(q)>-1;
+    row.style.display = match ? '' : 'none';
+  });
+}
+
+function regSelectInvoice(id) {
+  _regSelInvId = id;
+  var inv = invoices.find(function(i){ return i.id===id; });
+  if (!inv) return;
+  var alreadyPaid = expenses.filter(function(e){ return e.type==='invoice_payment'&&e.reference==='INV-'+String(inv.id).padStart(4,'0'); })
+    .reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
+  var due = Math.max(0, parseFloat(inv.grand||0) - alreadyPaid);
+
+  var sum = document.getElementById('reg-inv-summary');
+  if (sum) sum.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div><div style="font-size:14px;font-weight:700">'+cName(inv.cid)+'</div>' +
+    '<div style="font-size:11px;color:var(--t3)">#INV-'+String(inv.id).padStart(4,'0')+' · '+inv.date+'</div></div>' +
+    '<div style="text-align:right"><div style="font-size:11px;color:var(--t3)">Invoice Total</div><div style="font-size:16px;font-weight:700">'+fmt(inv.grand)+'</div>' +
+    (alreadyPaid>0?'<div style="font-size:11px;color:#a78bfa">Paid: '+fmt(alreadyPaid)+'</div>':'')+
+    '<div style="font-size:13px;font-weight:700;color:#4caf7d">Due: '+fmt(due)+'</div></div></div>';
+
+  var amtEl = document.getElementById('reg-inv-amount');
+  if (amtEl) amtEl.value = due.toFixed(2);
+
+  document.getElementById('reg-inv-list').style.display  = 'none';
+  document.getElementById('reg-inv-form').style.display  = '';
+  document.getElementById('reg-inv-search').closest('div').style.display = 'none';
+}
+
+function regClearInvoice() {
+  _regSelInvId = null;
+  document.getElementById('reg-inv-list').style.display = '';
+  document.getElementById('reg-inv-form').style.display = 'none';
+  document.getElementById('reg-inv-search').closest('div').style.display = '';
+}
+
+function regCheckFull() {
+  if (!_regSelInvId) return;
+  var inv = invoices.find(function(i){ return i.id===_regSelInvId; });
+  if (!inv) return;
+  var method = (document.getElementById('reg-inv-method')||{}).value||'';
+  var entered = parseFloat((document.getElementById('reg-inv-amount')||{}).value||0)||0;
+  var alreadyPaid = expenses.filter(function(e){ return e.type==='invoice_payment'&&e.reference==='INV-'+String(inv.id).padStart(4,'0'); })
+    .reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
+  var due = Math.max(0, parseFloat(inv.grand||0) - alreadyPaid);
+  var chRow = document.getElementById('reg-inv-change');
+  if (!chRow) return;
+  if (method.toLowerCase().indexOf('cash')>-1 && entered > due) {
+    chRow.style.display = '';
+    chRow.textContent = '💵 Change due: ' + fmt(entered - due);
+  } else {
+    chRow.style.display = 'none';
+  }
+}
+
+function regCollectInvoicePayment() {
+  if (!_regSelInvId) return;
+  var inv = invoices.find(function(i){ return i.id===_regSelInvId; });
+  if (!inv) return;
+  var amount  = parseFloat((document.getElementById('reg-inv-amount')||{}).value||0);
+  var method  = (document.getElementById('reg-inv-method')||{}).value||'';
+  var notes   = (document.getElementById('reg-inv-notes')||{}).value||'';
+  if (!amount || amount <= 0) { toast('Enter a valid amount',true); return; }
+
+  var ref = 'INV-'+String(inv.id).padStart(4,'0');
+  var alreadyPaid = expenses.filter(function(e){ return e.type==='invoice_payment'&&e.reference===ref; })
+    .reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
+  var newTotal = alreadyPaid + amount;
+  var invGrand = parseFloat(inv.grand||0);
+  var newStatus = newTotal >= invGrand ? 'paid' : 'partial';
+
+  var row = {
+    date:       today(),
+    type:       'invoice_payment',
+    category:   'Invoice Payment',
+    vendor:     cName(inv.cid),
+    client_id:  inv.cid,
+    amount:     amount,
+    method:     method,
+    reference:  ref,
+    notes:      notes,
+    created_by: currentUser ? currentUser.id : null
+  };
+
+  dbInsert('expenses', row).then(function(created){
+    if (created) expenses.unshift(created);
+    return dbUpdate('invoices', inv.id, {status: newStatus});
+  }).then(function(updated){
+    if (updated) { var idx=invoices.findIndex(function(i){return i.id===inv.id;}); if(idx>-1) invoices[idx]=updated; }
+    logActivity('Invoice Payment', 'POS', ref+' — '+fmt(amount)+' via '+method);
+    toast('✅ Payment recorded — '+ref+' marked '+newStatus);
+    closeM('posRegisterModal');
+    renderPOSTodayBar();
+    if (curPage==='invoices') renderInvoices();
+  });
+}
+
+// ── TAB 2: Deposit ────────────────────────────────────────────────
+var DEP_CATS = ['Project Deposit','Retainer','Advance Payment','Material Deposit','Rush Deposit','Event Deposit','Other'];
+
+function buildRegDepPanel() {
+  var openJobs = jobs.filter(function(j){ return j.status!=='done'&&j.status!=='voided'; });
+  var openEsts = estimates.filter(function(e){ return e.status!=='invoiced'&&e.status!=='declined'; });
+
+  var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+    '<div class="fg" style="margin:0"><label class="fl">Client</label>' +
+      '<select class="fc" id="reg-dep-client" style="font-size:13px"><option value="">— Select client —</option>' +
+      clients.map(function(c){ return '<option value="'+c.id+'">'+c.name+(c.company?' ('+c.company+')':'')+'</option>'; }).join('') +
+    '</select></div>' +
+    '<div class="fg" style="margin:0"><label class="fl">Deposit Type</label>' +
+      expBuildSelect('reg-dep-cat','deposit_cats',DEP_CATS) +
+      '<script>document.getElementById("reg-dep-cat").onchange=function(){if(this.value==="__add__")expSelChange(this,"deposit_cats",'+JSON.stringify(DEP_CATS)+');}<\/script>' +
+    '</div>' +
+  '</div>' +
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+    '<div class="fg" style="margin:0"><label class="fl">Amount Received</label>' +
+      '<input class="fc" type="number" id="reg-dep-amount" min="0.01" step="0.01" placeholder="0.00" style="font-size:15px;font-weight:700"/>' +
+    '</div>' +
+    '<div class="fg" style="margin:0"><label class="fl">Payment Method</label>' + payMethodSel('reg-dep-method') + '</div>' +
+  '</div>' +
+  '<div class="fg" style="margin-bottom:10px">' +
+    '<label class="fl">Link to Job or Estimate (optional)</label>' +
+    '<select class="fc" id="reg-dep-link" style="font-size:13px">' +
+      '<option value="">— None / Standalone —</option>' +
+      '<optgroup label="Jobs">' +
+        openJobs.map(function(j){ return '<option value="JOB-'+j.id+'">'+j.title+'</option>'; }).join('') +
+      '</optgroup>' +
+      '<optgroup label="Estimates">' +
+        openEsts.map(function(e){ return '<option value="EST-'+e.id+'">#EST-'+String(e.id).padStart(4,'0')+' — '+cName(e.cid)+'</option>'; }).join('') +
+      '</optgroup>' +
+    '</select>' +
+  '</div>' +
+  '<div class="fg" style="margin-bottom:14px">' +
+    '<label class="fl">Notes</label>' +
+    '<input class="fc" id="reg-dep-notes" placeholder="e.g. 50% deposit for vehicle wrap, job starts Monday" style="font-size:13px"/>' +
+  '</div>' +
+  '<button class="btn btn-p" style="width:100%;justify-content:center;font-size:14px;font-weight:700;padding:12px" onclick="regRecordDeposit()">📥 Record Deposit</button>';
+  return html;
+}
+
+function regRecordDeposit() {
+  var clientId = parseInt((document.getElementById('reg-dep-client')||{}).value||0)||null;
+  var amount   = parseFloat((document.getElementById('reg-dep-amount')||{}).value||0);
+  var method   = (document.getElementById('reg-dep-method')||{}).value||'';
+  var cat      = (document.getElementById('reg-dep-cat')||{}).value||'Project Deposit';
+  var link     = (document.getElementById('reg-dep-link')||{}).value||'';
+  var notes    = (document.getElementById('reg-dep-notes')||{}).value||'';
+  if (!amount||amount<=0) { toast('Enter a valid amount',true); return; }
+
+  var row = {
+    date:       today(),
+    type:       'deposit',
+    category:   cat,
+    vendor:     clientId ? cName(clientId) : 'Walk-in',
+    client_id:  clientId,
+    amount:     amount,
+    method:     method,
+    reference:  link||null,
+    notes:      notes,
+    created_by: currentUser ? currentUser.id : null
+  };
+  dbInsert('expenses', row).then(function(created){
+    if (created) expenses.unshift(created);
+    logActivity('Deposit Recorded', 'POS', fmt(amount)+' via '+method+(link?' ['+link+']':''));
+    toast('✅ Deposit of '+fmt(amount)+' recorded!');
+    closeM('posRegisterModal');
+    renderPOSTodayBar();
+  });
+}
+
+// ── TAB 3: Expense / Payout ───────────────────────────────────────
+var EXP_CATS = ['Supplies / Materials','Vendor Payment','Rent / Lease','Utilities','Payroll / Labor','Equipment Purchase','Equipment Rental','Vehicle / Fuel','Marketing / Advertising','Insurance','Professional Services','Shipping / Freight','Petty Cash','Refund Issued','Other'];
+
+function buildRegExpPanel() {
+  var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+    '<div class="fg" style="margin:0"><label class="fl">Category</label>' +
+      expBuildSelect('reg-exp-cat','expense_cats',EXP_CATS) +
+      '<script>document.getElementById("reg-exp-cat").onchange=function(){if(this.value==="__add__")expSelChange(this,"expense_cats",'+JSON.stringify(EXP_CATS)+');}<\/script>' +
+    '</div>' +
+    '<div class="fg" style="margin:0"><label class="fl">Payee / Vendor</label>' +
+      '<input class="fc" id="reg-exp-vendor" placeholder="Vendor or recipient name" style="font-size:13px"/>' +
+    '</div>' +
+  '</div>' +
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+    '<div class="fg" style="margin:0"><label class="fl">Amount Paid Out</label>' +
+      '<input class="fc" type="number" id="reg-exp-amount" min="0.01" step="0.01" placeholder="0.00" style="font-size:15px;font-weight:700"/>' +
+    '</div>' +
+    '<div class="fg" style="margin:0"><label class="fl">Payment Method</label>' + payMethodSel('reg-exp-method') + '</div>' +
+  '</div>' +
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+    '<div class="fg" style="margin:0"><label class="fl">Date</label>' +
+      '<input class="fc" type="date" id="reg-exp-date" value="'+today()+'" style="font-size:13px"/>' +
+    '</div>' +
+    '<div class="fg" style="margin:0"><label class="fl">Reference / Receipt #</label>' +
+      '<input class="fc" id="reg-exp-ref" placeholder="Receipt, PO, or check #" style="font-size:13px"/>' +
+    '</div>' +
+  '</div>' +
+  '<div class="fg" style="margin-bottom:14px">' +
+    '<label class="fl">Description / Notes</label>' +
+    '<input class="fc" id="reg-exp-notes" placeholder="What was purchased or why…" style="font-size:13px"/>' +
+  '</div>' +
+  '<button class="btn" style="width:100%;justify-content:center;font-size:14px;font-weight:700;padding:12px;background:#f59e0b20;color:#f59e0b;border:1px solid rgba(245,158,11,.4)" onclick="regRecordExpense()">📤 Record Expense</button>';
+  return html;
+}
+
+function regRecordExpense() {
+  var cat    = (document.getElementById('reg-exp-cat')||{}).value||'Other';
+  var vendor = (document.getElementById('reg-exp-vendor')||{}).value||'';
+  var amount = parseFloat((document.getElementById('reg-exp-amount')||{}).value||0);
+  var method = (document.getElementById('reg-exp-method')||{}).value||'';
+  var date   = (document.getElementById('reg-exp-date')||{}).value||today();
+  var ref    = (document.getElementById('reg-exp-ref')||{}).value||'';
+  var notes  = (document.getElementById('reg-exp-notes')||{}).value||'';
+  if (!amount||amount<=0) { toast('Enter a valid amount',true); return; }
+
+  var row = {
+    date:       date,
+    type:       'expense',
+    category:   cat,
+    vendor:     vendor,
+    client_id:  null,
+    amount:     amount,
+    method:     method,
+    reference:  ref||null,
+    notes:      notes,
+    created_by: currentUser ? currentUser.id : null
+  };
+  dbInsert('expenses', row).then(function(created){
+    if (created) expenses.unshift(created);
+    logActivity('Expense Recorded', 'POS', cat+' — '+fmt(amount)+(vendor?' / '+vendor:''));
+    toast('📤 Expense of '+fmt(amount)+' recorded!');
+    closeM('posRegisterModal');
+    renderPOSTodayBar();
+  });
 }
 function showReceipt(inv, method, change, totals) {
   var client = {name: "Walk-in"};
