@@ -15266,10 +15266,7 @@ function backupChangePin() {
   backupRequestPin('Verify current PIN to change it').then(function(ok) {
     if (!ok) return;
     localStorage.removeItem('b2b_backup_pin_hash');
-    backupSetupPin().then(function() {
-      var bp = document.getElementById('backup-panel');
-      if (bp) bp.outerHTML = '<div id="backup-panel">' + renderBackupPanel() + '</div>';
-    });
+    backupSetupPin().then(function() { backupRefreshPanel(); });
   });
 }
 
@@ -15278,6 +15275,14 @@ function backupResetPin() {
   secLog('Security', 'HIGH', 'Backup PIN reset', 'By: ' + currentUser.name);
   localStorage.removeItem('b2b_backup_pin_hash');
   toast('PIN removed. Set a new one before next backup.');
+  backupRefreshPanel();
+}
+
+function backupInitPin() {
+  backupSetupPin().then(function() { backupRefreshPanel(); });
+}
+
+function backupRefreshPanel() {
   var bp = document.getElementById('backup-panel');
   if (bp) bp.outerHTML = '<div id="backup-panel">' + renderBackupPanel() + '</div>';
 }
@@ -15724,7 +15729,7 @@ function renderBackupPanel() {
         (pinSet
           ? '<button class="btn btn-o btn-sm" onclick="backupChangePin()">🔄 Change PIN</button>'+
             '<button class="btn btn-o btn-sm" style="color:#ef4444" onclick="backupResetPin()">✕ Remove PIN</button>'
-          : '<button class="btn btn-sm" style="background:#4caf7d;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer" onclick="backupSetupPin().then(function(){var bp=document.getElementById(\'backup-panel\');if(bp)bp.outerHTML=\'<div id=\\\"backup-panel\\\">\'+renderBackupPanel()+\'</div>\'})">🔑 Set Backup PIN</button>')+
+          : '<button class="btn btn-sm" style="background:#4caf7d;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer" onclick="backupInitPin()">🔑 Set Backup PIN</button>')+
       '</div>'+
     '</div>';
 
