@@ -15119,9 +15119,10 @@ function executeWipe() {
   });
 }
 function switchSettingsTab(tab, el) {
-  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf"];
+  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf", "danger"];
   for (var i = 0; i < tabs.length; i++) {
-    document.getElementById("settings-tab-" + tabs[i]).style.display = tabs[i] === tab ? "block" : "none";
+    var panel = document.getElementById("settings-tab-" + tabs[i]);
+    if (panel) panel.style.display = tabs[i] === tab ? "block" : "none";
   }
   var btns = document.querySelectorAll(".settings-tab");
   for (var j = 0; j < btns.length; j++) btns[j].classList.remove("active");
