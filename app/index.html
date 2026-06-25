@@ -16213,14 +16213,15 @@ function devPanelOpen() {
   if (p) {
     p.style.display = 'flex';
     devTab(_devPanelTab);
-    document.querySelector('.content').style.marginRight = '680px';
+    var m = document.querySelector('.main');
+    if (m) m.style.marginRight = '680px';
   }
 }
 function devPanelClose() {
   var p = document.getElementById('dev-panel');
   if (p) p.style.display = 'none';
-  var c = document.querySelector('.content');
-  if (c) c.style.marginRight = '';
+  var m = document.querySelector('.main');
+  if (m) m.style.marginRight = '';
 }
 function devPanelRefresh() {
   if (document.getElementById('dev-panel').style.display !== 'none') devTab(_devPanelTab);
