@@ -15127,6 +15127,161 @@ var _gdriveToken      = null;
 var _backupRunning    = false;
 var BACKUP_TABLES     = ['clients','invoices','transactions','expenses','messages','activity_log','jobs','price_list','estimates','suppliers','purchase_orders','app_users','settings'];
 
+// ── BACKUP PIN ─────────────────────────────────────────────────
+var _backupPinFailures  = 0;
+var _backupPinLockUntil = 0;  // timestamp when lockout expires
+
+// Simple SHA-256 hash using WebCrypto
+function backupHashPin(pin) {
+  var enc = new TextEncoder().encode('b2bprinthub:backup:' + pin);
+  return crypto.subtle.digest('SHA-256', enc).then(function(buf) {
+    return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  });
+}
+
+function backupPinIsSet() {
+  return !!localStorage.getItem('b2b_backup_pin_hash');
+}
+
+function backupVerifyPin(pin) {
+  var stored = localStorage.getItem('b2b_backup_pin_hash');
+  if (!stored) return Promise.resolve(false);
+  return backupHashPin(pin).then(function(hash) { return hash === stored; });
+}
+
+// Main gate: shows modal, resolves true if PIN accepted, false if cancelled
+function backupRequestPin(action) {
+  return new Promise(function(resolve) {
+    // Check lockout
+    if (Date.now() < _backupPinLockUntil) {
+      var secs = Math.ceil((_backupPinLockUntil - Date.now()) / 1000);
+      alert('⛔ Too many incorrect attempts. Try again in ' + secs + ' seconds.');
+      resolve(false); return;
+    }
+    // If no PIN set, prompt to create one first
+    if (!backupPinIsSet()) {
+      backupSetupPin().then(function(set) { if (set) backupRequestPin(action).then(resolve); else resolve(false); });
+      return;
+    }
+    // Show PIN entry modal
+    var overlay = document.createElement('div');
+    overlay.id = 'backup-pin-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML =
+      '<div style="background:var(--bg1);border:1px solid var(--bor);border-radius:16px;padding:32px 36px;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)">' +
+        '<div style="font-size:32px;margin-bottom:8px">🔐</div>' +
+        '<div style="font-size:16px;font-weight:800;margin-bottom:4px">Backup PIN Required</div>' +
+        '<div style="font-size:12px;color:var(--t3);margin-bottom:20px">' + action + '</div>' +
+        '<input id="bpin-input" type="password" placeholder="Enter PIN" maxlength="12" autocomplete="off" ' +
+          'style="width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:2px solid var(--bor);background:var(--bg2);color:var(--t1);font-size:20px;text-align:center;letter-spacing:4px;outline:none" />' +
+        '<div id="bpin-error" style="color:#ef4444;font-size:12px;margin-top:8px;min-height:18px"></div>' +
+        '<div style="display:flex;gap:10px;margin-top:16px">' +
+          '<button onclick="document.getElementById(\'backup-pin-overlay\').remove()" ' +
+            'style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--bor);background:var(--bg2);color:var(--t1);cursor:pointer;font-size:13px">Cancel</button>' +
+          '<button id="bpin-submit" ' +
+            'style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--acc);color:#fff;cursor:pointer;font-size:13px;font-weight:700">Unlock</button>' +
+        '</div>' +
+        '<div style="margin-top:14px;font-size:11px;color:var(--t3)">' +
+          (_backupPinFailures > 0 ? '⚠️ ' + _backupPinFailures + ' failed attempt' + (_backupPinFailures>1?'s':'') + ' · locks after 3' : 'PIN is required for all database exports') +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    function attempt() {
+      var pin = document.getElementById('bpin-input').value;
+      if (!pin || pin.length < 4) {
+        document.getElementById('bpin-error').textContent = 'PIN must be at least 4 digits.'; return;
+      }
+      backupVerifyPin(pin).then(function(ok) {
+        if (ok) {
+          _backupPinFailures = 0;
+          overlay.remove();
+          secLog('Security', 'LOW', 'Backup PIN accepted', action);
+          resolve(true);
+        } else {
+          _backupPinFailures++;
+          secLog('Security', 'HIGH', 'Backup PIN rejected', 'Attempt ' + _backupPinFailures);
+          if (_backupPinFailures >= 3) {
+            _backupPinLockUntil = Date.now() + 30000;
+            _backupPinFailures = 0;
+            overlay.remove();
+            alert('⛔ 3 incorrect attempts. Backup locked for 30 seconds.');
+            resolve(false);
+          } else {
+            var errEl = document.getElementById('bpin-error');
+            if (errEl) errEl.textContent = '❌ Incorrect PIN. ' + (3 - _backupPinFailures) + ' attempt(s) remaining.';
+            document.getElementById('bpin-input').value = '';
+            document.getElementById('bpin-input').focus();
+          }
+        }
+      });
+    }
+
+    document.getElementById('bpin-submit').addEventListener('click', attempt);
+    document.getElementById('bpin-input').addEventListener('keydown', function(e){ if(e.key==='Enter') attempt(); });
+    setTimeout(function(){ var el=document.getElementById('bpin-input'); if(el) el.focus(); }, 50);
+  });
+}
+
+function backupSetupPin() {
+  return new Promise(function(resolve) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML =
+      '<div style="background:var(--bg1);border:1px solid var(--bor);border-radius:16px;padding:32px 36px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)">' +
+        '<div style="font-size:32px;margin-bottom:8px">🔑</div>' +
+        '<div style="font-size:16px;font-weight:800;margin-bottom:4px">Set Backup PIN</div>' +
+        '<div style="font-size:12px;color:var(--t3);margin-bottom:20px">Create a 4–12 digit PIN to protect database exports.<br>Keep it safe — it cannot be recovered.</div>' +
+        '<input id="bpin-new1" type="password" placeholder="Choose PIN (4–12 digits)" maxlength="12" autocomplete="new-password" ' +
+          'style="width:100%;box-sizing:border-box;padding:11px;border-radius:8px;border:2px solid var(--bor);background:var(--bg2);color:var(--t1);font-size:18px;text-align:center;letter-spacing:3px;outline:none;margin-bottom:10px" />' +
+        '<input id="bpin-new2" type="password" placeholder="Confirm PIN" maxlength="12" autocomplete="new-password" ' +
+          'style="width:100%;box-sizing:border-box;padding:11px;border-radius:8px;border:2px solid var(--bor);background:var(--bg2);color:var(--t1);font-size:18px;text-align:center;letter-spacing:3px;outline:none" />' +
+        '<div id="bpin-setup-error" style="color:#ef4444;font-size:12px;margin-top:8px;min-height:18px"></div>' +
+        '<div style="display:flex;gap:10px;margin-top:16px">' +
+          '<button id="bpin-cancel-setup" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--bor);background:var(--bg2);color:var(--t1);cursor:pointer;font-size:13px">Cancel</button>' +
+          '<button id="bpin-save-setup" style="flex:1;padding:10px;border-radius:8px;border:none;background:#4caf7d;color:#fff;cursor:pointer;font-size:13px;font-weight:700">Set PIN</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    document.getElementById('bpin-cancel-setup').onclick = function(){ overlay.remove(); resolve(false); };
+    document.getElementById('bpin-save-setup').onclick = function() {
+      var p1 = document.getElementById('bpin-new1').value;
+      var p2 = document.getElementById('bpin-new2').value;
+      var err = document.getElementById('bpin-setup-error');
+      if (p1.length < 4) { err.textContent='PIN must be at least 4 characters.'; return; }
+      if (p1 !== p2)      { err.textContent='PINs do not match.'; return; }
+      backupHashPin(p1).then(function(hash) {
+        localStorage.setItem('b2b_backup_pin_hash', hash);
+        overlay.remove();
+        secLog('Security', 'MED', 'Backup PIN set', 'By: ' + currentUser.name);
+        toast('✅ Backup PIN set. You\'ll need it for all database exports.');
+        resolve(true);
+      });
+    };
+    setTimeout(function(){ var el=document.getElementById('bpin-new1'); if(el) el.focus(); },50);
+  });
+}
+
+function backupChangePin() {
+  backupRequestPin('Verify current PIN to change it').then(function(ok) {
+    if (!ok) return;
+    localStorage.removeItem('b2b_backup_pin_hash');
+    backupSetupPin().then(function() {
+      var bp = document.getElementById('backup-panel');
+      if (bp) bp.outerHTML = '<div id="backup-panel">' + renderBackupPanel() + '</div>';
+    });
+  });
+}
+
+function backupResetPin() {
+  if (!confirm('Reset backup PIN?\n\nThis requires admin confirmation. The current PIN will be removed.')) return;
+  secLog('Security', 'HIGH', 'Backup PIN reset', 'By: ' + currentUser.name);
+  localStorage.removeItem('b2b_backup_pin_hash');
+  toast('PIN removed. Set a new one before next backup.');
+  var bp = document.getElementById('backup-panel');
+  if (bp) bp.outerHTML = '<div id="backup-panel">' + renderBackupPanel() + '</div>';
+}
+
 function secLog(category, severity, msg, detail) {
   if (!currentUser) return;
   var entry = { ts: new Date().toISOString(), category: category, severity: severity,
@@ -15547,20 +15702,41 @@ function renderSecurityConsole() {
 
 function renderBackupPanel() {
   var last=_backupHistory.length?_backupHistory[0]:null;
+  var pinSet=backupPinIsSet();
+  var locked=Date.now()<_backupPinLockUntil;
   var histRows=_backupHistory.slice(0,5).map(function(b){
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bor);font-size:12px">'+
       '<div><span class="badge '+(b.dest==='local'?'b-inf':'b-ok')+'" style="margin-right:6px">'+(b.dest==='local'?'💾 Local':'☁️ Drive')+'</span>'+b.label+'</div>'+
       '<div style="color:var(--t3)">'+new Date(b.ts).toLocaleString()+'</div>'+
     '</div>';
   }).join('');
+
+  var pinRow=
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;margin-bottom:14px;background:'+(pinSet?'rgba(76,175,125,.08)':'rgba(245,158,11,.08)')+';border:1px solid '+(pinSet?'rgba(76,175,125,.25)':'rgba(245,158,11,.35)')+'">'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<span style="font-size:20px">'+(pinSet?'🔐':'⚠️')+'</span>'+
+        '<div>'+
+          '<div style="font-size:13px;font-weight:700;color:'+(pinSet?'#4caf7d':'#f59e0b')+'">'+(pinSet?'Backup PIN Active':'No Backup PIN Set')+'</div>'+
+          '<div style="font-size:11px;color:var(--t3)">'+(pinSet?'PIN required before every export · SHA-256 hashed · locks after 3 failures':(locked?'⛔ Locked — wait '+Math.ceil((_backupPinLockUntil-Date.now())/1000)+'s':'Set a PIN to protect database exports'))+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        (pinSet
+          ? '<button class="btn btn-o btn-sm" onclick="backupChangePin()">🔄 Change PIN</button>'+
+            '<button class="btn btn-o btn-sm" style="color:#ef4444" onclick="backupResetPin()">✕ Remove PIN</button>'
+          : '<button class="btn btn-sm" style="background:#4caf7d;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer" onclick="backupSetupPin().then(function(){var bp=document.getElementById(\'backup-panel\');if(bp)bp.outerHTML=\'<div id=\\\"backup-panel\\\">\'+renderBackupPanel()+\'</div>\'})">🔑 Set Backup PIN</button>')+
+      '</div>'+
+    '</div>';
+
   return '<div class="card" style="margin-bottom:14px">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
-      '<div><b>💾 Database Backup</b><div style="font-size:11px;color:var(--t3);margin-top:2px">'+BACKUP_TABLES.length+' tables · JSON snapshot · '+(_backupRunning?'⏳ Backup in progress…':'Ready')+'</div></div>'+
+      '<div><b>💾 Database Backup</b><div style="font-size:11px;color:var(--t3);margin-top:2px">'+BACKUP_TABLES.length+' tables · JSON snapshot · '+(_backupRunning?'⏳ Backup in progress…':'PIN-protected')+'</div></div>'+
       '<div style="display:flex;gap:8px">'+
-        '<button class="btn btn-p btn-sm" onclick="dbBackupLocal()" '+ (_backupRunning?'disabled':'')+'>💾 Download Local</button>'+
-        '<button class="btn btn-o btn-sm" onclick="dbBackupGDrive()" '+(_backupRunning?'disabled':'')+'>☁️ Save to Google Drive</button>'+
+        '<button class="btn btn-p btn-sm" onclick="dbBackupLocal()" '+(_backupRunning||locked?'disabled':'')+'>💾 Download Local</button>'+
+        '<button class="btn btn-o btn-sm" onclick="dbBackupGDrive()" '+(_backupRunning||locked?'disabled':'')+'>☁️ Save to Google Drive</button>'+
       '</div>'+
     '</div>'+
+    pinRow+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
       '<div style="background:var(--bg2);border-radius:8px;padding:12px">'+
         '<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:4px">Last Backup</div>'+
@@ -15579,12 +15755,18 @@ function renderBackupPanel() {
       '</div>'+
     '</div>'+
     (histRows?'<div><div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px">Backup History</div>'+histRows+'</div>':
-      '<div style="text-align:center;padding:16px;color:var(--t3);font-size:12px">No backups yet. Run your first backup above.</div>')+
+      '<div style="text-align:center;padding:16px;color:var(--t3);font-size:12px">No backups yet. Set a PIN and run your first backup above.</div>')+
   '</div>';
 }
 
 function dbBackupLocal() {
   if(_backupRunning) return;
+  backupRequestPin('Authorize local database download').then(function(ok) {
+    if (!ok) return;
+    _dbBackupLocalRun();
+  });
+}
+function _dbBackupLocalRun() {
   _backupRunning=true;
   var prog=document.getElementById('backup-progress');
   var progBar=document.getElementById('backup-progress-bar');
@@ -15631,6 +15813,12 @@ function dbBackupLocal() {
 
 function dbBackupGDrive() {
   if(_backupRunning) return;
+  backupRequestPin('Authorize Google Drive database upload').then(function(ok) {
+    if (!ok) return;
+    _dbBackupGDriveRun();
+  });
+}
+function _dbBackupGDriveRun() {
   // Request Google Drive token via OAuth2 popup
   if(typeof google==='undefined'||!google.accounts) {
     // Load GIS library on demand
