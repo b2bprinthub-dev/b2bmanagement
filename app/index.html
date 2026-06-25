@@ -15129,7 +15129,8 @@ var BACKUP_TABLES     = ['clients','invoices','transactions','expenses','message
 
 // ── BACKUP PIN ─────────────────────────────────────────────────
 var _backupPinFailures  = 0;
-var _backupPinLockUntil = 0;  // timestamp when lockout expires
+var _backupPinLockUntil = 0;
+var BACKUP_RESET_DEV_EMAIL = 'am.venturemanagement@gmail.com'; // developer email for reset keys
 
 // Simple SHA-256 hash using WebCrypto
 function backupHashPin(pin) {
@@ -15183,6 +15184,10 @@ function backupRequestPin(action) {
         '</div>' +
         '<div style="margin-top:14px;font-size:11px;color:var(--t3)">' +
           (_backupPinFailures > 0 ? '⚠️ ' + _backupPinFailures + ' failed attempt' + (_backupPinFailures>1?'s':'') + ' · locks after 3' : 'PIN is required for all database exports') +
+        '</div>' +
+        '<div style="margin-top:10px">' +
+          '<button onclick="document.getElementById(\'backup-pin-overlay\').remove();backupForgotPin();" ' +
+            'style="background:none;border:none;color:var(--acc);font-size:12px;cursor:pointer;text-decoration:underline;padding:0">Forgot PIN? Send reset key to developer →</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(overlay);
@@ -15260,6 +15265,120 @@ function backupSetupPin() {
     };
     setTimeout(function(){ var el=document.getElementById('bpin-new1'); if(el) el.focus(); },50);
   });
+}
+
+// ── BACKUP PIN RESET (mailto flow) ────────────────────────────
+
+function backupForgotPin() {
+  // Generate a CSPRNG 8-char alphanumeric reset key
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // unambiguous chars (no O/0/I/1)
+  var arr   = new Uint8Array(8);
+  crypto.getRandomValues(arr);
+  var key   = Array.from(arr).map(function(b){ return chars[b % chars.length]; }).join('');
+
+  // Store hash + expiry (15 minutes)
+  backupHashPin('RESET:' + key).then(function(hash) {
+    var expiry = Date.now() + 15 * 60 * 1000;
+    localStorage.setItem('b2b_backup_reset_hash',   hash);
+    localStorage.setItem('b2b_backup_reset_expiry', expiry);
+
+    secLog('Security', 'HIGH', 'Backup PIN reset requested', 'By: ' + (currentUser ? currentUser.name : '?') + ' · key expires in 15 min');
+
+    var who   = currentUser ? currentUser.name   : 'Unknown user';
+    var email = currentUser ? currentUser.email  : '';
+    var ts    = new Date().toLocaleString();
+    var subj  = encodeURIComponent('[B2B Print Hub] Backup PIN Reset Key');
+    var body  = encodeURIComponent(
+      'B2B Print Hub — Backup PIN Reset Request\n' +
+      '==========================================\n\n' +
+      'Requested by : ' + who + ' (' + email + ')\n' +
+      'Time         : ' + ts + '\n' +
+      'Expires      : 15 minutes from request\n\n' +
+      'ONE-TIME RESET KEY:\n\n' +
+      '  ' + key + '\n\n' +
+      'Instructions:\n' +
+      '1. Forward this key to the user who requested it.\n' +
+      '2. They must enter it in the app within 15 minutes.\n' +
+      '3. The key works only once and cannot be reused.\n\n' +
+      'If you did not request this, someone may be attempting\n' +
+      'unauthorized access to your database backup system.\n\n' +
+      '— B2B Print Hub Security System'
+    );
+
+    window.location.href = 'mailto:' + BACKUP_RESET_DEV_EMAIL + '?subject=' + subj + '&body=' + body;
+
+    // Show key entry modal after short delay (email client opens)
+    setTimeout(function() { backupShowResetEntry(); }, 1500);
+  });
+}
+
+function backupShowResetEntry() {
+  var overlay = document.createElement('div');
+  overlay.id  = 'backup-reset-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML =
+    '<div style="background:var(--bg1);border:1px solid var(--bor);border-radius:16px;padding:32px 36px;width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)">' +
+      '<div style="font-size:32px;margin-bottom:8px">📬</div>' +
+      '<div style="font-size:16px;font-weight:800;margin-bottom:4px">Check Your Email</div>' +
+      '<div style="font-size:12px;color:var(--t3);margin-bottom:6px">An email has opened in your mail client addressed to the developer.</div>' +
+      '<div style="font-size:12px;color:var(--t3);margin-bottom:20px">Send it, wait for the reset key, then enter it below. <b style="color:#f59e0b">Expires in 15 minutes.</b></div>' +
+      '<input id="breset-input" type="text" placeholder="Enter reset key (e.g. AB3K9PQZ)" maxlength="8" autocomplete="off" ' +
+        'style="width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:2px solid var(--bor);background:var(--bg2);color:var(--t1);font-size:18px;text-align:center;letter-spacing:4px;text-transform:uppercase;outline:none"/>' +
+      '<div id="breset-error" style="color:#ef4444;font-size:12px;margin-top:8px;min-height:18px"></div>' +
+      '<div style="display:flex;gap:10px;margin-top:16px">' +
+        '<button id="breset-cancel" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--bor);background:var(--bg2);color:var(--t1);cursor:pointer;font-size:13px">Cancel</button>' +
+        '<button id="breset-submit" style="flex:1;padding:10px;border-radius:8px;border:none;background:#f59e0b;color:#000;cursor:pointer;font-size:13px;font-weight:700">Apply Reset Key</button>' +
+      '</div>' +
+      '<div style="margin-top:12px;font-size:11px;color:var(--t3)">Key is case-insensitive · one-time use · 15-minute expiry</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  document.getElementById('breset-cancel').onclick = function() { overlay.remove(); };
+  document.getElementById('breset-submit').onclick = function() {
+    var key = (document.getElementById('breset-input').value || '').trim().toUpperCase();
+    if (key.length !== 8) { document.getElementById('breset-error').textContent = 'Key must be exactly 8 characters.'; return; }
+
+    var storedHash   = localStorage.getItem('b2b_backup_reset_hash');
+    var storedExpiry = parseInt(localStorage.getItem('b2b_backup_reset_expiry') || '0', 10);
+
+    if (!storedHash || !storedExpiry) {
+      document.getElementById('breset-error').textContent = 'No pending reset found. Request a new one.'; return;
+    }
+    if (Date.now() > storedExpiry) {
+      localStorage.removeItem('b2b_backup_reset_hash');
+      localStorage.removeItem('b2b_backup_reset_expiry');
+      document.getElementById('breset-error').textContent = '⏰ Reset key has expired. Please request a new one.'; return;
+    }
+
+    backupHashPin('RESET:' + key).then(function(hash) {
+      if (hash !== storedHash) {
+        secLog('Security', 'HIGH', 'Invalid backup PIN reset key entered', 'By: ' + (currentUser ? currentUser.name : '?'));
+        document.getElementById('breset-error').textContent = '❌ Incorrect key. Check the email and try again.';
+        return;
+      }
+      // Key valid — clear PIN and reset storage
+      localStorage.removeItem('b2b_backup_pin_hash');
+      localStorage.removeItem('b2b_backup_reset_hash');
+      localStorage.removeItem('b2b_backup_reset_expiry');
+      secLog('Security', 'MED', 'Backup PIN successfully reset via email key', 'By: ' + (currentUser ? currentUser.name : '?'));
+      overlay.remove();
+      toast('✅ PIN reset successful. Please set a new PIN.');
+      // Close any open PIN modal then open setup
+      var pinOverlay = document.getElementById('backup-pin-overlay');
+      if (pinOverlay) pinOverlay.remove();
+      setTimeout(function() { backupInitPin(); }, 300);
+    });
+  };
+
+  document.getElementById('breset-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('breset-submit').click();
+    // Force uppercase as user types
+    setTimeout(function() {
+      var el = document.getElementById('breset-input');
+      if (el) el.value = el.value.toUpperCase();
+    }, 0);
+  });
+  setTimeout(function() { var el = document.getElementById('breset-input'); if (el) el.focus(); }, 50);
 }
 
 function backupChangePin() {
