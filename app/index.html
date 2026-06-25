@@ -2528,20 +2528,12 @@ function sbInsert(table, row) {
   }
   return dbInsert(table, row);
 }
-var _realDataBackup = {};
-
 function toggleSandbox() {
   _sandboxMode = !_sandboxMode;
   _sandboxStore = {};
 
   if (_sandboxMode) {
-    // Back up live arrays, then replace with mock data
-    _realDataBackup = {
-      clients: clients, invoices: invoices, jobs: jobs,
-      estimates: estimates, appMessages: appMessages,
-      posItems: posItems, expenses: expenses,
-      transactions: transactions, activityLog: activityLog
-    };
+    // Fill arrays with mock data — real data was never loaded for developer
     clients      = (_sandboxMockData.clients      || []).slice();
     invoices     = (_sandboxMockData.invoices     || []).slice();
     jobs         = (_sandboxMockData.jobs         || []).slice();
@@ -2552,30 +2544,19 @@ function toggleSandbox() {
     transactions = (_sandboxMockData.transactions || []).slice();
     activityLog  = (_sandboxMockData.activity_log || []).slice();
   } else {
-    // Restore live arrays
-    if (_realDataBackup.clients !== undefined) {
-      clients      = _realDataBackup.clients;
-      invoices     = _realDataBackup.invoices;
-      jobs         = _realDataBackup.jobs;
-      estimates    = _realDataBackup.estimates;
-      appMessages  = _realDataBackup.appMessages;
-      posItems     = _realDataBackup.posItems;
-      expenses     = _realDataBackup.expenses;
-      transactions = _realDataBackup.transactions;
-      activityLog  = _realDataBackup.activityLog;
-    }
-    _realDataBackup = {};
+    // Clear all arrays — developer never has real data
+    clients = []; invoices = []; estimates = []; jobs = [];
+    appMessages = []; posItems = []; expenses = []; transactions = []; activityLog = [];
   }
 
   var bar = document.getElementById('sandbox-bar');
   if (bar) bar.style.display = _sandboxMode ? 'flex' : 'none';
-  toast(_sandboxMode ? '🧪 Sandbox ON — showing mock data only' : '✅ Sandbox OFF — live data restored');
+  toast(_sandboxMode ? '🧪 Sandbox ON — demo data loaded' : '✅ Sandbox OFF — data cleared');
   applyUserUI();
-  // Re-render current page with swapped data
-  gotoPage(curPage, document.querySelector('.nav-i.active'));
-  // If sandbox turned off and on a restricted page, go to dashboard
   if (!_sandboxMode && isDeveloper() && DEV_RESTRICTED_MODS.indexOf(curPage) > -1) {
     gotoPage('dashboard', document.querySelector('.nav-i[onclick*="dashboard"]'));
+  } else {
+    gotoPage(curPage, document.querySelector('.nav-i.active'));
   }
   devPanelRefresh();
 }
@@ -2946,6 +2927,23 @@ function applyUserUI() {
 
 function loadAppData() {
   showLoading("Loading your data...");
+  // Developer account: only load system data — no customer/business data
+  if (isDeveloper()) {
+    return Promise.all([
+      dbGet("roles", {order: "id"}),
+      dbGet("app_users", {order: "id"})
+    ]).then(function(results) {
+      appRoles = results[0];
+      if (!appRoles.find(function(r){ return r.id === 9999; })) appRoles.push(DEV_ROLE);
+      appUsers = results[1];
+      // All business arrays stay empty — no real customer data loaded
+      clients = []; invoices = []; estimates = []; jobs = []; teamMembers = [];
+      posItems = []; jobPayments = []; crewMembers = []; jobNotes = [];
+      appMessages = []; invItems = []; invTxns = []; purchaseOrders = [];
+      suppliers = []; expenses = []; transactions = []; activityLog = []; _plItems = [];
+      return loadSettings();
+    }).then(function() { hideLoading(); });
+  }
   return Promise.all([
     dbGet("roles", {order: "id"}),
     dbGet("app_users", {order: "id"}),
@@ -2968,10 +2966,7 @@ function loadAppData() {
     dbGet("price_list",  {order: "created_at", asc: false}).catch(function(){ return []; })
   ]).then(function (results) {
     appRoles     = results[0];
-    // Inject Developer role into the list if not already present (virtual role, not in DB)
-    if (!appRoles.find(function(r){ return r.id === 9999; })) {
-      appRoles.push(DEV_ROLE);
-    }
+    if (!appRoles.find(function(r){ return r.id === 9999; })) appRoles.push(DEV_ROLE);
     appUsers     = results[1];
     clients      = results[2];
     invoices     = results[3];
