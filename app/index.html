@@ -7716,29 +7716,45 @@ function updateConvHeaderButtons(status) {
   }
 }
 
+function getDeletedConvKey() {
+  return 'b2b_deleted_convs_' + (currentUser ? currentUser.id : '');
+}
+function getDeletedConvIds() {
+  try { return JSON.parse(localStorage.getItem(getDeletedConvKey()) || '[]'); } catch(e) { return []; }
+}
+function addDeletedConvId(otherId) {
+  var list = getDeletedConvIds();
+  var key = String(otherId);
+  if (list.indexOf(key) === -1) list.push(key);
+  localStorage.setItem(getDeletedConvKey(), JSON.stringify(list));
+}
+function clearDeletedConvIds() {
+  localStorage.removeItem(getDeletedConvKey());
+}
+
 function deleteConv() {
   if (_activeMsgUserId == null) return;
   if (!confirm('Delete this entire conversation? This cannot be undone.')) return;
   var otherId = _activeMsgUserId;
   var myId = currentUser.id;
   var toDelete = appMessages.filter(function(m) {
-    if (otherId === 'broadcast') return m.to_user_id == null && m.from_user_id == myId;
+    if (otherId === 'broadcast') return m.to_user_id == null;
     return (m.from_user_id == myId && m.to_user_id == otherId) ||
            (m.from_user_id == otherId && m.to_user_id == myId);
   });
-  // Remove locally immediately
   var ids = toDelete.map(function(m) { return m.id; });
+  // Remove locally immediately
   appMessages = appMessages.filter(function(m) { return ids.indexOf(m.id) === -1; });
   delete _convStates[String(otherId)];
   saveConvStates();
+  // Persist deletion so received messages don't reappear on reload
+  addDeletedConvId(otherId);
   _activeMsgUserId = null;
   showMsgPanel('empty');
   renderMsgConvList();
   updateMsgBadge();
-  // Delete from DB (only messages the current user sent — RLS allows it)
-  toDelete.forEach(function(m) {
-    if (m.from_user_id == myId) dbDelete('messages', m.id);
-  });
+  // Delete ALL messages from DB (sent + received); RLS handles what it can
+  toDelete.forEach(function(m) { dbDelete('messages', m.id); });
   toast('Conversation deleted');
 }
 
@@ -7768,6 +7784,7 @@ function getConvMessages(otherId) {
 function getConversations() {
   if (!currentUser) return [];
   var myId = currentUser.id;
+  var deletedIds = getDeletedConvIds();
   var seen = {};
   var convs = [];
   // Sort all messages newest first so first encounter = most recent
@@ -7785,6 +7802,7 @@ function getConversations() {
       continue;
     }
     if (seen[otherId]) continue;
+    if (deletedIds.indexOf(String(otherId)) > -1) continue;
     seen[otherId] = true;
     convs.push({ otherId: otherId, lastMsg: m });
   }
@@ -15887,6 +15905,14 @@ function executeWipe() {
     Promise.all(ops).then(function(results) {
       var failed = results.filter(function(r){ return r.error; }).map(function(r){ return r.table; });
       if (failed.length) { toast('Some tables failed: ' + failed.join(', '), true); btn.disabled = false; btn.textContent = 'Wipe'; return; }
+      // Clear all per-user message state from localStorage
+      var keysToRemove = [];
+      for (var ki = 0; ki < localStorage.length; ki++) {
+        var lk = localStorage.key(ki);
+        if (lk && (lk.indexOf('convStates_') === 0 || lk.indexOf('b2b_deleted_convs_') === 0)) keysToRemove.push(lk);
+      }
+      keysToRemove.forEach(function(lk){ localStorage.removeItem(lk); });
+      appMessages = [];
 
       if (mode === 'fresh') {
         // Remove all app_users except admin and developer
