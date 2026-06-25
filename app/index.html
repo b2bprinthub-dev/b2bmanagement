@@ -140,8 +140,32 @@ textarea.fc{resize:vertical;min-height:72px}
 .tot-grand{font-weight:700;font-size:15px;color:var(--t1);border-top:1px solid var(--bor);padding-top:10px;margin-top:6px}
 
 /* ── Kanban cards ── */
-.k-card{background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:13px;margin-bottom:8px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+/* ── Jobs Board ── */
+.k-card{background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:12px 13px;margin-bottom:8px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .k-card:hover{border-color:var(--acc);transform:translateY(-1px);box-shadow:var(--shadow-lg)}
+.k-card .k-priority-bar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:10px 0 0 10px}
+.k-col{background:var(--bg2);border:1px solid var(--bor);border-radius:14px;padding:14px;min-height:140px}
+.k-col-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bor)}
+.k-stat{background:var(--bg2);border:1px solid var(--bor);border-radius:10px;padding:14px 18px;flex:1;min-width:0;position:relative;overflow:hidden}
+.k-stat .k-stat-bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+/* View switcher buttons */
+.jv-btn{padding:5px 12px;font-size:12px;font-weight:500;background:transparent;color:var(--t2);border:none;border-radius:6px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.jv-btn:hover{color:var(--t1)}
+.jv-btn.jv-active{background:var(--sur);color:var(--t1);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+
+/* ── Report Center ── */
+.rc-nav-item{display:block;width:100%;text-align:left;padding:8px 12px;font-size:13px;font-weight:500;color:var(--t2);background:transparent;border:none;border-radius:7px;cursor:pointer;transition:all .12s}
+.rc-nav-item:hover{background:var(--bg3);color:var(--t1)}
+.rc-nav-item.rc-nav-active{background:var(--bg3);color:var(--acc);font-weight:600}
+.rc-report-row{display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--bor);cursor:pointer;transition:background .12s}
+.rc-report-row:first-child{border-radius:10px 10px 0 0}
+.rc-report-row:last-child{border-bottom:none;border-radius:0 0 10px 10px}
+.rc-report-row:hover{background:var(--bg3)}
+.rc-report-row:hover .rc-arrow{color:var(--acc)}
+.rc-group-hd{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;padding:18px 0 8px;margin-top:4px}
+.rc-group-hd:first-child{padding-top:0}
+.rc-freq-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.rc-arrow{font-size:16px;color:var(--t3);flex-shrink:0;transition:color .12s}
 
 /* ── Chips ── */
 .chip{display:inline-flex;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;background:var(--bg3);color:var(--t2);border:1px solid var(--bor);cursor:pointer;transition:all .15s}
@@ -342,37 +366,37 @@ textarea.fc{resize:vertical;min-height:72px}
   </div>
   <nav class="sb-nav">
     <div class="nav-grp">
-      <div class="nav-lbl">Overview</div>
-      <button class="nav-i active" onclick="gotoPage('dashboard',this)" data-perm="dashboard"><span>🏠</span>Dashboard</button>
+      <div class="nav-lbl" data-i18n="nav.grp.overview">Overview</div>
+      <button class="nav-i active" onclick="gotoPage('dashboard',this)" data-perm="dashboard"><span>🏠</span><span data-i18n="nav.dashboard">Dashboard</span></button>
     </div>
     <div class="nav-grp" id="nav-grp-sales">
-      <div class="nav-lbl">Sales</div>
-      <button class="nav-i" onclick="gotoPage('invoices',this)" data-perm="invoices"><span>🧾</span>Invoices</button>
-      <button class="nav-i" onclick="gotoPage('estimates',this)" data-perm="estimates"><span>📋</span>Estimates</button>
-      <button class="nav-i" onclick="gotoPage('pos',this)" data-perm="pos"><span>🛒</span>Point of Sale</button>
+      <div class="nav-lbl" data-i18n="nav.grp.sales">Sales</div>
+      <button class="nav-i" onclick="gotoPage('invoices',this)" data-perm="invoices"><span>🧾</span><span data-i18n="nav.invoices">Invoices</span></button>
+      <button class="nav-i" onclick="gotoPage('estimates',this)" data-perm="estimates"><span>📋</span><span data-i18n="nav.estimates">Estimates</span></button>
+      <button class="nav-i" onclick="gotoPage('pos',this)" data-perm="pos"><span>🛒</span><span data-i18n="nav.pos">Point of Sale</span></button>
     </div>
     <div class="nav-grp">
-      <div class="nav-lbl">Operations</div>
-      <button class="nav-i" onclick="gotoPage('jobs',this)" data-perm="jobs"><span>🔧</span>Jobs Board</button>
-      <button class="nav-i" onclick="gotoPage('myportal',this)" data-perm="installer_portal"><span>👷</span>My Work</button>
-      <button class="nav-i" onclick="gotoPage('designer',this)" data-perm="designer_portal"><span>🎨</span>My Studio</button>
-      <button class="nav-i" onclick="gotoPage('inventory',this)" data-perm="inventory"><span>📦</span>Inventory<span id="inv-alert-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto"></span></button>
-      <button class="nav-i" onclick="gotoPage('crm',this)" data-perm="crm"><span>👥</span>CRM</button>
+      <div class="nav-lbl" data-i18n="nav.grp.operations">Operations</div>
+      <button class="nav-i" onclick="gotoPage('jobs',this)" data-perm="jobs"><span>🔧</span><span data-i18n="nav.jobs">Jobs Board</span></button>
+      <button class="nav-i" onclick="gotoPage('myportal',this)" data-perm="installer_portal"><span>👷</span><span data-i18n="nav.myportal">My Work</span></button>
+      <button class="nav-i" onclick="gotoPage('designer',this)" data-perm="designer_portal"><span>🎨</span><span data-i18n="nav.designer">My Studio</span></button>
+      <button class="nav-i" onclick="gotoPage('inventory',this)" data-perm="inventory"><span>📦</span><span data-i18n="nav.inventory">Inventory</span><span id="inv-alert-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto"></span></button>
+      <button class="nav-i" onclick="gotoPage('crm',this)" data-perm="crm"><span>👥</span><span data-i18n="nav.crm">CRM</span></button>
     </div>
     <div class="nav-grp" id="nav-grp-finance">
-      <div class="nav-lbl">Finance</div>
-      <button class="nav-i" onclick="gotoPage('finance',this)" data-perm="invoices"><span>💳</span>Transaction Ledger<span id="pending-txn-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto">!</span></button>
+      <div class="nav-lbl" data-i18n="nav.grp.finance">Finance</div>
+      <button class="nav-i" onclick="gotoPage('finance',this)" data-perm="invoices"><span>💳</span><span data-i18n="nav.finance">Transaction Ledger</span><span id="pending-txn-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto">!</span></button>
     </div>
     <div class="nav-grp">
-      <div class="nav-lbl">Communication</div>
-      <button class="nav-i" onclick="gotoPage('messages',this)" data-perm="messages" id="msg-nav-btn"><span>💬</span>Messages<span id="msg-badge-nav" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto"></span></button>
+      <div class="nav-lbl" data-i18n="nav.grp.communication">Communication</div>
+      <button class="nav-i" onclick="gotoPage('messages',this)" data-perm="messages" id="msg-nav-btn"><span>💬</span><span data-i18n="nav.messages">Messages</span><span id="msg-badge-nav" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto"></span></button>
     </div>
     <div class="nav-grp">
-      <div class="nav-lbl">Reports</div>
-      <button class="nav-i" onclick="gotoPage('analytics',this)" data-perm="analytics"><span>📊</span>Analytics</button>
-      <button class="nav-i" onclick="gotoPage('myreports',this)" data-perm="installer_portal" id="nav-myreports-btn"><span>📋</span>My Reports</button>
-      <button class="nav-i" onclick="gotoPage('settings',this)" data-perm="settings"><span>⚙️</span>Settings</button>
-      <button class="nav-i" id="nav-kb-btn" style="display:none" onclick="gotoPage('knowledgebase',this)" data-perm="settings"><span>📚</span>Knowledge Base</button>
+      <div class="nav-lbl" data-i18n="nav.grp.reports">Reports</div>
+      <button class="nav-i" onclick="gotoPage('analytics',this)" data-perm="analytics"><span>📊</span><span data-i18n="nav.analytics">Analytics</span></button>
+      <button class="nav-i" onclick="gotoPage('myreports',this)" data-perm="installer_portal" id="nav-myreports-btn"><span>📋</span><span data-i18n="nav.myreports">My Reports</span></button>
+      <button class="nav-i" onclick="gotoPage('settings',this)" data-perm="settings"><span>⚙️</span><span data-i18n="nav.settings">Settings</span></button>
+      <button class="nav-i" id="nav-kb-btn" style="display:none" onclick="gotoPage('knowledgebase',this)" data-perm="settings"><span>📚</span><span data-i18n="nav.knowledgebase">Knowledge Base</span></button>
     </div>
   </nav>
   <div class="sb-user">
@@ -394,6 +418,7 @@ textarea.fc{resize:vertical;min-height:72px}
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
+      <button id="lang-toggle-btn" onclick="toggleLang()" title="Switch language / Cambiar idioma" style="padding:6px 12px;background:var(--bg3);border:1px solid var(--bor);border-radius:8px;cursor:pointer;color:var(--t1);font-size:12px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:6px;white-space:nowrap"><span id="lang-flag" style="font-size:15px">🇺🇸</span><span id="lang-label">EN</span></button>
       <button id="theme-toggle-btn" onclick="toggleTheme()" title="Switch theme"></button>
       <button class="btn btn-o btn-sm" id="heldOrdersBtn" onclick="openHeldOrders()" style="display:none">Held Orders</button>
       <button onclick="gotoPage('messages',document.getElementById('msg-nav-btn'))" style="position:relative;background:none;border:1px solid var(--bor);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--t2);font-size:18px;line-height:1;display:flex;align-items:center" title="Messages">
@@ -418,7 +443,7 @@ textarea.fc{resize:vertical;min-height:72px}
       <!-- ── Dashboard Header ── -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
         <div>
-          <div style="font-size:20px;font-weight:700">Business Overview</div>
+          <div style="font-size:20px;font-weight:700" data-i18n="dash.title">Business Overview</div>
           <div style="font-size:11px;color:var(--t3);margin-top:2px" id="dash-last-updated">–</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -445,7 +470,7 @@ textarea.fc{resize:vertical;min-height:72px}
       <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:18px">
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <b>Revenue Trend</b>
+            <b data-i18n="dash.revenueTrend">Revenue Trend</b>
             <div style="display:flex;gap:4px">
               <button class="chip active" onclick="setRange('week',this)">Week</button>
               <button class="chip" onclick="setRange('month',this)">Month</button>
@@ -455,7 +480,7 @@ textarea.fc{resize:vertical;min-height:72px}
           <div class="chart-wrap"><canvas id="revChart"></canvas></div>
         </div>
         <div class="card">
-          <b>Revenue Mix</b>
+          <b data-i18n="dash.revenueMix">Revenue Mix</b>
           <div id="dash-cashflow" style="margin-top:10px"></div>
           <div class="chart-wrap" style="margin-top:8px;max-height:140px"><canvas id="svcChart"></canvas></div>
         </div>
@@ -464,15 +489,15 @@ textarea.fc{resize:vertical;min-height:72px}
       <!-- ── Row 4: Pipeline + Top Clients + Team Performance ── -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px">
         <div class="card">
-          <b>Jobs Pipeline</b>
+          <b data-i18n="dash.jobsPipeline">Jobs Pipeline</b>
           <div id="dash-pipeline" style="margin-top:12px"></div>
         </div>
         <div class="card">
-          <b>Top Clients by Revenue</b>
+          <b data-i18n="dash.topClients">Top Clients by Revenue</b>
           <div id="dash-top-clients" style="margin-top:12px"></div>
         </div>
         <div class="card">
-          <b>Team Performance</b>
+          <b data-i18n="dash.teamPerformance">Team Performance</b>
           <div id="dash-team-perf" style="margin-top:12px"></div>
         </div>
       </div>
@@ -480,12 +505,12 @@ textarea.fc{resize:vertical;min-height:72px}
       <!-- ── Row 5: AR Aging + Upcoming Deadlines ── -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
         <div class="card">
-          <b>Accounts Receivable Aging</b>
+          <b data-i18n="dash.arAging">Accounts Receivable Aging</b>
           <div id="dash-ar-aging" style="margin-top:12px"></div>
         </div>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-            <b>Upcoming Deadlines</b>
+            <b data-i18n="dash.upcomingDeadlines">Upcoming Deadlines</b>
             <span id="dash-deadline-badge" style="font-size:11px;color:var(--t3)"></span>
           </div>
           <div id="dash-deadlines" style="margin-top:10px"></div>
@@ -495,13 +520,13 @@ textarea.fc{resize:vertical;min-height:72px}
       <!-- ── Row 6: Recent Invoices + Live Activity ── -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         <div class="card">
-          <b>Recent Invoices</b>
+          <b data-i18n="dash.recentInvoices">Recent Invoices</b>
           <div id="dash-inv-list" style="margin-top:12px"></div>
         </div>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-            <b>Live Activity Feed</b>
-            <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--ok)"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block;animation:pulse 2s infinite"></span>Live</span>
+            <b data-i18n="dash.liveActivity">Live Activity Feed</b>
+            <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--ok)"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block;animation:pulse 2s infinite"></span><span data-i18n="dash.live">Live</span></span>
           </div>
           <div id="dash-activity" style="margin-top:10px"></div>
         </div>
@@ -510,21 +535,37 @@ textarea.fc{resize:vertical;min-height:72px}
 
     <div class="page" id="page-invoices">
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <button class="chip active" onclick="filterInv('all',this)">All</button>
-        <button class="chip" onclick="filterInv('draft',this)">Draft</button>
-        <button class="chip" onclick="filterInv('sent',this)">Sent</button>
-        <button class="chip" onclick="filterInv('paid',this)">Paid</button>
-        <button class="chip" onclick="filterInv('voided',this)">Voided</button>
+        <button class="chip active" onclick="filterInv('all',this)" data-i18n="status.all">All</button>
+        <button class="chip" onclick="filterInv('draft',this)" data-i18n="status.draft">Draft</button>
+        <button class="chip" onclick="filterInv('sent',this)" data-i18n="status.sent">Sent</button>
+        <button class="chip" onclick="filterInv('paid',this)" data-i18n="status.paid">Paid</button>
+        <button class="chip" onclick="filterInv('voided',this)" data-i18n="status.voided">Voided</button>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
-        <table><thead><tr><th>#</th><th>Client</th><th>Services</th><th>Date</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+        <table><thead><tr>
+          <th data-i18n="inv.col.num">#</th>
+          <th data-i18n="inv.col.client">Client</th>
+          <th data-i18n="inv.col.services">Services</th>
+          <th data-i18n="inv.col.date">Date</th>
+          <th data-i18n="inv.col.amount">Amount</th>
+          <th data-i18n="inv.col.status">Status</th>
+          <th data-i18n="inv.col.actions">Actions</th>
+        </tr></thead>
         <tbody id="inv-tbody"></tbody></table>
       </div>
     </div>
 
     <div class="page" id="page-estimates">
       <div class="card" style="padding:0;overflow:hidden">
-        <table><thead><tr><th>#</th><th>Client</th><th>Description</th><th>Date</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+        <table><thead><tr>
+          <th data-i18n="inv.col.num">#</th>
+          <th data-i18n="inv.col.client">Client</th>
+          <th data-i18n="field.description">Description</th>
+          <th data-i18n="inv.col.date">Date</th>
+          <th data-i18n="inv.col.amount">Amount</th>
+          <th data-i18n="inv.col.status">Status</th>
+          <th data-i18n="inv.col.actions">Actions</th>
+        </tr></thead>
         <tbody id="est-tbody"></tbody></table>
       </div>
     </div>
@@ -645,61 +686,70 @@ textarea.fc{resize:vertical;min-height:72px}
       <!-- Designer Available Jobs Panel -->
       <div id="designer-available-panel" style="display:none;margin-bottom:16px"></div>
 
-      <!-- Quick Stats Bar -->
-      <div id="jobs-stats-bar" class="g4" style="margin-bottom:16px"></div>
+      <!-- Stats Strip -->
+      <div id="jobs-stats-bar" style="margin-bottom:20px"></div>
 
       <!-- Toolbar -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <input id="job-search" class="fc" placeholder="Search jobs..." style="width:180px;padding:7px 11px" oninput="renderJobs()"/>
-          <select class="fc" id="job-filter-type" style="width:150px;padding:7px 11px" onchange="renderJobs()">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <!-- Left: Filters -->
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div style="position:relative">
+            <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--t3);pointer-events:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input id="job-search" class="fc" placeholder="Search jobs…" style="width:200px;padding:7px 11px 7px 32px" oninput="renderJobs()"/>
+          </div>
+          <select class="fc" id="job-filter-type" style="width:148px;padding:7px 10px" onchange="renderJobs()">
             <option value="">All Services</option>
             <option>Web Design</option><option>Print / Banners</option><option>Large Format Signs</option>
             <option>Window Wraps</option><option>Signs &amp; Awnings</option><option>Install</option><option>Other</option>
           </select>
-          <select class="fc" id="job-filter-member" style="width:160px;padding:7px 11px" onchange="renderJobs()">
+          <select class="fc" id="job-filter-member" style="width:148px;padding:7px 10px" onchange="renderJobs()">
             <option value="">All Staff</option>
           </select>
-          <select class="fc" id="job-filter-priority" style="width:130px;padding:7px 11px" onchange="renderJobs()">
+          <select class="fc" id="job-filter-priority" style="width:130px;padding:7px 10px" onchange="renderJobs()">
             <option value="">All Priorities</option>
-            <option value="high">🔴 High</option>
-            <option value="medium">🟡 Medium</option>
-            <option value="low">🟢 Low</option>
+            <option value="high">High Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="low">Low Priority</option>
           </select>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);cursor:pointer;white-space:nowrap">
-            <input type="checkbox" id="job-filter-overdue" onchange="renderJobs()"/> Overdue only
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);cursor:pointer;white-space:nowrap;padding:7px 12px;border:1px solid var(--bor);border-radius:8px;background:var(--bg2)">
+            <input type="checkbox" id="job-filter-overdue" onchange="renderJobs()"/> Overdue
           </label>
         </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <!-- View toggle -->
-          <div style="display:flex;border:1px solid var(--bor);border-radius:8px;overflow:hidden">
-            <button id="view-btn-kanban" onclick="setJobView('kanban',this)" style="padding:6px 12px;font-size:12px;font-weight:600;background:var(--acc);color:#fff;border:none;cursor:pointer">⊞ Board</button>
-            <button id="view-btn-list" onclick="setJobView('list',this)" style="padding:6px 12px;font-size:12px;font-weight:600;background:transparent;color:var(--t2);border:none;cursor:pointer">☰ List</button>
-            <button id="view-btn-calendar" onclick="setJobView('calendar',this)" style="padding:6px 12px;font-size:12px;font-weight:600;background:transparent;color:var(--t2);border:none;cursor:pointer">📅 Calendar</button>
-            <button id="view-btn-staff" onclick="setJobView('staff',this)" style="padding:6px 12px;font-size:12px;font-weight:600;background:transparent;color:var(--t2);border:none;cursor:pointer">👥 Staff</button>
+
+        <!-- Right: Actions -->
+        <div style="display:flex;gap:8px;align-items:center">
+          <!-- View switcher -->
+          <div style="display:flex;background:var(--bg3);border:1px solid var(--bor);border-radius:8px;padding:3px;gap:2px">
+            <button id="view-btn-kanban" onclick="setJobView('kanban',this)" class="jv-btn jv-active">Board</button>
+            <button id="view-btn-list" onclick="setJobView('list',this)" class="jv-btn">List</button>
+            <button id="view-btn-calendar" onclick="setJobView('calendar',this)" class="jv-btn">Calendar</button>
+            <button id="view-btn-staff" onclick="setJobView('staff',this)" class="jv-btn">Staff</button>
           </div>
-          <button class="btn btn-o btn-sm" onclick="exportJobsCSV()" id="jobs-export-btn">⬇ Export</button>
-          <button class="btn btn-o btn-sm" onclick="bulkArchiveDone()" id="jobs-archive-btn" title="Archive all Done jobs to keep the board clean" style="color:#f59e0b;border-color:#f59e0b40">📦 Archive Done</button>
-          <button class="btn btn-o btn-sm" onclick="toggleArchivedView()" id="jobs-archived-toggle" style="color:var(--t3)">🗄 Archived</button>
-          <button class="btn btn-o btn-sm" onclick="openMembersModal()" id="jobs-team-btn">Team</button>
-          <button class="btn btn-p btn-sm" onclick="canEditPayment()?openIntakeWizard():openJobModal(null)" id="jobs-new-btn">+ New Job</button>
+          <!-- Secondary actions -->
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="btn btn-o btn-sm" onclick="openMembersModal()" id="jobs-team-btn" style="font-size:12px">Team</button>
+            <button class="btn btn-o btn-sm" onclick="exportJobsCSV()" id="jobs-export-btn" style="font-size:12px">Export</button>
+            <button class="btn btn-o btn-sm" onclick="bulkArchiveDone()" id="jobs-archive-btn" style="font-size:12px;color:var(--warn)">Archive Done</button>
+            <button class="btn btn-o btn-sm" onclick="toggleArchivedView()" id="jobs-archived-toggle" style="font-size:12px;color:var(--t3)">Archived</button>
+          </div>
+          <button class="btn btn-p btn-sm" onclick="canEditPayment()?openIntakeWizard():openJobModal(null)" id="jobs-new-btn" style="font-size:13px;padding:7px 16px">+ New Job</button>
         </div>
       </div>
 
-      <!-- Archived banner (hidden by default) -->
-      <div id="jobs-archived-banner" style="display:none;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:20px">🗄</span>
-          <div><div style="font-weight:700;font-size:14px;color:#f59e0b">Archived Jobs</div><div style="font-size:12px;color:var(--t3)" id="archived-count-label">0 archived jobs</div></div>
+      <!-- Archived banner -->
+      <div id="jobs-archived-banner" style="display:none;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:14px 18px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:36px;height:36px;border-radius:8px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>
+          <div><div style="font-weight:600;font-size:14px;color:var(--warn)">Archived Jobs</div><div style="font-size:12px;color:var(--t3);margin-top:1px" id="archived-count-label">0 archived jobs</div></div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-sm" onclick="purgeAllArchived()" style="background:#ef444415;color:#ef4444;border:none;font-size:12px">🗑 Delete All Permanently</button>
-          <button class="btn btn-o btn-sm" onclick="toggleArchivedView()" style="font-size:12px">✕ Close</button>
+          <button class="btn btn-sm" onclick="purgeAllArchived()" style="background:rgba(239,68,68,.1);color:var(--err);border:none;font-size:12px">Delete All</button>
+          <button class="btn btn-o btn-sm" onclick="toggleArchivedView()" style="font-size:12px">Close</button>
         </div>
       </div>
 
       <!-- Views -->
-      <div id="kanban" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:start"></div>
+      <div id="kanban" style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;align-items:start"></div>
       <div id="jobs-list-view" style="display:none"></div>
       <div id="jobs-calendar-view" style="display:none"></div>
       <div id="jobs-staff-view" style="display:none"></div>
@@ -978,8 +1028,8 @@ textarea.fc{resize:vertical;min-height:72px}
       <!-- Header -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
         <div>
-          <div style="font-size:20px;font-weight:700">📊 Financial Reports</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:2px" id="an-generated">CFO-grade reporting suite</div>
+          <div style="font-size:20px;font-weight:700" data-i18n="an.title">📊 Financial Reports</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px" id="an-generated" data-i18n="an.subtitle">CFO-grade reporting suite</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select id="an-period" class="fc" style="padding:6px 10px;font-size:12px" onchange="renderAnalytics()">
@@ -995,13 +1045,13 @@ textarea.fc{resize:vertical;min-height:72px}
       </div>
       <!-- Tab bar -->
       <div style="display:flex;gap:2px;border-bottom:2px solid var(--bor);margin-bottom:20px;overflow-x:auto">
-        <button class="an-tab active" onclick="setAnTab('overview',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--acc);border-bottom:2px solid var(--acc);margin-bottom:-2px;cursor:pointer;white-space:nowrap">📈 Overview</button>
-        <button class="an-tab" onclick="setAnTab('pl',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap">💼 P&amp;L</button>
-        <button class="an-tab" onclick="setAnTab('ar',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap">🏦 AR &amp; Cash</button>
-        <button class="an-tab" onclick="setAnTab('sales',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap">🛒 Sales</button>
-        <button class="an-tab" onclick="setAnTab('clients',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap">👥 Clients</button>
-        <button class="an-tab" onclick="setAnTab('ops',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap">⚙️ Operations</button>
-        <button class="an-tab" onclick="setAnTab('forecast',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap">🔭 Forecast</button>
+        <button class="an-tab active" onclick="setAnTab('overview',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--acc);border-bottom:2px solid var(--acc);margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.overview">Overview</button>
+        <button class="an-tab" onclick="setAnTab('pl',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.pl">P&amp;L</button>
+        <button class="an-tab" onclick="setAnTab('ar',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.ar">AR &amp; Cash</button>
+        <button class="an-tab" onclick="setAnTab('sales',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.sales">Sales</button>
+        <button class="an-tab" onclick="setAnTab('clients',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.clients">Clients</button>
+        <button class="an-tab" onclick="setAnTab('ops',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.ops">Operations</button>
+        <button class="an-tab" onclick="setAnTab('forecast',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.forecast">Forecast</button>
       </div>
       <!-- Tab panels -->
       <div id="an-tab-overview"></div>
@@ -1031,34 +1081,40 @@ textarea.fc{resize:vertical;min-height:72px}
     <!-- ══ MY REPORTS PAGE ══════════════════════════════════════ -->
     <div class="page" id="page-myreports">
       <!-- Header -->
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--bor)">
         <div>
-          <div style="font-size:22px;font-weight:700">📋 Report Center</div>
-          <div style="font-size:13px;color:var(--t3);margin-top:2px" id="mr-subtitle">Business reporting suite · Select a report to generate</div>
+          <div style="font-size:20px;font-weight:700;color:var(--t1)" data-i18n="rpt.title">Reports</div>
+          <div style="font-size:12px;color:var(--t3);margin-top:3px" id="mr-subtitle" data-i18n="rpt.subtitle">Select a report to generate</div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap" id="mr-action-bar">
-          <button class="btn btn-o btn-sm" onclick="mrBackToCatalog()" id="mr-back-btn" style="display:none">← All Reports</button>
-          <button class="btn btn-o btn-sm" onclick="window.print()" id="mr-print-btn" style="display:none">🖨 Print</button>
-          <button class="btn btn-o btn-sm" onclick="exportActiveReportCSV()" id="mr-csv-btn" style="display:none">⬇ CSV</button>
-          <button class="btn btn-p btn-sm" onclick="openEmailReportModal()" id="mr-email-btn" style="display:none">📧 Email Report</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" id="mr-action-bar">
+          <button class="btn btn-o btn-sm" onclick="mrBackToCatalog()" id="mr-back-btn" style="display:none;font-size:12px" data-i18n="btn.allReports">← All Reports</button>
+          <button class="btn btn-o btn-sm" onclick="window.print()" id="mr-print-btn" style="display:none;font-size:12px" data-i18n="btn.print">Print</button>
+          <button class="btn btn-o btn-sm" onclick="exportActiveReportCSV()" id="mr-csv-btn" style="display:none;font-size:12px" data-i18n="btn.exportCsv">Export CSV</button>
+          <button class="btn btn-p btn-sm" onclick="openEmailReportModal()" id="mr-email-btn" style="display:none;font-size:12px" data-i18n="btn.emailReport">Email Report</button>
         </div>
       </div>
 
-      <!-- Catalog view -->
-      <div id="mr-catalog">
-        <!-- Category filter tabs -->
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px" id="mr-cat-tabs">
-          <button class="btn btn-p btn-sm mr-cat-btn" onclick="filterMrCat('all',this)">All Reports</button>
-          <button class="btn btn-o btn-sm mr-cat-btn" onclick="filterMrCat('daily',this)">📅 Daily</button>
-          <button class="btn btn-o btn-sm mr-cat-btn" onclick="filterMrCat('weekly',this)">📆 Weekly</button>
-          <button class="btn btn-o btn-sm mr-cat-btn" onclick="filterMrCat('monthly',this)">🗓 Monthly</button>
-          <button class="btn btn-o btn-sm mr-cat-btn" onclick="filterMrCat('quarterly',this)">📊 Quarterly</button>
-          <button class="btn btn-o btn-sm mr-cat-btn" onclick="filterMrCat('annual',this)">📈 Annual</button>
-          <button class="btn btn-o btn-sm mr-cat-btn" onclick="filterMrCat('personal',this)">👤 My Reports</button>
-          <button class="btn btn-o btn-sm mr-cat-btn" onclick="filterMrCat('compliance',this)">🔒 Compliance</button>
-          <button class="btn btn-o btn-sm mr-cat-btn" onclick="filterMrCat('inventory',this)">📦 Inventory</button>
+      <!-- Catalog view: two-column layout -->
+      <div id="mr-catalog" style="display:flex;gap:0;align-items:flex-start">
+        <!-- Left nav -->
+        <div style="width:200px;flex-shrink:0;margin-right:28px">
+          <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;padding:0 10px" data-i18n="rpt.categories">Categories</div>
+          <nav id="mr-cat-tabs" style="display:flex;flex-direction:column;gap:1px">
+            <button class="mr-cat-btn rc-nav-item rc-nav-active" onclick="filterMrCat('all',this)" data-i18n="rpt.cat.all">All Reports</button>
+            <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('daily',this)" data-i18n="rpt.cat.daily">Daily</button>
+            <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('weekly',this)" data-i18n="rpt.cat.weekly">Weekly</button>
+            <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('monthly',this)" data-i18n="rpt.cat.monthly">Monthly</button>
+            <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('quarterly',this)" data-i18n="rpt.cat.quarterly">Quarterly</button>
+            <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('annual',this)" data-i18n="rpt.cat.annual">Annual</button>
+            <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('personal',this)" data-i18n="rpt.cat.personal">My Reports</button>
+            <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('compliance',this)" data-i18n="rpt.cat.compliance">Compliance</button>
+            <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('inventory',this)" data-i18n="rpt.cat.inventory">Inventory</button>
+          </nav>
         </div>
-        <div id="mr-report-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
+        <!-- Right: report list -->
+        <div style="flex:1;min-width:0">
+          <div id="mr-report-cards"></div>
+        </div>
       </div>
 
       <!-- Report viewer (hidden until report is opened) -->
@@ -1533,14 +1589,14 @@ textarea.fc{resize:vertical;min-height:72px}
 
     <div class="page" id="page-settings">
       <div class="settings-tabs">
-        <button class="settings-tab active" onclick="switchSettingsTab('users',this)">Users</button>
-        <button class="settings-tab" onclick="switchSettingsTab('requests',this)">Access Requests <span id="req-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:4px"></span></button>
-        <button class="settings-tab" onclick="switchSettingsTab('roles',this)">Roles</button>
-        <button class="settings-tab" onclick="switchSettingsTab('activity',this)">Activity Log</button>
-        <button class="settings-tab" onclick="switchSettingsTab('security',this)">Security</button>
-        <button class="settings-tab" onclick="switchSettingsTab('business',this)">Business Info</button>
-        <button class="settings-tab" onclick="switchSettingsTab('pdf',this)">PDF Settings</button>
-        <button class="settings-tab" id="danger-zone-tab" style="color:var(--err);display:none" onclick="switchSettingsTab('danger',this)">⚠️ Danger Zone</button>
+        <button class="settings-tab active" onclick="switchSettingsTab('users',this)" data-i18n="set.tab.users">Users</button>
+        <button class="settings-tab" onclick="switchSettingsTab('requests',this)"><span data-i18n="set.tab.requests">Access Requests</span> <span id="req-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:4px"></span></button>
+        <button class="settings-tab" onclick="switchSettingsTab('roles',this)" data-i18n="set.tab.roles">Roles</button>
+        <button class="settings-tab" onclick="switchSettingsTab('activity',this)" data-i18n="set.tab.activity">Activity Log</button>
+        <button class="settings-tab" onclick="switchSettingsTab('security',this)" data-i18n="set.tab.security">Security</button>
+        <button class="settings-tab" onclick="switchSettingsTab('business',this)" data-i18n="set.tab.business">Business Info</button>
+        <button class="settings-tab" onclick="switchSettingsTab('pdf',this)" data-i18n="set.tab.pdf">PDF Settings</button>
+        <button class="settings-tab" id="danger-zone-tab" style="color:var(--err);display:none" onclick="switchSettingsTab('danger',this)" data-i18n="set.tab.danger">⚠️ Danger Zone</button>
       </div>
       <div id="settings-tab-users">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -2703,6 +2759,274 @@ var _devLogs = [];
   window.addEventListener('unhandledrejection', function(e) { capture('PROMISE', [String(e.reason)]); });
 })();
 
+// ══════════════════════════════════════════════════════════════
+//  MULTI-LANGUAGE SYSTEM  (EN / ES)
+// ══════════════════════════════════════════════════════════════
+var _lang = localStorage.getItem('b2b_lang') || 'en';
+
+var STRINGS = {
+  en: {
+    // ── Nav groups
+    'nav.grp.overview':'Overview','nav.grp.sales':'Sales','nav.grp.operations':'Operations',
+    'nav.grp.finance':'Finance','nav.grp.communication':'Communication','nav.grp.reports':'Reports',
+    // ── Nav items
+    'nav.dashboard':'Dashboard','nav.invoices':'Invoices','nav.estimates':'Estimates',
+    'nav.pos':'Point of Sale','nav.jobs':'Jobs Board','nav.myportal':'My Work',
+    'nav.designer':'My Studio','nav.inventory':'Inventory','nav.crm':'CRM',
+    'nav.finance':'Transaction Ledger','nav.messages':'Messages','nav.analytics':'Analytics',
+    'nav.myreports':'My Reports','nav.settings':'Settings','nav.knowledgebase':'Knowledge Base',
+    // ── Topbar / chrome
+    'topbar.heldOrders':'Held Orders','topbar.newJob':'+ New Job','topbar.new':'New',
+    'lang.toggle':'ES','lang.label':'EN','lang.flag':'🇺🇸',
+    // ── Common actions
+    'btn.save':'Save','btn.cancel':'Cancel','btn.edit':'Edit','btn.delete':'Delete',
+    'btn.add':'Add','btn.new':'New','btn.back':'Back','btn.close':'Close',
+    'btn.export':'Export','btn.print':'Print','btn.search':'Search','btn.filter':'Filter',
+    'btn.archive':'Archive','btn.approve':'Approve','btn.reject':'Reject','btn.submit':'Submit',
+    'btn.send':'Send','btn.view':'View','btn.download':'Download','btn.upload':'Upload',
+    'btn.confirm':'Confirm','btn.apply':'Apply','btn.run':'Run','btn.refresh':'Refresh',
+    'btn.exportCsv':'Export CSV','btn.emailReport':'Email Report','btn.allReports':'← All Reports',
+    // ── Status labels
+    'status.all':'All','status.pending':'Pending','status.inProgress':'In Progress',
+    'status.needsReview':'Needs Review','status.done':'Done','status.voided':'Voided',
+    'status.draft':'Draft','status.sent':'Sent','status.paid':'Paid','status.overdue':'Overdue',
+    'status.active':'Active','status.inactive':'Inactive','status.rush':'RUSH',
+    'status.archived':'Archived','status.accepted':'Accepted','status.rejected':'Rejected',
+    // ── Priority
+    'priority.low':'Low','priority.medium':'Med','priority.high':'High',
+    'priority.label':'Priority',
+    // ── Time periods
+    'period.today':'Today','period.week':'This Week','period.month':'This Month',
+    'period.quarter':'This Quarter','period.year':'This Year','period.all':'All Time',
+    'period.daily':'Daily','period.weekly':'Weekly','period.monthly':'Monthly',
+    'period.quarterly':'Quarterly','period.annual':'Annual','period.onDemand':'On Demand',
+    // ── Dashboard
+    'dash.title':'Business Overview','dash.revenueTrend':'Revenue Trend',
+    'dash.revenueMix':'Revenue Mix','dash.jobsPipeline':'Jobs Pipeline',
+    'dash.topClients':'Top Clients by Revenue','dash.teamPerformance':'Team Performance',
+    'dash.arAging':'Accounts Receivable Aging','dash.upcomingDeadlines':'Upcoming Deadlines',
+    'dash.recentInvoices':'Recent Invoices','dash.liveActivity':'Live Activity Feed',
+    'dash.live':'Live',
+    // ── Jobs board
+    'jobs.title':'Jobs Board','jobs.statsTotal':'Active Jobs','jobs.statsPending':'Pending',
+    'jobs.statsInProgress':'In Progress','jobs.statsNeedsReview':'Needs Review',
+    'jobs.statsOverdue':'Overdue','jobs.statsDoneMonth':'Done This Month',
+    'jobs.col.pending':'Pending','jobs.col.inProgress':'In Progress',
+    'jobs.col.needsReview':'Needs Review','jobs.col.done':'Done','jobs.col.voided':'Voided',
+    'jobs.search':'Search jobs…','jobs.filterType':'All Services','jobs.filterStaff':'All Staff',
+    'jobs.filterPriority':'Priority','jobs.showOverdue':'Overdue only',
+    'jobs.newJob':'+ New Job','jobs.export':'Export','jobs.archiveDone':'Archive Done',
+    'jobs.archivedView':'Archived','jobs.team':'Team','jobs.kanban':'Kanban',
+    'jobs.list':'List','jobs.calendar':'Calendar','jobs.staffView':'Staff',
+    'jobs.noJobs':'No jobs','jobs.start':'Start','jobs.due':'Due','jobs.dueOverdue':'Overdue',
+    'jobs.progress':'Progress','jobs.move':'Move…','jobs.checklist':'Checklist',
+    // ── Jobs list table headers
+    'jobs.col.job':'Job','jobs.col.client':'Client','jobs.col.service':'Service',
+    'jobs.col.status':'Status','jobs.col.priority':'Priority','jobs.col.startDate':'Start',
+    'jobs.col.dueDate':'Due Date','jobs.col.assignedTo':'Assigned To',
+    'jobs.col.hours':'Est.h','jobs.col.payment':'Payment','jobs.col.actions':'Actions',
+    // ── Invoices
+    'inv.title':'Invoices','inv.col.num':'#','inv.col.client':'Client',
+    'inv.col.services':'Services','inv.col.date':'Date','inv.col.amount':'Amount',
+    'inv.col.status':'Status','inv.col.actions':'Actions','inv.newInvoice':'+ New Invoice',
+    // ── Estimates
+    'est.title':'Estimates','est.newEstimate':'+ New Estimate',
+    // ── POS
+    'pos.title':'Point of Sale',
+    // ── CRM
+    'crm.title':'CRM','crm.newClient':'+ New Client',
+    // ── Inventory
+    'inv2.title':'Inventory',
+    // ── Analytics
+    'an.title':'Financial Reports','an.subtitle':'CFO-grade reporting suite',
+    'an.tab.overview':'Overview','an.tab.pl':'P&L','an.tab.ar':'AR & Cash',
+    'an.tab.sales':'Sales','an.tab.clients':'Clients','an.tab.ops':'Operations',
+    'an.tab.forecast':'Forecast','an.exportCsv':'Export CSV',
+    // ── Reports
+    'rpt.title':'Reports','rpt.subtitle':'Select a report to generate',
+    'rpt.categories':'Categories','rpt.noReports':'No reports available in this category.',
+    'rpt.cat.all':'All Reports','rpt.cat.daily':'Daily','rpt.cat.weekly':'Weekly',
+    'rpt.cat.monthly':'Monthly','rpt.cat.quarterly':'Quarterly','rpt.cat.annual':'Annual',
+    'rpt.cat.personal':'My Reports','rpt.cat.compliance':'Compliance','rpt.cat.inventory':'Inventory',
+    'rpt.grp.daily':'Daily Reports','rpt.grp.weekly':'Weekly Reports','rpt.grp.monthly':'Monthly Reports',
+    'rpt.grp.quarterly':'Quarterly Reports','rpt.grp.annual':'Annual Reports',
+    'rpt.grp.personal':'My Reports','rpt.grp.compliance':'Compliance','rpt.grp.inventory':'Inventory',
+    // ── Settings
+    'set.title':'Settings','set.tab.users':'Users','set.tab.requests':'Access Requests',
+    'set.tab.roles':'Roles & Permissions','set.tab.activity':'Activity Log',
+    'set.tab.security':'Security','set.tab.business':'Business Info',
+    'set.tab.pdf':'PDF Settings','set.tab.danger':'Danger Zone',
+    // ── Common table / form
+    'field.name':'Name','field.email':'Email','field.phone':'Phone','field.address':'Address',
+    'field.notes':'Notes','field.date':'Date','field.amount':'Amount','field.total':'Total',
+    'field.subtotal':'Subtotal','field.tax':'Tax','field.discount':'Discount',
+    'field.description':'Description','field.type':'Type','field.status':'Status',
+    'field.role':'Role','field.client':'Client','field.assignedTo':'Assigned To',
+    // ── Empty / error states
+    'empty.noData':'No data to display','empty.noResults':'No results found',
+    'empty.noJobs':'No jobs match the current filters',
+    'empty.noInvoices':'No invoices found','empty.noClients':'No clients found',
+    // ── Messages
+    'msg.title':'Messages','msg.newMessage':'+ New Message',
+    // ── Finance
+    'fin.title':'Transaction Ledger',
+    // ── Knowledge Base
+    'kb.title':'Knowledge Base',
+  },
+  es: {
+    // ── Nav groups
+    'nav.grp.overview':'Resumen','nav.grp.sales':'Ventas','nav.grp.operations':'Operaciones',
+    'nav.grp.finance':'Finanzas','nav.grp.communication':'Comunicación','nav.grp.reports':'Reportes',
+    // ── Nav items
+    'nav.dashboard':'Panel','nav.invoices':'Facturas','nav.estimates':'Cotizaciones',
+    'nav.pos':'Punto de Venta','nav.jobs':'Tablero de Trabajos','nav.myportal':'Mi Trabajo',
+    'nav.designer':'Mi Estudio','nav.inventory':'Inventario','nav.crm':'CRM',
+    'nav.finance':'Libro de Transacciones','nav.messages':'Mensajes','nav.analytics':'Analítica',
+    'nav.myreports':'Mis Reportes','nav.settings':'Configuración','nav.knowledgebase':'Base de Conocimiento',
+    // ── Topbar / chrome
+    'topbar.heldOrders':'Órdenes en Espera','topbar.newJob':'+ Nuevo Trabajo','topbar.new':'Nuevo',
+    'lang.toggle':'EN','lang.label':'ES','lang.flag':'🇲🇽',
+    // ── Common actions
+    'btn.save':'Guardar','btn.cancel':'Cancelar','btn.edit':'Editar','btn.delete':'Eliminar',
+    'btn.add':'Agregar','btn.new':'Nuevo','btn.back':'Atrás','btn.close':'Cerrar',
+    'btn.export':'Exportar','btn.print':'Imprimir','btn.search':'Buscar','btn.filter':'Filtrar',
+    'btn.archive':'Archivar','btn.approve':'Aprobar','btn.reject':'Rechazar','btn.submit':'Enviar',
+    'btn.send':'Enviar','btn.view':'Ver','btn.download':'Descargar','btn.upload':'Subir',
+    'btn.confirm':'Confirmar','btn.apply':'Aplicar','btn.run':'Ejecutar','btn.refresh':'Actualizar',
+    'btn.exportCsv':'Exportar CSV','btn.emailReport':'Enviar Reporte','btn.allReports':'← Todos los Reportes',
+    // ── Status labels
+    'status.all':'Todos','status.pending':'Pendiente','status.inProgress':'En Progreso',
+    'status.needsReview':'En Revisión','status.done':'Terminado','status.voided':'Anulado',
+    'status.draft':'Borrador','status.sent':'Enviado','status.paid':'Pagado','status.overdue':'Vencido',
+    'status.active':'Activo','status.inactive':'Inactivo','status.rush':'URGENTE',
+    'status.archived':'Archivado','status.accepted':'Aceptado','status.rejected':'Rechazado',
+    // ── Priority
+    'priority.low':'Bajo','priority.medium':'Medio','priority.high':'Alto',
+    'priority.label':'Prioridad',
+    // ── Time periods
+    'period.today':'Hoy','period.week':'Esta Semana','period.month':'Este Mes',
+    'period.quarter':'Este Trimestre','period.year':'Este Año','period.all':'Todo el Tiempo',
+    'period.daily':'Diario','period.weekly':'Semanal','period.monthly':'Mensual',
+    'period.quarterly':'Trimestral','period.annual':'Anual','period.onDemand':'A Demanda',
+    // ── Dashboard
+    'dash.title':'Resumen del Negocio','dash.revenueTrend':'Tendencia de Ingresos',
+    'dash.revenueMix':'Mezcla de Ingresos','dash.jobsPipeline':'Embudo de Trabajos',
+    'dash.topClients':'Principales Clientes por Ingreso','dash.teamPerformance':'Desempeño del Equipo',
+    'dash.arAging':'Antigüedad de Cuentas por Cobrar','dash.upcomingDeadlines':'Próximas Fechas Límite',
+    'dash.recentInvoices':'Facturas Recientes','dash.liveActivity':'Actividad en Vivo',
+    'dash.live':'En Vivo',
+    // ── Jobs board
+    'jobs.title':'Tablero de Trabajos','jobs.statsTotal':'Trabajos Activos',
+    'jobs.statsPending':'Pendientes','jobs.statsInProgress':'En Progreso',
+    'jobs.statsNeedsReview':'En Revisión','jobs.statsOverdue':'Vencidos',
+    'jobs.statsDoneMonth':'Terminados Este Mes',
+    'jobs.col.pending':'Pendiente','jobs.col.inProgress':'En Progreso',
+    'jobs.col.needsReview':'En Revisión','jobs.col.done':'Terminado','jobs.col.voided':'Anulado',
+    'jobs.search':'Buscar trabajos…','jobs.filterType':'Todos los Servicios',
+    'jobs.filterStaff':'Todo el Personal','jobs.filterPriority':'Prioridad',
+    'jobs.showOverdue':'Solo vencidos',
+    'jobs.newJob':'+ Nuevo Trabajo','jobs.export':'Exportar','jobs.archiveDone':'Archivar Terminados',
+    'jobs.archivedView':'Archivados','jobs.team':'Equipo','jobs.kanban':'Kanban',
+    'jobs.list':'Lista','jobs.calendar':'Calendario','jobs.staffView':'Personal',
+    'jobs.noJobs':'Sin trabajos','jobs.start':'Inicio','jobs.due':'Vence','jobs.dueOverdue':'Vencido',
+    'jobs.progress':'Progreso','jobs.move':'Mover…','jobs.checklist':'Lista de tareas',
+    // ── Jobs list table headers
+    'jobs.col.job':'Trabajo','jobs.col.client':'Cliente','jobs.col.service':'Servicio',
+    'jobs.col.status':'Estado','jobs.col.priority':'Prioridad','jobs.col.startDate':'Inicio',
+    'jobs.col.dueDate':'Fecha Límite','jobs.col.assignedTo':'Asignado a',
+    'jobs.col.hours':'Hrs Est.','jobs.col.payment':'Pago','jobs.col.actions':'Acciones',
+    // ── Invoices
+    'inv.title':'Facturas','inv.col.num':'#','inv.col.client':'Cliente',
+    'inv.col.services':'Servicios','inv.col.date':'Fecha','inv.col.amount':'Monto',
+    'inv.col.status':'Estado','inv.col.actions':'Acciones','inv.newInvoice':'+ Nueva Factura',
+    // ── Estimates
+    'est.title':'Cotizaciones','est.newEstimate':'+ Nueva Cotización',
+    // ── POS
+    'pos.title':'Punto de Venta',
+    // ── CRM
+    'crm.title':'CRM','crm.newClient':'+ Nuevo Cliente',
+    // ── Inventory
+    'inv2.title':'Inventario',
+    // ── Analytics
+    'an.title':'Reportes Financieros','an.subtitle':'Suite de reportes nivel directivo',
+    'an.tab.overview':'Resumen','an.tab.pl':'G&P','an.tab.ar':'CxC y Caja',
+    'an.tab.sales':'Ventas','an.tab.clients':'Clientes','an.tab.ops':'Operaciones',
+    'an.tab.forecast':'Proyección','an.exportCsv':'Exportar CSV',
+    // ── Reports
+    'rpt.title':'Reportes','rpt.subtitle':'Seleccione un reporte para generar',
+    'rpt.categories':'Categorías','rpt.noReports':'No hay reportes disponibles en esta categoría.',
+    'rpt.cat.all':'Todos los Reportes','rpt.cat.daily':'Diarios','rpt.cat.weekly':'Semanales',
+    'rpt.cat.monthly':'Mensuales','rpt.cat.quarterly':'Trimestrales','rpt.cat.annual':'Anuales',
+    'rpt.cat.personal':'Mis Reportes','rpt.cat.compliance':'Cumplimiento','rpt.cat.inventory':'Inventario',
+    'rpt.grp.daily':'Reportes Diarios','rpt.grp.weekly':'Reportes Semanales',
+    'rpt.grp.monthly':'Reportes Mensuales','rpt.grp.quarterly':'Reportes Trimestrales',
+    'rpt.grp.annual':'Reportes Anuales','rpt.grp.personal':'Mis Reportes',
+    'rpt.grp.compliance':'Cumplimiento','rpt.grp.inventory':'Inventario',
+    // ── Settings
+    'set.title':'Configuración','set.tab.users':'Usuarios','set.tab.requests':'Solicitudes de Acceso',
+    'set.tab.roles':'Roles y Permisos','set.tab.activity':'Registro de Actividad',
+    'set.tab.security':'Seguridad','set.tab.business':'Info del Negocio',
+    'set.tab.pdf':'Config. PDF','set.tab.danger':'Zona de Peligro',
+    // ── Common table / form
+    'field.name':'Nombre','field.email':'Correo','field.phone':'Teléfono',
+    'field.address':'Dirección','field.notes':'Notas','field.date':'Fecha',
+    'field.amount':'Monto','field.total':'Total','field.subtotal':'Subtotal',
+    'field.tax':'Impuesto','field.discount':'Descuento','field.description':'Descripción',
+    'field.type':'Tipo','field.status':'Estado','field.role':'Rol',
+    'field.client':'Cliente','field.assignedTo':'Asignado a',
+    // ── Empty / error states
+    'empty.noData':'Sin datos para mostrar','empty.noResults':'Sin resultados',
+    'empty.noJobs':'Ningún trabajo coincide con los filtros',
+    'empty.noInvoices':'No se encontraron facturas','empty.noClients':'No se encontraron clientes',
+    // ── Messages
+    'msg.title':'Mensajes','msg.newMessage':'+ Nuevo Mensaje',
+    // ── Finance
+    'fin.title':'Libro de Transacciones',
+    // ── Knowledge Base
+    'kb.title':'Base de Conocimiento',
+  }
+};
+
+function t(key) {
+  return (STRINGS[_lang] || STRINGS.en)[key] || (STRINGS.en[key] || key);
+}
+
+function applyLang() {
+  // Update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  // Update language toggle button
+  var ll = document.getElementById('lang-label');
+  if (ll) ll.textContent = t('lang.label');
+  var lf = document.getElementById('lang-flag');
+  if (lf) lf.textContent = t('lang.flag');
+  // Re-render current page content
+  var cur = document.querySelector('.page.active');
+  if (cur) {
+    var pid = cur.id ? cur.id.replace('page-','') : '';
+    if (pid === 'jobs')       renderJobs();
+    else if (pid === 'myreports') renderMyReports();
+    else if (pid === 'analytics') renderAnalytics();
+    else if (pid === 'dashboard') renderDash();
+    else if (pid === 'invoices')  renderInvoices();
+    else if (pid === 'estimates') renderEstimates();
+    else if (pid === 'settings')  renderSettings();
+    else if (pid === 'crm')       renderCRM();
+    else if (pid === 'inventory') renderInventory();
+    else if (pid === 'finance')   renderFinance();
+  }
+}
+
+function toggleLang() {
+  _lang = _lang === 'en' ? 'es' : 'en';
+  localStorage.setItem('b2b_lang', _lang);
+  applyLang();
+}
+
+(function(){ _lang = localStorage.getItem('b2b_lang') || 'en'; })();
+
 function applyTheme(mode) {
   var btn = document.getElementById('theme-toggle-btn');
   if (mode === 'light') {
@@ -2905,6 +3229,8 @@ function handleAuthSession(session) {
           document.getElementById("appRoot").style.display = "block";
           document.getElementById("syncStatus").style.display = "flex";
           hideLoading();
+          // Apply saved language to static elements
+          applyLang();
           if (!canEditPayment() && hasPermission('designer_portal')) {
             gotoPage('designer', document.querySelector('.nav-i[onclick*="designer"]'));
           } else if (!canEditPayment() && hasPermission('installer_portal')) {
@@ -10095,7 +10421,7 @@ function setJobView(view, btn) {
   _jobView = view;
   ['kanban','list','calendar','staff','archived'].forEach(function(v) {
     var b = document.getElementById('view-btn-' + v);
-    if (b) { b.style.background = v === view ? 'var(--acc)' : 'transparent'; b.style.color = v === view ? '#fff' : 'var(--t2)'; }
+    if (b) { b.classList.toggle('jv-active', v === view); }
     var el = document.getElementById(v === 'kanban' ? 'kanban' : 'jobs-' + v + '-view');
     if (el) el.style.display = 'none';
   });
@@ -10127,30 +10453,33 @@ function jobPassesFilter(j, f) {
 function renderJobsStatsBar() {
   var bar = document.getElementById('jobs-stats-bar');
   if (!bar) return;
-  var total = jobs.length;
-  var inProg = jobs.filter(function(j){ return j.status === 'in-progress'; }).length;
-  var needsRev = jobs.filter(function(j){ return j.status === 'needs-review'; }).length;
-  var overdue = jobs.filter(function(j){ return j.due_date && j.due_date < today() && j.status !== 'done' && j.status !== 'voided'; }).length;
-  var unassigned = jobs.filter(function(j){ return !j.members || !j.members.length; }).length;
+  var total = jobs.filter(function(j){ return !j.archived; }).length;
+  var pending = jobs.filter(function(j){ return j.status === 'pending' && !j.archived; }).length;
+  var inProg = jobs.filter(function(j){ return j.status === 'in-progress' && !j.archived; }).length;
+  var needsRev = jobs.filter(function(j){ return j.status === 'needs-review' && !j.archived; }).length;
+  var overdue = jobs.filter(function(j){ return j.due_date && j.due_date < today() && j.status !== 'done' && j.status !== 'voided' && !j.archived; }).length;
   var doneThisMonth = jobs.filter(function(j){
     if (j.status !== 'done') return false;
-    var d = j.updated_at || j.due_date;
-    if (!d) return false;
+    var d = j.updated_at || j.due_date; if (!d) return false;
     var now = new Date(); var jd = new Date(d);
     return jd.getMonth() === now.getMonth() && jd.getFullYear() === now.getFullYear();
   }).length;
-  bar.innerHTML =
-    stat('Total Jobs', total, '#6c63ff') +
-    stat('In Progress', inProg, '#f59e0b') +
-    stat('Needs Review', needsRev, needsRev > 0 ? '#a78bfa' : '#4caf7d') +
-    stat('Overdue', overdue, overdue > 0 ? '#ef4444' : '#4caf7d') +
-    stat('Unassigned', unassigned, unassigned > 0 ? '#f59e0b' : '#4caf7d') +
-    stat('Done This Month', doneThisMonth, '#4caf7d');
-  function stat(label, val, color) {
-    return '<div class="card" style="padding:14px 16px;cursor:default">' +
-      '<div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">' + label + '</div>' +
-      '<div style="font-size:26px;font-weight:700;color:' + color + '">' + val + '</div></div>';
-  }
+  var stats = [
+    {label:t('jobs.statsTotal'),      val:total,        color:'#635bff'},
+    {label:t('jobs.statsPending'),    val:pending,      color:'#38bdf8'},
+    {label:t('jobs.statsInProgress'), val:inProg,       color:'#f59e0b'},
+    {label:t('jobs.statsNeedsReview'),val:needsRev,     color:'#a78bfa'},
+    {label:t('jobs.statsOverdue'),    val:overdue,      color: overdue > 0 ? '#ef4444' : '#4caf7d'},
+    {label:t('jobs.statsDoneMonth'),  val:doneThisMonth,color:'#4caf7d'}
+  ];
+  bar.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+    stats.map(function(s) {
+      return '<div class="k-stat">' +
+        '<div class="k-stat-bar" style="background:' + s.color + '"></div>' +
+        '<div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">' + s.label + '</div>' +
+        '<div style="font-size:24px;font-weight:700;color:' + s.color + ';line-height:1">' + s.val + '</div>' +
+        '</div>';
+    }).join('') + '</div>';
 }
 
 function populateMemberFilter() {
@@ -10656,26 +10985,29 @@ function renderJobs() {
 function renderJobsKanban() {
   var f = getJobFilters();
   var cols = [
-    {st: 'pending',      label: 'Pending',      c: '#38bdf8'},
-    {st: 'in-progress',  label: 'In Progress',  c: '#f59e0b'},
-    {st: 'needs-review', label: 'Needs Review', c: '#a78bfa'},
-    {st: 'done',         label: 'Done',         c: '#4caf7d'},
-    {st: 'voided',       label: 'Voided',       c: '#ef4444'}
+    {st:'pending',      label:t('jobs.col.pending'),     c:'#38bdf8', icon:'○'},
+    {st:'in-progress',  label:t('jobs.col.inProgress'),  c:'#f59e0b', icon:'◑'},
+    {st:'needs-review', label:t('jobs.col.needsReview'), c:'#a78bfa', icon:'◎'},
+    {st:'done',         label:t('jobs.col.done'),        c:'#4caf7d', icon:'●'},
+    {st:'voided',       label:t('jobs.col.voided'),      c:'#ef4444', icon:'✕'}
   ];
-  var pColors = {low: '#4caf7d', medium: '#f59e0b', high: '#ef4444'};
+  var pColors = {low:'#4caf7d', medium:'#f59e0b', high:'#ef4444'};
   var outHtml = '';
 
   for (var ci = 0; ci < cols.length; ci++) {
     var col = cols[ci];
-    var allInCol = jobs.filter(function(j){ return j.status === col.st; });
+    var allInCol = jobs.filter(function(j){ return j.status === col.st && !j.archived; });
     var colJobs  = allInCol.filter(function(j){ return jobPassesFilter(j, f); });
 
-    var colHtml = '<div style="background:var(--bg3);border-radius:14px;padding:14px;min-height:120px">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
-      '<span style="font-size:12px;font-weight:700;color:' + col.c + '">' + col.label + '</span>' +
+    var colHtml = '<div class="k-col">' +
+      '<div class="k-col-hd">' +
+      '<div style="display:flex;align-items:center;gap:7px">' +
+      '<span style="font-size:13px;color:' + col.c + '">' + col.icon + '</span>' +
+      '<span style="font-size:12px;font-weight:600;color:var(--t1)">' + col.label + '</span>' +
+      '</div>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
-      '<span style="background:' + col.c + '25;color:' + col.c + ';border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">' + allInCol.length + '</span>' +
-      '<button onclick="openJobModalWithStatus(\'' + col.st + '\')" style="background:' + col.c + '20;border:none;color:' + col.c + ';border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:14px;font-weight:700">+</button>' +
+      '<span style="background:' + col.c + '20;color:' + col.c + ';border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700">' + allInCol.length + '</span>' +
+      '<button onclick="openJobModalWithStatus(\'' + col.st + '\')" title="Add job" style="background:var(--bg3);border:1px solid var(--bor);color:var(--t2);border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;line-height:1;padding:0">+</button>' +
       '</div></div>';
 
     if (colJobs.length) {
@@ -10683,7 +11015,7 @@ function renderJobsKanban() {
         colHtml += buildJobCard(colJobs[cj], pColors);
       }
     } else {
-      colHtml += '<div style="text-align:center;padding:24px 10px;color:var(--t3);font-size:12px;border:2px dashed var(--bor);border-radius:10px;margin-top:4px">No jobs here</div>';
+      colHtml += '<div style="text-align:center;padding:28px 12px;color:var(--t3);font-size:12px;border:1px dashed var(--bor);border-radius:10px">' + t('jobs.noJobs') + '</div>';
     }
     colHtml += '</div>';
     outHtml += colHtml;
@@ -10693,37 +11025,74 @@ function renderJobsKanban() {
 
 function buildJobCard(j, pColors) {
   var checklist = j.checklist || [];
-  var done = checklist.filter(function(x){ return x.done; }).length;
-  var total2 = checklist.length;
-  var pct = total2 ? Math.round(done / total2 * 100) : 0;
-  var overdue = j.due_date && j.due_date < today() && j.status !== 'done';
+  var clDone = checklist.filter(function(x){ return x.done; }).length;
+  var clTotal = checklist.length;
+  var pct = clTotal ? Math.round(clDone / clTotal * 100) : 0;
+  var overdue = j.due_date && j.due_date < today() && j.status !== 'done' && j.status !== 'voided';
   var pay = findJobPayment(j.id);
-  var payBadge = pay ? '<span style="font-size:9px;background:rgba(108,99,255,.15);color:var(--acc);border-radius:8px;padding:1px 6px;font-weight:600">$' + (pay.pay_type === 'flat' ? (pay.flat_amount||0) : (pay.hourly_rate||0)+'/hr') + '</span>' : '';
+  var prio = j.priority || 'medium';
+  var prioColor = pColors[prio] || '#9ea3c0';
+
+  // Priority label chips
+  var prioLabel = {low:t('priority.low'), medium:t('priority.medium'), high:t('priority.high')};
 
   var html = '<div class="k-card" onclick="openJobDetail(' + j.id + ')">' +
-    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px">' +
-    '<div style="font-weight:500;font-size:13px;flex:1;padding-right:6px">' +
-      (j.is_rush ? '<span style="background:#ef4444;color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:4px">RUSH</span>' : '') +
-      j.title + '</div>' +
-    '<div style="width:10px;height:10px;border-radius:50%;background:' + (pColors[j.priority||'medium'] || '#9ea3c0') + ';flex-shrink:0;margin-top:3px" title="' + (j.priority||'medium') + ' priority"></div></div>' +
-    '<div style="font-size:11px;color:var(--t3);margin-bottom:5px">' + cName(j.cid) + ' · ' + j.type + '</div>';
+    // Priority stripe
+    '<div class="k-priority-bar" style="background:' + prioColor + '"></div>' +
+
+    // Title row
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px;padding-left:6px">' +
+      '<div style="font-weight:600;font-size:13px;line-height:1.35;flex:1">' +
+        (j.is_rush ? '<span style="background:#ef4444;color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:5px;letter-spacing:.3px">RUSH</span>' : '') +
+        j.title +
+      '</div>' +
+      '<span style="font-size:9px;font-weight:700;color:' + prioColor + ';background:' + prioColor + '18;border-radius:4px;padding:2px 6px;flex-shrink:0;white-space:nowrap">' + prioLabel[prio] + '</span>' +
+    '</div>' +
+
+    // Client · Type
+    '<div style="font-size:11px;color:var(--t3);margin-bottom:8px;padding-left:6px">' + cName(j.cid) + ' · ' + (j.type || '—') + '</div>';
+
+  // Date info
   if (j.start_date && j.status === 'pending') {
-    html += '<div style="font-size:10px;color:var(--t3);margin-bottom:3px">🗓 Start: ' + j.start_date + '</div>';
+    html += '<div style="font-size:11px;color:var(--t3);margin-bottom:4px;padding-left:6px;display:flex;align-items:center;gap:5px">' +
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' +
+      t('jobs.start') + ' ' + j.start_date + '</div>';
   }
   if (j.due_date) {
-    html += '<div style="font-size:10px;color:' + (overdue ? 'var(--err)' : 'var(--t3)') + ';margin-bottom:4px">' + (overdue ? '⚠ ' : '') + 'Due: ' + j.due_date + (overdue ? ' — overdue' : '') + '</div>';
+    var dueColor = overdue ? 'var(--err)' : 'var(--t3)';
+    html += '<div style="font-size:11px;color:' + dueColor + ';margin-bottom:8px;padding-left:6px;display:flex;align-items:center;gap:5px;font-weight:' + (overdue?'600':'400') + '">' +
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+      (overdue ? t('jobs.dueOverdue') + ' · ' : t('jobs.due') + ' ') + j.due_date + '</div>';
   }
-  if (total2) {
-    html += '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:2px"><span>Checklist</span><span>' + done + '/' + total2 + '</span></div>' +
-      '<div style="height:4px;background:var(--bor);border-radius:2px;overflow:hidden"><div style="height:100%;background:var(--ok);width:' + pct + '%"></div></div></div>';
+
+  // Checklist progress
+  if (clTotal) {
+    html += '<div style="margin-bottom:8px;padding-left:6px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--t3);margin-bottom:4px">' +
+        '<span>' + t('jobs.progress') + '</span><span style="font-weight:600">' + clDone + '/' + clTotal + '</span>' +
+      '</div>' +
+      '<div style="height:3px;background:var(--bor);border-radius:2px;overflow:hidden">' +
+        '<div style="height:100%;background:' + (pct === 100 ? 'var(--ok)' : 'var(--acc)') + ';width:' + pct + '%;transition:width .3s"></div>' +
+      '</div></div>';
   }
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">' +
-    '<div style="display:flex;align-items:center;gap:5px">' + memberAvatars(j.members) + payBadge + '</div>' +
-    '<div style="display:flex;gap:4px">' +
-    '<button onclick="event.stopPropagation();editJobById(' + j.id + ')" style="background:var(--bg3);border:1px solid var(--bor);border-radius:5px;padding:2px 7px;font-size:11px;color:var(--t2);cursor:pointer">Edit</button>' +
-    (j.status === 'done' || j.status === 'voided' ? '<button onclick="event.stopPropagation();archiveJob(' + j.id + ')" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:5px;padding:2px 7px;font-size:11px;color:#f59e0b;cursor:pointer" title="Archive this job">📦</button>' : '') +
-    '<select onchange="moveJob(' + j.id + ',this.value);event.stopPropagation()" onclick="event.stopPropagation()" style="font-size:10px;padding:2px 4px;border:1px solid var(--bor);border-radius:5px;background:var(--bg3);color:var(--t2);cursor:pointer">' +
-    '<option value="">Move</option><option value="pending">Pending</option><option value="in-progress">In Progress</option><option value="needs-review">Needs Review</option><option value="done">Done</option><option value="voided">Voided</option></select>' +
+
+  // Footer: avatars + actions
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding-left:6px;margin-top:4px;padding-top:8px;border-top:1px solid var(--bor)">' +
+    '<div style="display:flex;align-items:center;gap:5px">' +
+      memberAvatars(j.members) +
+      (pay ? '<span style="font-size:9px;background:rgba(99,91,255,.12);color:var(--acc);border-radius:6px;padding:2px 7px;font-weight:600;margin-left:2px">$' + (pay.pay_type === 'flat' ? (pay.flat_amount||0) : (pay.hourly_rate||0)+'/hr') + '</span>' : '') +
+    '</div>' +
+    '<div style="display:flex;gap:4px;align-items:center">' +
+      '<button onclick="event.stopPropagation();editJobById(' + j.id + ')" style="background:var(--bg3);border:1px solid var(--bor);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--t2);cursor:pointer;font-weight:500">' + t('btn.edit') + '</button>' +
+      (j.status === 'done' || j.status === 'voided' ? '<button onclick="event.stopPropagation();archiveJob(' + j.id + ')" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--warn);cursor:pointer" title="' + t('btn.archive') + '">↓</button>' : '') +
+      '<select onchange="moveJob(' + j.id + ',this.value);event.stopPropagation()" onclick="event.stopPropagation()" style="font-size:11px;padding:3px 6px;border:1px solid var(--bor);border-radius:6px;background:var(--bg3);color:var(--t2);cursor:pointer">' +
+        '<option value="">' + t('jobs.move') + '</option>' +
+        '<option value="pending">' + t('jobs.col.pending') + '</option>' +
+        '<option value="in-progress">' + t('jobs.col.inProgress') + '</option>' +
+        '<option value="needs-review">' + t('jobs.col.needsReview') + '</option>' +
+        '<option value="done">' + t('jobs.col.done') + '</option>' +
+        '<option value="voided">' + t('jobs.col.voided') + '</option>' +
+      '</select>' +
     '</div></div></div>';
   return html;
 }
@@ -12481,7 +12850,7 @@ function mrShowCatalog() {
   _activeReport = null;
   var catalog = document.getElementById('mr-catalog');
   var viewer  = document.getElementById('mr-viewer');
-  if (catalog) catalog.style.display = '';
+  if (catalog) catalog.style.display = 'flex';
   if (viewer)  viewer.style.display  = 'none';
   ['mr-back-btn','mr-print-btn','mr-csv-btn','mr-email-btn'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.style.display='none';
@@ -12494,9 +12863,9 @@ function mrBackToCatalog() { mrShowCatalog(); }
 function filterMrCat(cat, el) {
   _mrCatFilter = cat;
   document.querySelectorAll('.mr-cat-btn').forEach(function(b){
-    b.className = b.className.replace('btn-p','btn-o');
+    b.classList.remove('rc-nav-active');
   });
-  if (el) el.className = el.className.replace('btn-o','btn-p');
+  if (el) el.classList.add('rc-nav-active');
   mrRenderCards(cat);
 }
 
@@ -12504,30 +12873,58 @@ function mrRenderCards(cat) {
   var isAdmin = canEditPayment();
   var container = document.getElementById('mr-report-cards');
   if (!container) return;
+
+  var freqColors = {Daily:'#38bdf8',Weekly:'#4caf7d',Monthly:'#635bff',Quarterly:'#f59e0b',Annual:'#ef4444','On Demand':'#a78bfa'};
+
   var filtered = REPORT_CATALOG.filter(function(r){
     if (cat !== 'all' && r.cat !== cat) return false;
     if (r.perm === 'finance' && !isAdmin) return false;
     return true;
   });
-  var freqColors = {Daily:'#38bdf8',Weekly:'#4caf7d',Monthly:'#6c63ff',Quarterly:'#f59e0b',Annual:'#ef4444','On Demand':'#a78bfa'};
-  container.innerHTML = filtered.map(function(r){
-    var fc = freqColors[r.freq]||'#9ea3c0';
-    return '<div class="card" style="cursor:pointer;transition:transform .15s,box-shadow .15s;border-left:3px solid '+fc+'" '+
-      'onclick="openReport(\''+r.id+'\')" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 20px rgba(0,0,0,.15)\'" '+
-      'onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'\'">' +
-      '<div style="display:flex;align-items:flex-start;gap:10px">' +
-        '<div style="font-size:28px;line-height:1;flex-shrink:0">'+r.icon+'</div>'+
-        '<div style="flex:1">' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
-            '<span style="font-size:13px;font-weight:700;color:var(--t1)">'+r.title+'</span>'+
-          '</div>'+
-          '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+r.desc+'</div>'+
-          '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+fc+'20;color:'+fc+'">'+r.freq+'</span>'+
-        '</div>'+
-        '<div style="font-size:18px;color:var(--t3)">›</div>'+
-      '</div>'+
-    '</div>';
-  }).join('') || '<div class="empty" style="padding:40px;text-align:center;grid-column:1/-1">No reports available for your role in this category.</div>';
+
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty" style="padding:60px;text-align:center">' + t('rpt.noReports') + '</div>';
+    return;
+  }
+
+  // Group by category for "All" view
+  var catOrder = ['daily','weekly','monthly','quarterly','annual','personal','compliance','inventory'];
+  var catLabels = {
+    daily:t('rpt.grp.daily'), weekly:t('rpt.grp.weekly'), monthly:t('rpt.grp.monthly'),
+    quarterly:t('rpt.grp.quarterly'), annual:t('rpt.grp.annual'), personal:t('rpt.grp.personal'),
+    compliance:t('rpt.grp.compliance'), inventory:t('rpt.grp.inventory')
+  };
+
+  var html = '';
+  if (cat === 'all') {
+    // Group into sections
+    catOrder.forEach(function(c) {
+      var group = filtered.filter(function(r){ return r.cat === c; });
+      if (!group.length) return;
+      html += '<div class="rc-group-hd">' + catLabels[c] + '</div>';
+      html += '<div style="background:var(--bg2);border:1px solid var(--bor);border-radius:10px;overflow:hidden;margin-bottom:6px">';
+      html += group.map(function(r){ return renderReportRow(r, freqColors); }).join('');
+      html += '</div>';
+    });
+  } else {
+    html += '<div style="background:var(--bg2);border:1px solid var(--bor);border-radius:10px;overflow:hidden">';
+    html += filtered.map(function(r){ return renderReportRow(r, freqColors); }).join('');
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function renderReportRow(r, freqColors) {
+  var fc = freqColors[r.freq] || '#9ea3c0';
+  return '<div class="rc-report-row" onclick="openReport(\'' + r.id + '\')">' +
+    '<div style="flex:1;min-width:0">' +
+      '<div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:3px">' + r.title + '</div>' +
+      '<div style="font-size:12px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + r.desc + '</div>' +
+    '</div>' +
+    '<span class="rc-freq-badge" style="background:' + fc + '18;color:' + fc + '">' + r.freq + '</span>' +
+    '<span class="rc-arrow">›</span>' +
+  '</div>';
 }
 
 function openReport(reportId) {
