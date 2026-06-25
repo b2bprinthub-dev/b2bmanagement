@@ -1452,6 +1452,7 @@ textarea.fc{resize:vertical;min-height:70px}
         <button class="settings-tab" onclick="switchSettingsTab('security',this)">Security</button>
         <button class="settings-tab" onclick="switchSettingsTab('business',this)">Business Info</button>
         <button class="settings-tab" onclick="switchSettingsTab('pdf',this)">PDF Settings</button>
+        <button class="settings-tab" id="danger-zone-tab" style="color:var(--err);display:none" onclick="switchSettingsTab('danger',this)">⚠️ Danger Zone</button>
       </div>
       <div id="settings-tab-users">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -1565,6 +1566,43 @@ textarea.fc{resize:vertical;min-height:70px}
           <div>
             <div class="fl" style="margin-bottom:8px">Live Preview</div>
             <div id="pdf-preview-box" class="pdf-preview"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="settings-tab-danger" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+          <span style="font-size:24px">⚠️</span>
+          <div>
+            <div style="font-weight:700;font-size:16px;color:var(--err)">Danger Zone</div>
+            <div style="font-size:13px;color:var(--t3);margin-top:2px">Irreversible actions. Proceed with extreme caution.</div>
+          </div>
+        </div>
+
+        <div class="card" style="border:1px solid var(--err);margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+            <div>
+              <div style="font-weight:600;font-size:14px;color:var(--err)">Wipe All Business Data</div>
+              <div style="font-size:12px;color:var(--t3);margin-top:4px;line-height:1.6">
+                Permanently deletes: clients, invoices, estimates, jobs, transactions, expenses,<br>
+                messages, pos items, activity log, access requests, inventory, purchase orders.<br>
+                <strong style="color:var(--t2)">Keeps:</strong> app users, roles, business settings.
+              </div>
+            </div>
+            <button class="btn btn-sm" style="background:var(--err);color:#fff;white-space:nowrap;flex-shrink:0" onclick="openDataWipeModal()">🗑️ Wipe Data</button>
+          </div>
+        </div>
+
+        <div class="card" style="border:1px solid #f59e0b">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+            <div>
+              <div style="font-weight:600;font-size:14px;color:#f59e0b">Reset to Fresh Install</div>
+              <div style="font-size:12px;color:var(--t3);margin-top:4px;line-height:1.6">
+                Wipes all business data AND removes all users except Admin and Developer accounts.<br>
+                Use this to hand off a clean instance or start completely fresh.
+              </div>
+            </div>
+            <button class="btn btn-sm" style="background:#f59e0b;color:#000;white-space:nowrap;flex-shrink:0" onclick="openFreshInstallModal()">♻️ Fresh Install</button>
           </div>
         </div>
       </div>
@@ -2367,8 +2405,8 @@ try {
   sbInitError = e;
 }
 
-var ALL_MODULES = ["dashboard","invoices","estimates","pos","jobs","installer_portal","designer_portal","crm","analytics","settings"];
-var MODULE_LABELS = {dashboard:"Dashboard",invoices:"Invoices",estimates:"Estimates",pos:"Point of Sale",jobs:"Jobs Board",installer_portal:"My Work (Installer)",designer_portal:"My Studio (Designer/Dev)",crm:"CRM",analytics:"Analytics",settings:"Settings"};
+var ALL_MODULES = ["dashboard","invoices","estimates","pos","jobs","installer_portal","designer_portal","crm","analytics","settings","delete_access_requests"];
+var MODULE_LABELS = {dashboard:"Dashboard",invoices:"Invoices",estimates:"Estimates",pos:"Point of Sale",jobs:"Jobs Board",installer_portal:"My Work (Installer)",designer_portal:"My Studio (Designer/Dev)",crm:"CRM",analytics:"Analytics",settings:"Settings",delete_access_requests:"🗑️ Delete Access Requests"};
 var SVCS = ["Web Design","Print / Banners","Large Format Signs","Window Wraps","Signs & Awnings","Install","Other"];
 var CAT_COLORS = {Print:"#6c63ff",Wraps:"#38bdf8",Signs:"#f59e0b",Install:"#ef4444",Design:"#4caf7d"};
 
@@ -14999,7 +15037,87 @@ function exportTeamCSV() {
   toast('Team report exported!');
 }
 
-function renderSettings() { switchSettingsTab("users", document.querySelector(".settings-tab")); checkPendingRequestsBadge(); }
+function renderSettings() {
+  // Show Danger Zone tab only for admins
+  var dzTab = document.getElementById('danger-zone-tab');
+  if (dzTab) dzTab.style.display = canEditPayment() && !isDeveloper() ? '' : 'none';
+  switchSettingsTab("users", document.querySelector(".settings-tab"));
+  checkPendingRequestsBadge();
+}
+
+function openDataWipeModal() {
+  if (!canEditPayment() || isDeveloper()) { toast("Admin access required", true); return; }
+  document.getElementById('wipe-confirm-input').value = '';
+  document.getElementById('wipe-pin-input').value = '';
+  document.getElementById('wipe-mode').value = 'data';
+  document.getElementById('wipeModalTitle').textContent = '🗑️ Wipe All Business Data';
+  document.getElementById('wipeModalDesc').textContent = 'This will permanently delete all clients, invoices, jobs, estimates, transactions, expenses, messages, inventory and activity logs. App users and settings are kept.';
+  openModal('wipeModal');
+}
+
+function openFreshInstallModal() {
+  if (!canEditPayment() || isDeveloper()) { toast("Admin access required", true); return; }
+  document.getElementById('wipe-confirm-input').value = '';
+  document.getElementById('wipe-pin-input').value = '';
+  document.getElementById('wipe-mode').value = 'fresh';
+  document.getElementById('wipeModalTitle').textContent = '♻️ Reset to Fresh Install';
+  document.getElementById('wipeModalDesc').textContent = 'This wipes ALL business data AND removes every user except the Admin and Developer accounts. The app will be completely clean.';
+  openModal('wipeModal');
+}
+
+function executeWipe() {
+  var confirmVal = (document.getElementById('wipe-confirm-input').value || '').trim().toUpperCase();
+  var pin = document.getElementById('wipe-pin-input').value.trim();
+  var mode = document.getElementById('wipe-mode').value;
+
+  if (confirmVal !== 'RESET') { toast('Type RESET to confirm', true); return; }
+  if (!pin) { toast('Enter your backup PIN', true); return; }
+
+  backupHashPin(pin).then(function(hash) {
+    var stored = localStorage.getItem('b2b_backup_pin_hash');
+    if (!stored || stored !== hash) { toast('Incorrect PIN', true); return; }
+
+    var btn = document.getElementById('wipe-execute-btn');
+    btn.disabled = true;
+    btn.textContent = 'Wiping…';
+
+    var WIPE_TABLES = ['clients','invoices','estimates','jobs','job_payments','job_notes',
+      'crew_members','team_members','transactions','expenses','messages','pos_items',
+      'activity_log','access_requests','inventory','inventory_transactions',
+      'purchase_orders','suppliers','price_list'];
+
+    // Delete all rows from each table using a truthy filter
+    var ops = WIPE_TABLES.map(function(t) {
+      return sb.from(t).delete().neq('id', -1).then(function(r){ return {table:t, error:r.error}; }).catch(function(){ return {table:t, error:null}; });
+    });
+
+    Promise.all(ops).then(function(results) {
+      var failed = results.filter(function(r){ return r.error; }).map(function(r){ return r.table; });
+      if (failed.length) { toast('Some tables failed: ' + failed.join(', '), true); btn.disabled = false; btn.textContent = 'Wipe'; return; }
+
+      if (mode === 'fresh') {
+        // Remove all app_users except admin and developer
+        var keepEmails = [DEV_EMAIL];
+        // find admins
+        appUsers.forEach(function(u){
+          var rn = getUserRole(u).name.toLowerCase();
+          if (rn.indexOf('admin') > -1) keepEmails.push(u.email);
+        });
+        var toDelete = appUsers.filter(function(u){ return keepEmails.indexOf(u.email) === -1; });
+        var delOps = toDelete.map(function(u){ return sb.from('app_users').delete().eq('id', u.id); });
+        return Promise.all(delOps);
+      }
+    }).then(function() {
+      closeModal('wipeModal');
+      toast('✅ Wipe complete — reloading…');
+      setTimeout(function(){ window.location.reload(); }, 1500);
+    }).catch(function(e) {
+      toast('Error during wipe: ' + e.message, true);
+      var btn2 = document.getElementById('wipe-execute-btn');
+      if (btn2) { btn2.disabled = false; btn2.textContent = 'Wipe'; }
+    });
+  });
+}
 function switchSettingsTab(tab, el) {
   var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf"];
   for (var i = 0; i < tabs.length; i++) {
@@ -15053,12 +15171,18 @@ function renderRequestsList() {
         (r.reason ? '<div style="font-size:13px;color:var(--t2);background:var(--bg3);padding:10px 12px;border-radius:8px;margin-bottom:10px">' + r.reason + '</div>' : '') +
         '<div style="font-size:11px;color:var(--t3);margin-bottom:10px">Requested ' + when + '</div>';
 
+      var delBtn = canDeleteAccessRequests()
+        ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="deleteRequest(' + r.id + ',\'' + (r.name||'').replace(/'/g,"\\'") + '\')">🗑️ Delete</button>'
+        : '';
       if (!alreadyUser) {
         html += '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
           '<select class="fc" id="req-role-' + r.id + '" style="width:auto;flex:1;min-width:140px;padding:7px 10px">' + roleOpts + '</select>' +
           '<button class="btn btn-ok btn-sm" onclick="approveRequest(' + r.id + ')">Approve &amp; Create User</button>' +
           (r.status !== "denied" ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="denyRequest(' + r.id + ')">Deny</button>' : '') +
+          delBtn +
           '</div>';
+      } else {
+        if (delBtn) html += '<div style="margin-top:8px">' + delBtn + '</div>';
       }
       html += '</div>';
     }
@@ -15096,12 +15220,31 @@ function approveRequest(id) {
   });
 }
 
+function canDeleteAccessRequests() {
+  if (!currentUser) return false;
+  var role = getUserRole(currentUser);
+  if (role.name.toLowerCase().indexOf('admin') > -1) return true;
+  return Array.isArray(role.perms) && role.perms.indexOf('delete_access_requests') > -1;
+}
+
 function denyRequest(id) {
   if (!confirm("Deny this access request? They will need to submit a new request to be reconsidered.")) return;
   sb.from("access_requests").update({status: "denied", reviewed_at: new Date().toISOString(), reviewed_by: currentUser ? currentUser.email : ""}).eq("id", id).then(function () {
     renderRequestsList();
     checkPendingRequestsBadge();
     toast("Request denied");
+  });
+}
+
+function deleteRequest(id, name) {
+  if (!canDeleteAccessRequests()) { toast("No permission to delete access requests", true); return; }
+  if (!confirm('Permanently delete the access request from "' + name + '"? This cannot be undone.')) return;
+  sb.from("access_requests").delete().eq("id", id).then(function(res) {
+    if (res.error) { toast("Error deleting request", true); return; }
+    logActivity("Delete Access Request", "Settings", "Deleted request from " + name);
+    renderRequestsList();
+    checkPendingRequestsBadge();
+    toast("Access request deleted");
   });
 }
 
@@ -17164,5 +17307,30 @@ window.pwaGetQueueCount = function() {
 // Init queue count on load
 pwaOpenDB().then(pwaUpdateQueueCount);
 </script>
+
+<!-- Wipe Confirmation Modal -->
+<div class="overlay" id="wipeModal">
+  <div class="modal" style="max-width:460px;border:2px solid var(--err)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-weight:700;font-size:16px;color:var(--err)" id="wipeModalTitle">Wipe Data</div>
+      <button onclick="closeModal('wipeModal')" style="background:none;border:none;color:var(--t2);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <input type="hidden" id="wipe-mode" value="data"/>
+    <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--t2);line-height:1.6" id="wipeModalDesc"></div>
+    <div class="fg" style="margin-bottom:12px">
+      <label class="fl" style="color:var(--err)">Type <strong>RESET</strong> to confirm</label>
+      <input class="fc" id="wipe-confirm-input" placeholder="RESET" autocomplete="off" style="border-color:var(--err)"/>
+    </div>
+    <div class="fg" style="margin-bottom:20px">
+      <label class="fl">Backup PIN</label>
+      <input class="fc" id="wipe-pin-input" type="password" placeholder="Enter your backup PIN" autocomplete="off"/>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-o" style="flex:1" onclick="closeModal('wipeModal')">Cancel</button>
+      <button class="btn" id="wipe-execute-btn" style="flex:1;background:var(--err);color:#fff;font-weight:700" onclick="executeWipe()">⚠️ Wipe</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
