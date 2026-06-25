@@ -1352,7 +1352,7 @@ textarea.fc{resize:vertical;min-height:70px}
     <!-- ── Finance / Transaction Ledger Page ── -->
     <div class="page" id="page-finance">
       <!-- Pending txn safety alert -->
-      <div id="pending-txn-alert" style="display:none;background:rgba(239,68,68,.12);border:1px solid var(--err);border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div id="pending-txn-alert" style="display:none;background:rgba(239,68,68,.12);border:1px solid var(--err);border-radius:10px;padding:14px 18px;margin-bottom:18px;align-items:center;justify-content:space-between;gap:12px">
         <div>
           <div style="font-weight:700;color:var(--err);font-size:13px">⚠️ Unconfirmed Transactions Detected</div>
           <div style="font-size:12px;color:var(--t2);margin-top:3px" id="pending-txn-alert-msg">Some transactions may not have saved due to a connection issue.</div>
@@ -5088,6 +5088,7 @@ function checkPendingTxns() {
       var alert = document.getElementById('pending-txn-alert');
       if (alert) {
         alert.style.display = 'flex';
+        alert.style.alignItems = 'center';
         var msg = document.getElementById('pending-txn-alert-msg');
         if (msg) msg.textContent = p.length + ' transaction(s) may not have saved. Open Transaction Ledger to review.';
       }
@@ -13043,6 +13044,7 @@ function renderInvPriceList() {
       '<select class="fc" onchange="_plSupFilter=this.value;renderInvPriceList()" style="padding:7px 10px;font-size:13px;width:auto"><option value="all">All Suppliers</option>'+suppliers.map(function(s){return '<option value="'+s+'" '+(s===_plSupFilter?'selected':'')+'>'+s+'</option>';}).join('')+'</select>' +
       '<select class="fc" onchange="_plStatusFilter=this.value;renderInvPriceList()" style="padding:7px 10px;font-size:13px;width:auto"><option value="all">All Status</option><option value="approved" '+(_plStatusFilter==='approved'?'selected':'')+'>Approved</option><option value="pending" '+(_plStatusFilter==='pending'?'selected':'')+'>Pending</option></select>' +
       '<button class="btn btn-o btn-sm" onclick="plExportCSV()">⬇ Export CSV</button>' +
+      '<button class="btn btn-p btn-sm" onclick="plOpenAddModal()">＋ Add Item</button>' +
     '</div>' +
 
     // Bulk action bar (shows when items selected)
@@ -13084,6 +13086,7 @@ function renderInvPriceList() {
           '<td style="padding:8px 12px"><span class="badge '+sc+'">'+r.status+'</span></td>' +
           '<td style="padding:8px 12px;white-space:nowrap">' +
             (r.status==='pending' ? '<button class="btn btn-ok btn-sm" style="margin-right:4px" onclick="plApproveOne('+r.id+')">✅</button>' : '') +
+            '<button class="btn btn-o btn-sm" style="margin-right:4px" onclick="plOpenAddModal('+r.id+')">✏️</button>' +
             '<button class="btn btn-o btn-sm" onclick="plDeleteOne('+r.id+')" style="color:var(--err)">🗑</button>' +
           '</td>' +
         '</tr>';
@@ -13501,6 +13504,114 @@ function plExportCSV() {
 }
 
 function setPlStatusFilter(s) { _plStatusFilter = s; renderInvPriceList(); }
+
+// ── Manual Add Item ───────────────────────────────────────────
+function plOpenAddModal(editId) {
+  var ex = editId ? _plItems.find(function(r){ return r.id === editId; }) : null;
+  var cost = ex ? parseFloat(ex.cost_price||0) : 0;
+  var sale = ex ? parseFloat(ex.sale_price||0) : 0;
+  var suppliers = [...new Set(_plItems.map(function(r){ return r.supplier||''; }).filter(Boolean))].sort();
+  var categories = [...new Set(_plItems.map(function(r){ return r.category||''; }).filter(Boolean))].sort();
+
+  var html =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">' +
+      '<div><label class="fl" style="margin-bottom:4px">Supplier</label>' +
+        '<input id="pla-supplier" class="fc" list="pla-sup-list" placeholder="e.g. Acme Print Supplies" value="'+(ex?ex.supplier||'':'')+'" style="width:100%"/>' +
+        '<datalist id="pla-sup-list">'+suppliers.map(function(s){return '<option value="'+s+'">'}).join('')+'</datalist></div>' +
+      '<div><label class="fl" style="margin-bottom:4px">SKU / Code</label>' +
+        '<input id="pla-sku" class="fc" placeholder="e.g. APS-001" value="'+(ex?ex.sku||'':'')+'" style="width:100%"/></div>' +
+    '</div>' +
+    '<div style="margin-bottom:12px"><label class="fl" style="margin-bottom:4px">Description <span style="color:var(--err)">*</span></label>' +
+      '<input id="pla-desc" class="fc" placeholder="e.g. Glossy Photo Paper 4x6 (100 sheets)" value="'+(ex?ex.description||'':'')+'" style="width:100%"/></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">' +
+      '<div><label class="fl" style="margin-bottom:4px">Category</label>' +
+        '<input id="pla-category" class="fc" list="pla-cat-list" placeholder="e.g. Paper" value="'+(ex?ex.category||'':'')+'" style="width:100%"/>' +
+        '<datalist id="pla-cat-list">'+categories.map(function(c){return '<option value="'+c+'">'}).join('')+'</datalist></div>' +
+      '<div><label class="fl" style="margin-bottom:4px">Unit</label>' +
+        '<select id="pla-unit" class="fc" style="width:100%">' +
+          ['Each','Pack','Roll','Sheet','Bottle','Box','Case','Set'].map(function(u){
+            return '<option value="'+u+'" '+((ex?ex.unit||'Each':'Each')===u?'selected':'')+'>'+u+'</option>';
+          }).join('') +
+        '</select></div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
+      '<div><label class="fl" style="margin-bottom:4px">Cost Price ($) <span style="color:var(--err)">*</span></label>' +
+        '<input id="pla-cost" class="fc" type="number" min="0" step="0.01" placeholder="0.00" value="'+(cost||'')+'" oninput="plAddRecalcSale()" style="width:100%"/></div>' +
+      '<div><label class="fl" style="margin-bottom:4px">Margin %</label>' +
+        '<input id="pla-margin" class="fc" type="number" min="0" step="1" value="'+_plDefaultMargin+'" oninput="plAddRecalcSale()" style="width:100%"/></div>' +
+      '<div><label class="fl" style="margin-bottom:4px">Sale Price ($)</label>' +
+        '<input id="pla-sale" class="fc" type="number" min="0" step="0.01" placeholder="0.00" value="'+(sale||'')+'" oninput="plAddRecalcMargin()" style="width:100%"/></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+      '<button class="btn btn-o" onclick="closeM(\'plAddModal\')">Cancel</button>' +
+      '<button class="btn btn-p" onclick="plSaveAddModal('+(editId||'null')+')">'+( editId ? '💾 Save Changes' : '✅ Add to Price List')+'</button>' +
+    '</div>';
+
+  var modal = document.getElementById('plAddModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.className = 'overlay';
+    modal.id = 'plAddModal';
+    modal.innerHTML = '<div class="modal" style="max-width:560px"><div class="modal-t"><span id="plAddModalTitle">➕ Add Price List Item</span><button class="xbtn" onclick="closeM(\'plAddModal\')">&times;</button></div><div id="plAddModalBody" style="padding:20px"></div></div>';
+    document.body.appendChild(modal);
+  }
+  document.getElementById('plAddModalTitle').textContent = editId ? '✏️ Edit Price List Item' : '➕ Add Price List Item';
+  document.getElementById('plAddModalBody').innerHTML = html;
+  modal.classList.add('open');
+}
+
+function plAddRecalcSale() {
+  var cost = parseFloat(document.getElementById('pla-cost').value)||0;
+  var margin = parseFloat(document.getElementById('pla-margin').value)||0;
+  var sale = +(cost * (1 + margin/100)).toFixed(2);
+  var saleEl = document.getElementById('pla-sale');
+  if (saleEl) saleEl.value = sale || '';
+}
+
+function plAddRecalcMargin() {
+  var cost = parseFloat(document.getElementById('pla-cost').value)||0;
+  var sale = parseFloat(document.getElementById('pla-sale').value)||0;
+  var margin = cost > 0 ? +((sale - cost) / cost * 100).toFixed(1) : 0;
+  var mEl = document.getElementById('pla-margin');
+  if (mEl) mEl.value = margin;
+}
+
+function plSaveAddModal(editId) {
+  var desc = (document.getElementById('pla-desc').value||'').trim();
+  var cost = parseFloat(document.getElementById('pla-cost').value)||0;
+  if (!desc) { alert('Description is required'); return; }
+  if (!cost)  { alert('Cost Price is required');  return; }
+
+  var row = {
+    supplier:    (document.getElementById('pla-supplier').value||'').trim(),
+    sku:         (document.getElementById('pla-sku').value||'').trim(),
+    description: desc,
+    category:    (document.getElementById('pla-category').value||'').trim(),
+    unit:        document.getElementById('pla-unit').value||'Each',
+    cost_price:  cost,
+    sale_price:  parseFloat(document.getElementById('pla-sale').value)||0,
+    status:      'approved',
+    approved_by: currentUser ? currentUser.name : '',
+    approved_at: new Date().toISOString()
+  };
+
+  if (editId) {
+    dbUpdate('price_list', editId, row).then(function(){
+      var r = _plItems.find(function(x){ return x.id===editId; });
+      if (r) Object.assign(r, row);
+      closeM('plAddModal');
+      renderInvPriceList();
+      toast('Item updated!');
+    });
+  } else {
+    dbInsert('price_list', row).then(function(created){
+      if (created) _plItems.unshift(created);
+      closeM('plAddModal');
+      renderInvPriceList();
+      toast('Item added to price list!');
+    }).catch(function(err){ toast('Error: '+(err.message||err), true); });
+  }
+}
 
 // ── CRUD ──────────────────────────────────────────────────────
 function openInvItemModal(id) {
