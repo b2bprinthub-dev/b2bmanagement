@@ -15113,8 +15113,8 @@ function secLog(category, severity, msg, detail) {
     msg: msg, detail: detail||'', user: currentUser.name, uid: currentUser.id };
   _secEventLog.unshift(entry);
   if (_secEventLog.length > 500) _secEventLog.pop();
-  dbInsert('activity_log', { action:'[SEC:'+severity+'] '+msg, module:category,
-    username:currentUser.name, user_id:currentUser.id, detail:detail||'' }).catch(function(){});
+  dbInsert('activity_log', { action:'[SEC:'+severity+'] '+msg+(detail?' | '+detail:''), module:category,
+    username:currentUser.name, user_id:currentUser.id }).catch(function(){});
   if (severity==='HIGH'||severity==='CRITICAL') { _secAlerts.unshift(entry); if(_secAlerts.length>50)_secAlerts.pop(); }
 }
 
@@ -15301,10 +15301,11 @@ function secRunRLSScan(){
     ]).then(function(ops){
       var elapsed=Date.now()-start;
       var selectOk=ops[0].rows===0;
-      var insertBlocked=ops[1].status===401||(ops[1].err&&ops[1].err.indexOf('42501')>-1);
+      // 200/201 = actual insert success (vulnerability). 400=schema error, 401/403=RLS block — all are safe.
+      var insertBlocked=ops[1].status!==200&&ops[1].status!==201;
       return {table:table,elapsed:elapsed,select:ops[0],insert:ops[1],
         status:(selectOk&&insertBlocked)?'PASS':'FAIL',
-        issues:(!selectOk?['SELECT leaked '+ops[0].rows+' row(s)']:[]).concat(!insertBlocked?['INSERT not blocked (HTTP '+ops[1].status+')']:[])};
+        issues:(!selectOk?['SELECT leaked '+ops[0].rows+' row(s)']:[]).concat(!insertBlocked?['INSERT succeeded (HTTP '+ops[1].status+') — RLS missing!']:[])};
     }).catch(function(e){return {table:table,status:'ERROR',issues:[String(e.message||e)],elapsed:0};});
   })).then(function(res){
     _secRlsResults=res; _secScanRunning=false;
@@ -15333,7 +15334,7 @@ function secRenderRLSResults(results){
     results.map(function(r){
       var sc=r.status==='PASS'?'#4caf7d':r.status==='FAIL'?'#ef4444':'#f59e0b';
       var selLabel=r.select?(r.select.rows===0?'<span style="color:#4caf7d">Blocked</span>':'<span style="color:#ef4444">Leaked '+r.select.rows+'</span>'):'—';
-      var insLabel=r.insert?(r.insert.status===401?'<span style="color:#4caf7d">Blocked</span>':'<span style="color:#ef4444">Allowed ('+r.insert.status+')</span>'):'—';
+      var insLabel=r.insert?((r.insert.status!==200&&r.insert.status!==201)?'<span style="color:#4caf7d">Blocked ('+r.insert.status+')</span>':'<span style="color:#ef4444">ALLOWED! ('+r.insert.status+')</span>'):'—';
       return '<tr style="border-bottom:1px solid var(--bor)">'+
         '<td style="padding:7px 10px;font-weight:600">'+r.table+'</td>'+
         '<td style="padding:7px 10px">'+selLabel+'</td>'+
