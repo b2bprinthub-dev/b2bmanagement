@@ -1,0 +1,20 @@
+{
+  "name": "B2B Print Hub",
+  "short_name": "PrintHub",
+  "description": "B2B Print Hub — Business Management Suite",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    { "name": "Invoices",   "url": "./#invoices",   "description": "Open Invoices" },
+    { "name": "Jobs Board", "url": "./#jobs",        "description": "Open Jobs Board" },
+    { "name": "Dashboard",  "url": "./#dashboard",  "description": "Open Dashboard" }
+  ]
+}

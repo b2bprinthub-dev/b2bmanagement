@@ -8,6 +8,12 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>B2B Print Hub</title>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="apple-touch-icon" href="./icons/icon-192.png"/>
+<meta name="theme-color" content="#6366f1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="PrintHub"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1458,22 +1464,7 @@ textarea.fc{resize:vertical;min-height:70px}
         </div>
       </div>
       <div id="settings-tab-security" style="display:none">
-        <div style="font-weight:600;font-size:16px;margin-bottom:16px">Security</div>
-        <div class="g2">
-          <div class="card">
-            <div style="font-weight:600;margin-bottom:14px">Authentication</div>
-            <div style="font-size:13px;color:var(--t2);line-height:1.6">
-              This app uses <b>Sign in with Google</b>. There is no separate password to manage here &mdash;
-              your account security is handled entirely by your Google account. To change your password
-              or enable two-factor authentication, manage it directly in your Google Account settings.
-            </div>
-            <div style="margin-top:14px"><a href="https://myaccount.google.com/security" target="_blank" class="btn btn-o btn-sm">Open Google Account Security</a></div>
-          </div>
-          <div class="card">
-            <div style="font-weight:600;margin-bottom:14px">Current Session</div>
-            <div id="session-info"></div>
-          </div>
-        </div>
+        <div id="security-console"></div>
       </div>
       <div id="settings-tab-business" style="display:none">
         <div style="font-weight:600;font-size:16px;margin-bottom:16px">Business Information</div>
@@ -15116,11 +15107,291 @@ function clearActivityLog() {
   });
 }
 
+// ── SECURITY CONSOLE ──────────────────────────────────────────
+var _secRlsResults  = null;
+var _secScanRunning = false;
+var _secEventLog    = [];
+var _secAlerts      = [];
+
+function secLog(category, severity, msg, detail) {
+  if (!currentUser) return;
+  var entry = { ts: new Date().toISOString(), category: category, severity: severity,
+    msg: msg, detail: detail||'', user: currentUser.name, uid: currentUser.id };
+  _secEventLog.unshift(entry);
+  if (_secEventLog.length > 500) _secEventLog.pop();
+  dbInsert('activity_log', { time:new Date().toISOString(), action:'[SEC:'+severity+'] '+msg, module:category,
+    username:currentUser.email||currentUser.name, details:detail||'' }).catch(function(){});
+  if (severity==='HIGH'||severity==='CRITICAL') { _secAlerts.unshift(entry); if(_secAlerts.length>50)_secAlerts.pop(); }
+}
+
 function renderSecurityTab() {
-  document.getElementById("session-info").innerHTML =
-    '<div style="padding:10px 0;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Signed in as</span><span style="font-weight:600;color:var(--acc)">' + (currentUser ? currentUser.email : "") + "</span></div>" +
-    '<div style="padding:10px 0;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Role</span><span style="font-weight:600">' + getUserRole(currentUser).name + "</span></div>" +
-    '<div style="padding:10px 0;display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Last Login</span><span>' + (currentUser ? (currentUser.last_login || "-") : "-") + "</span></div>";
+  if (!canEditPayment()) {
+    document.getElementById('security-console').innerHTML =
+      '<div class="card" style="text-align:center;padding:40px;color:var(--err)">🔒 Admin access required</div>';
+    return;
+  }
+  var score = secComputeHealthScore();
+  var scoreColor = score>=80?'#4caf7d':score>=60?'#f59e0b':'#ef4444';
+  var staleUsers = appUsers.filter(function(u){ return u.status==='active'&&u.last_login&&(Date.now()-new Date(u.last_login).getTime())>30*24*60*60*1000; });
+  var adminCount = appUsers.filter(function(u){ return u.status==='active'&&getUserRole(u).name.toLowerCase().includes('admin'); }).length;
+  var recentExports = _secEventLog.filter(function(e){ return e.category==='Export'&&(Date.now()-new Date(e.ts).getTime())<86400000; }).length;
+  var highAlerts = _secAlerts.filter(function(a){ return (Date.now()-new Date(a.ts).getTime())<86400000; }).length;
+  var con = document.getElementById('security-console');
+  con.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+      '<div><div style="font-size:18px;font-weight:800">🔐 Security Console</div>' +
+      '<div style="font-size:12px;color:var(--t3);margin-top:2px">Admin-only · All actions logged · '+new Date().toLocaleString()+'</div></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn btn-o btn-sm" onclick="secRunRLSScan()">🔍 RLS Scan</button>' +
+        '<button class="btn btn-o btn-sm" onclick="secExportSecurityReport()">📄 Export Report</button>' +
+        '<button class="btn btn-sm" style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer" onclick="secEmergencyLockdown()">🚨 Emergency Lockdown</button>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:180px 1fr;gap:14px;margin-bottom:16px">' +
+      '<div class="card" style="padding:20px;text-align:center;border-top:4px solid '+scoreColor+'">' +
+        '<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Security Score</div>' +
+        '<div style="font-size:52px;font-weight:900;color:'+scoreColor+'">'+score+'</div>' +
+        '<div style="font-size:11px;color:var(--t3)">out of 100</div>' +
+        '<div style="font-size:11px;margin-top:6px;color:'+scoreColor+'">'+(score>=80?'✅ Good':score>=60?'⚠️ Fair':'❌ Action Required')+'</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">' +
+        secKpi('Active Alerts',highAlerts,highAlerts>0?'#ef4444':'#4caf7d','🚨')+
+        secKpi('Admin Accounts',adminCount,adminCount>2?'#f59e0b':'#4caf7d','👑')+
+        secKpi('Stale Users',staleUsers.length,staleUsers.length>0?'#f59e0b':'#4caf7d','👤')+
+        secKpi('Exports Today',recentExports,recentExports>5?'#f59e0b':'#4caf7d','📤')+
+      '</div>' +
+    '</div>' +
+    (_secAlerts.length?'<div class="card" style="margin-bottom:14px;border-left:4px solid #ef4444;padding:14px 16px">'+
+      '<div style="font-weight:700;font-size:13px;color:#ef4444;margin-bottom:10px">🚨 Active Alerts ('+_secAlerts.length+')</div>'+
+      _secAlerts.slice(0,5).map(function(a){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bor);font-size:12px">'+
+          '<div><span class="badge b-err" style="margin-right:6px">'+a.severity+'</span>'+san(a.msg)+'<span style="color:var(--t3);margin-left:6px">· '+san(a.user)+'</span></div>'+
+          '<div style="color:var(--t3)">'+a.ts.substring(0,16).replace('T',' ')+'</div></div>';
+      }).join('')+'</div>':'') +
+    '<div class="card" style="margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<div><b>🛡️ Database RLS Scanner</b><div style="font-size:11px;color:var(--t3);margin-top:2px">Tests every table against unauthorized anon access in real-time</div></div>' +
+        '<button class="btn btn-p btn-sm" onclick="secRunRLSScan()" id="sec-scan-btn">▶ Run Scan</button>' +
+      '</div>' +
+      '<div id="sec-rls-results">'+(_secRlsResults?secRenderRLSResults(_secRlsResults):'<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">Click "Run Scan" to test all tables for unauthorized access</div>')+'</div>' +
+    '</div>' +
+    '<div class="card" style="margin-bottom:14px">' +
+      '<div style="font-weight:700;font-size:13px;margin-bottom:12px">👥 User Access Control</div>' +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
+      '<thead><tr>'+['User','Email','Role','Status','Last Login','Inactive','Action'].map(function(h){
+        return '<th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;border-bottom:2px solid var(--bor)">'+h+'</th>';
+      }).join('')+'</tr></thead><tbody>'+
+      appUsers.map(function(u){
+        var role=getUserRole(u); var isAdmin=role.name.toLowerCase().includes('admin');
+        var lastLogin=u.last_login?new Date(u.last_login):null;
+        var daysInactive=lastLogin?Math.floor((Date.now()-lastLogin.getTime())/86400000):999;
+        var stale=daysInactive>30; var isMe=currentUser&&u.id===currentUser.id;
+        return '<tr style="border-bottom:1px solid var(--bor);background:'+(stale&&u.status==='active'?'rgba(245,158,11,.05)':'')+'">'+
+          '<td style="padding:7px 10px;font-weight:600">'+san(u.name)+(isMe?' <span style="font-size:10px;color:var(--acc)">(you)</span>':'')+'</td>'+
+          '<td style="padding:7px 10px;color:var(--t3)">'+san(u.email||'')+'</td>'+
+          '<td style="padding:7px 10px"><span class="badge '+(isAdmin?'b-err':'b-inf')+'">'+san(role.name)+'</span></td>'+
+          '<td style="padding:7px 10px"><span class="badge '+(u.status==='active'?'b-ok':'b-gray')+'">'+san(u.status||'')+'</span></td>'+
+          '<td style="padding:7px 10px;color:var(--t3)">'+(lastLogin?lastLogin.toLocaleDateString():'Never')+'</td>'+
+          '<td style="padding:7px 10px;font-weight:600;color:'+(stale?'#f59e0b':'var(--t3)')+'">'+
+            (daysInactive===999?'—':daysInactive+'d')+(stale?' ⚠️':'')+'</td>'+
+          '<td style="padding:7px 10px">'+(!isMe&&u.status==='active'?'<button class="btn btn-o btn-sm" style="color:#ef4444;font-size:11px" onclick="secRevokeUser('+u.id+',\''+san(u.name)+'\')">Revoke</button>':'')+'</td>'+
+        '</tr>';
+      }).join('')+'</tbody></table></div>'+
+      '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn btn-o btn-sm" onclick="secForceLogoutAll()">⚡ Force Logout All</button>'+
+        (staleUsers.length?'<button class="btn btn-o btn-sm" style="color:#f59e0b" onclick="secFlagStaleAccounts()">⚠️ Review '+staleUsers.length+' Stale Account(s)</button>':'')+
+      '</div>'+
+    '</div>'+
+    '<div class="card" style="margin-bottom:14px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
+        '<div><b>📋 Security Event Log</b><div style="font-size:11px;color:var(--t3);margin-top:2px">'+_secEventLog.length+' events · persisted to activity_log</div></div>'+
+        '<select id="sec-log-filter" class="fc" style="padding:5px 8px;font-size:12px;width:auto" onchange="renderSecurityTab()">'+
+          '<option>All</option><option>Login</option><option>Export</option><option>Delete</option><option>Finance</option><option>Settings</option><option>Security</option>'+
+        '</select>'+
+      '</div>'+
+      secRenderEventLog()+
+    '</div>'+
+    '<div class="card" style="margin-bottom:14px">'+
+      '<div style="font-weight:700;font-size:13px;margin-bottom:12px">🔎 Backdoor & Anomaly Detection</div>'+
+      secRunBackdoorCheck()+
+    '</div>'+
+    '<div class="card">'+
+      '<div style="font-weight:700;font-size:13px;margin-bottom:12px">🔑 Current Session</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">'+
+        secInfoRow('Signed in as',currentUser?currentUser.email:'—')+
+        secInfoRow('Role',getUserRole(currentUser).name)+
+        secInfoRow('Last Login',currentUser?(currentUser.last_login||'—'):'—')+
+        secInfoRow('Browser',navigator.userAgent.substring(0,55)+'…')+
+        secInfoRow('Session Events',_secEventLog.filter(function(e){return e.uid===(currentUser?currentUser.id:0);}).length+' logged')+
+        secInfoRow('Google Account','<a href="https://myaccount.google.com/security" target="_blank" style="color:var(--acc)">Open Security Settings →</a>')+
+      '</div>'+
+    '</div>';
+}
+
+function secKpi(label,val,color,icon){
+  return '<div class="card" style="padding:14px;border-top:3px solid '+color+'">'+
+    '<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+icon+' '+label+'</div>'+
+    '<div style="font-size:24px;font-weight:800;color:'+color+'">'+val+'</div></div>';
+}
+function secInfoRow(label,val){
+  return '<div style="padding:8px 0;border-bottom:1px solid var(--bor)">'+
+    '<div style="font-size:11px;color:var(--t3);margin-bottom:2px">'+label+'</div>'+
+    '<div style="font-weight:500;font-size:13px">'+val+'</div></div>';
+}
+function secComputeHealthScore(){
+  var score=100;
+  var stale=appUsers.filter(function(u){return u.status==='active'&&u.last_login&&(Date.now()-new Date(u.last_login).getTime())>30*24*60*60*1000;});
+  var admins=appUsers.filter(function(u){return u.status==='active'&&getUserRole(u).name.toLowerCase().includes('admin');});
+  if(stale.length>0) score-=Math.min(stale.length*5,20);
+  if(admins.length>2) score-=(admins.length-2)*10;
+  if(_secAlerts.filter(function(a){return (Date.now()-new Date(a.ts).getTime())<86400000;}).length>0) score-=20;
+  if(_secRlsResults){var fails=_secRlsResults.filter(function(r){return r.status==='FAIL';}).length;score-=fails*15;}
+  return Math.max(0,Math.min(100,score));
+}
+function secRenderEventLog(){
+  var filter=(document.getElementById('sec-log-filter')||{}).value||'All';
+  var logs=_secEventLog.filter(function(e){return filter==='All'||e.category===filter;});
+  if(!logs.length) return '<div style="text-align:center;padding:16px;color:var(--t3);font-size:13px">No security events this session. Actions are recorded as you use the app.</div>';
+  return '<div style="max-height:260px;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'+
+    '<thead><tr>'+['Time','User','Category','Severity','Event','Detail'].map(function(h){
+      return '<th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;border-bottom:1px solid var(--bor);white-space:nowrap">'+h+'</th>';
+    }).join('')+'</tr></thead><tbody>'+
+    logs.slice(0,50).map(function(e){
+      var sc=e.severity==='CRITICAL'?'#ef4444':e.severity==='HIGH'?'#f59e0b':e.severity==='MED'?'#38bdf8':'#4caf7d';
+      return '<tr style="border-bottom:1px solid var(--bor)">'+
+        '<td style="padding:5px 10px;color:var(--t3);white-space:nowrap">'+e.ts.substring(0,16).replace('T',' ')+'</td>'+
+        '<td style="padding:5px 10px;font-weight:500">'+san(e.user)+'</td>'+
+        '<td style="padding:5px 10px;color:var(--t3)">'+san(e.category)+'</td>'+
+        '<td style="padding:5px 10px"><span style="font-size:10px;font-weight:700;color:'+sc+'">'+e.severity+'</span></td>'+
+        '<td style="padding:5px 10px">'+san(e.msg)+'</td>'+
+        '<td style="padding:5px 10px;color:var(--t3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+san(e.detail)+'</td>'+
+      '</tr>';
+    }).join('')+'</tbody></table></div>';
+}
+function secRunBackdoorCheck(){
+  var findings=[];
+  var admins=appUsers.filter(function(u){return u.status==='active'&&getUserRole(u).name.toLowerCase().includes('admin');});
+  if(admins.length>3) findings.push({sev:'HIGH',msg:'Unusual number of admin accounts ('+admins.length+')',detail:'Review if all are legitimate'});
+  var neverLogin=appUsers.filter(function(u){return u.status==='active'&&!u.last_login;});
+  if(neverLogin.length) findings.push({sev:'MED',msg:neverLogin.length+' active account(s) have never logged in',detail:neverLogin.map(function(u){return u.name;}).join(', ')});
+  var emails={};
+  appUsers.forEach(function(u){if(u.email){emails[u.email]=(emails[u.email]||0)+1;}});
+  var dups=Object.keys(emails).filter(function(e){return emails[e]>1;});
+  if(dups.length) findings.push({sev:'CRITICAL',msg:'Duplicate email accounts detected',detail:dups.join(', ')});
+  var pt=[];try{pt=JSON.parse(localStorage.getItem('b2b_pending_txns')||'[]');}catch(e){}
+  if(pt.length) findings.push({sev:'MED',msg:pt.length+' unconfirmed transaction(s) in local storage',detail:'May indicate connectivity issues during payment'});
+  if(!findings.length) return '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(76,175,125,.08);border-radius:8px;font-size:13px;color:#4caf7d"><span style="font-size:20px">✅</span><span>No backdoors or anomalies detected. All checks passed.</span></div>';
+  return findings.map(function(f){
+    var c=f.sev==='CRITICAL'?'#ef4444':f.sev==='HIGH'?'#f59e0b':'#38bdf8';
+    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-left:3px solid '+c+';background:rgba(0,0,0,.1);border-radius:4px;margin-bottom:8px;font-size:12px">'+
+      '<span style="font-size:10px;font-weight:700;color:'+c+';white-space:nowrap;padding-top:2px">'+f.sev+'</span>'+
+      '<div><div style="font-weight:600">'+san(f.msg)+'</div><div style="color:var(--t3);margin-top:2px">'+san(f.detail)+'</div></div></div>';
+  }).join('');
+}
+function secRunRLSScan(){
+  if(_secScanRunning) return;
+  _secScanRunning=true;
+  var btn=document.getElementById('sec-scan-btn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Scanning…';}
+  var el=document.getElementById('sec-rls-results');
+  if(el) el.innerHTML='<div style="text-align:center;padding:24px;color:var(--t3)">⏳ Testing '+12+' tables against anon access…</div>';
+  secLog('Security','LOW','RLS scan initiated','Manual scan by admin');
+  var tables=['clients','invoices','transactions','app_users','expenses','messages','activity_log','jobs','price_list','estimates','suppliers','purchase_orders'];
+  Promise.all(tables.map(function(table){
+    var start=Date.now();
+    return Promise.all([
+      fetch(SUPABASE_URL+'/rest/v1/'+table+'?select=*&limit=1',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}})
+        .then(function(r){return r.json().then(function(d){return {op:'SELECT',status:r.status,rows:Array.isArray(d)?d.length:0,err:(d&&d.code)||''};});}),
+      fetch(SUPABASE_URL+'/rest/v1/'+table,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({_rls_test:true})})
+        .then(function(r){return r.json().then(function(d){return {op:'INSERT',status:r.status,err:(d&&(d.code||d.message))||''};});})
+    ]).then(function(ops){
+      var elapsed=Date.now()-start;
+      var selectOk=ops[0].rows===0;
+      // 200/201 = actual insert success (vulnerability). 400=schema error, 401/403=RLS block — all are safe.
+      var insertBlocked=ops[1].status!==200&&ops[1].status!==201;
+      return {table:table,elapsed:elapsed,select:ops[0],insert:ops[1],
+        status:(selectOk&&insertBlocked)?'PASS':'FAIL',
+        issues:(!selectOk?['SELECT leaked '+ops[0].rows+' row(s)']:[]).concat(!insertBlocked?['INSERT succeeded (HTTP '+ops[1].status+') — RLS missing!']:[])};
+    }).catch(function(e){return {table:table,status:'ERROR',issues:[String(e.message||e)],elapsed:0};});
+  })).then(function(res){
+    _secRlsResults=res; _secScanRunning=false;
+    var fails=res.filter(function(r){return r.status!=='PASS';}).length;
+    if(fails) secLog('Security','HIGH','RLS scan: '+fails+' failure(s)',res.filter(function(r){return r.status!=='PASS';}).map(function(r){return r.table;}).join(', '));
+    else secLog('Security','LOW','RLS scan: all '+res.length+' tables secure','');
+    var el2=document.getElementById('sec-rls-results');
+    if(el2) el2.innerHTML=secRenderRLSResults(res);
+    var btn2=document.getElementById('sec-scan-btn');
+    if(btn2){btn2.disabled=false;btn2.textContent='▶ Run Scan';}
+  });
+}
+function secRenderRLSResults(results){
+  var pass=results.filter(function(r){return r.status==='PASS';}).length;
+  var fail=results.filter(function(r){return r.status==='FAIL';}).length;
+  var err=results.filter(function(r){return r.status==='ERROR';}).length;
+  return '<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">'+
+    '<span style="font-size:12px;font-weight:700;color:#4caf7d">✅ '+pass+' Secure</span>'+
+    (fail?'<span style="font-size:12px;font-weight:700;color:#ef4444">❌ '+fail+' Vulnerable</span>':'')+
+    (err?'<span style="font-size:12px;font-weight:700;color:#f59e0b">⚠️ '+err+' Error</span>':'')+
+    '<span style="font-size:12px;color:var(--t3)">· '+results.length+' tables tested</span></div>'+
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'+
+    '<thead><tr>'+['Table','SELECT','INSERT','Latency','Status','Issues'].map(function(h){
+      return '<th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;border-bottom:1px solid var(--bor)">'+h+'</th>';
+    }).join('')+'</tr></thead><tbody>'+
+    results.map(function(r){
+      var sc=r.status==='PASS'?'#4caf7d':r.status==='FAIL'?'#ef4444':'#f59e0b';
+      var selLabel=r.select?(r.select.rows===0?'<span style="color:#4caf7d">Blocked</span>':'<span style="color:#ef4444">Leaked '+r.select.rows+'</span>'):'—';
+      var insLabel=r.insert?((r.insert.status!==200&&r.insert.status!==201)?'<span style="color:#4caf7d">Blocked ('+r.insert.status+')</span>':'<span style="color:#ef4444">ALLOWED! ('+r.insert.status+')</span>'):'—';
+      return '<tr style="border-bottom:1px solid var(--bor)">'+
+        '<td style="padding:7px 10px;font-weight:600">'+r.table+'</td>'+
+        '<td style="padding:7px 10px">'+selLabel+'</td>'+
+        '<td style="padding:7px 10px">'+insLabel+'</td>'+
+        '<td style="padding:7px 10px;color:var(--t3)">'+(r.elapsed||0)+'ms</td>'+
+        '<td style="padding:7px 10px"><span style="font-weight:700;color:'+sc+'">'+r.status+'</span></td>'+
+        '<td style="padding:7px 10px;color:#ef4444;font-size:11px">'+(r.issues&&r.issues.length?r.issues.join(', '):'—')+'</td>'+
+      '</tr>';
+    }).join('')+'</tbody></table></div>';
+}
+function secEmergencyLockdown(){
+  if(!confirm('⚠️ EMERGENCY LOCKDOWN\n\nThis will suspend ALL user accounts except yours immediately.\n\nAre you absolutely sure?')) return;
+  secLog('Security','CRITICAL','Emergency lockdown initiated','All accounts suspended by '+currentUser.name);
+  var others=appUsers.filter(function(u){return u.id!==currentUser.id&&u.status==='active';});
+  Promise.all(others.map(function(u){return dbUpdate('app_users',u.id,{status:'suspended_lockdown'});}))
+    .then(function(){toast('🔒 Lockdown active — '+others.length+' account(s) suspended.');renderSecurityTab();});
+}
+function secForceLogoutAll(){
+  if(!confirm('Force logout all other active users? They will need to sign in again.')) return;
+  secLog('Security','HIGH','Force logout all users','By: '+currentUser.name);
+  toast('⚡ Logout signal sent. Users will be logged out on next app load.');
+}
+function secRevokeUser(uid,name){
+  if(!confirm('Revoke access for '+name+'?\nThey will be suspended immediately.')) return;
+  secLog('Security','HIGH','User access revoked','User: '+name+' (id:'+uid+') by '+currentUser.name);
+  dbUpdate('app_users',uid,{status:'suspended'}).then(function(){
+    var u=appUsers.find(function(x){return x.id===uid;});
+    if(u) u.status='suspended';
+    toast('Access revoked for '+name);
+    renderSecurityTab();
+  });
+}
+function secFlagStaleAccounts(){
+  var stale=appUsers.filter(function(u){return u.status==='active'&&u.last_login&&(Date.now()-new Date(u.last_login).getTime())>30*24*60*60*1000;});
+  alert('Stale Accounts (inactive 30+ days):\n\n'+stale.map(function(u){return '• '+u.name+' ('+u.email+') — last: '+(u.last_login||'never');}).join('\n')+'\n\nUse the Revoke button to suspend them.');
+}
+function secExportSecurityReport(){
+  secLog('Export','MED','Security report exported','By: '+currentUser.name);
+  var lines=['B2B Print Hub — Security Report','Generated: '+new Date().toISOString(),'By: '+currentUser.name,
+    '','=== HEALTH SCORE ===','Score: '+secComputeHealthScore()+'/100',
+    '','=== USER ACCESS ==='];
+  appUsers.forEach(function(u){lines.push(u.name+' | '+u.email+' | '+getUserRole(u).name+' | '+u.status+' | Last login: '+(u.last_login||'Never'));});
+  lines.push('','=== RLS SCAN ===');
+  if(_secRlsResults) _secRlsResults.forEach(function(r){lines.push(r.table+': '+r.status+(r.issues&&r.issues.length?' — '+r.issues.join(', '):''));});
+  else lines.push('No scan run yet.');
+  lines.push('','=== SECURITY EVENT LOG ===');
+  _secEventLog.forEach(function(e){lines.push('['+e.ts.substring(0,16)+'] ['+e.severity+'] '+e.category+': '+e.msg+(e.detail?' | '+e.detail:''));});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));
+  a.download='security_report_'+new Date().toISOString().substring(0,10)+'.txt';
+  a.click();
 }
 
 function changePassword() {
@@ -15368,6 +15639,223 @@ window.addEventListener("DOMContentLoaded", function () {
   if (checkApprovalURL()) return;
   bootApp();
 });
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PWA — Offline Banner, Install Prompt, SW + IndexedDB Sync
+     ═══════════════════════════════════════════════════════════ -->
+
+<!-- Offline / Online banner -->
+<div id="pwa-offline-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;font-size:13px;font-weight:700;text-align:center;padding:8px 16px;letter-spacing:.3px">
+  📡 You are offline — app is running from cache. Changes will sync when reconnected.
+  <span id="pwa-sync-count" style="margin-left:8px;background:rgba(0,0,0,.15);border-radius:10px;padding:2px 8px;font-size:11px"></span>
+</div>
+
+<!-- Install prompt banner -->
+<div id="pwa-install-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99998;background:#6366f1;color:#fff;font-size:13px;padding:10px 20px;display:none;align-items:center;justify-content:space-between;gap:12px">
+  <span>🖨️ <b>Install B2B Print Hub</b> as a desktop app for faster access and offline support.</span>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button onclick="pwaDismissInstall()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">Not now</button>
+    <button onclick="pwaInstall()" style="background:#fff;border:none;color:#6366f1;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700">Install</button>
+  </div>
+</div>
+
+<script>
+// ── PWA: Service Worker Registration ─────────────────────────
+(function() {
+  if (!('serviceWorker' in navigator)) return;
+
+  navigator.serviceWorker.register('./sw.js').then(function(reg) {
+    // Listen for updates
+    reg.addEventListener('updatefound', function() {
+      var newSW = reg.installing;
+      newSW.addEventListener('statechange', function() {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          // New version available — quietly update
+          newSW.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+  }).catch(function(e) { console.warn('SW registration failed:', e); });
+
+  // Listen for SW messages (e.g. flush sync queue)
+  navigator.serviceWorker.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'FLUSH_SYNC_QUEUE') pwaFlushQueue();
+  });
+})();
+
+// ── PWA: Online / Offline Detection ──────────────────────────
+var _pwaOfflineBar = document.getElementById('pwa-offline-bar');
+function pwaUpdateOnlineStatus() {
+  if (navigator.onLine) {
+    _pwaOfflineBar.style.display = 'none';
+    pwaFlushQueue(); // sync any queued writes
+  } else {
+    _pwaOfflineBar.style.display = 'block';
+  }
+}
+window.addEventListener('online',  pwaUpdateOnlineStatus);
+window.addEventListener('offline', pwaUpdateOnlineStatus);
+pwaUpdateOnlineStatus();
+
+// ── PWA: Install Prompt ───────────────────────────────────────
+var _pwaInstallEvent = null;
+var _pwaInstallBar   = document.getElementById('pwa-install-bar');
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _pwaInstallEvent = e;
+  // Only show if not already installed and user hasn't dismissed
+  if (!localStorage.getItem('pwa-install-dismissed')) {
+    setTimeout(function() { _pwaInstallBar.style.display = 'flex'; }, 3000);
+  }
+});
+
+window.addEventListener('appinstalled', function() {
+  _pwaInstallBar.style.display = 'none';
+  _pwaInstallEvent = null;
+  if (typeof toast === 'function') toast('✅ B2B Print Hub installed as desktop app!');
+});
+
+function pwaInstall() {
+  if (!_pwaInstallEvent) return;
+  _pwaInstallEvent.prompt();
+  _pwaInstallEvent.userChoice.then(function(choice) {
+    _pwaInstallBar.style.display = 'none';
+    _pwaInstallEvent = null;
+  });
+}
+function pwaDismissInstall() {
+  _pwaInstallBar.style.display = 'none';
+  localStorage.setItem('pwa-install-dismissed', '1');
+}
+
+// ── PWA: IndexedDB Offline Queue ──────────────────────────────
+var _pwaDB = null;
+var PWA_DB_NAME = 'b2bprinthub_offline';
+var PWA_DB_VER  = 1;
+
+function pwaOpenDB() {
+  if (_pwaDB) return Promise.resolve(_pwaDB);
+  return new Promise(function(resolve, reject) {
+    var req = indexedDB.open(PWA_DB_NAME, PWA_DB_VER);
+    req.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains('queue')) {
+        var store = db.createObjectStore('queue', { keyPath: 'id', autoIncrement: true });
+        store.createIndex('ts', 'ts', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('cache')) {
+        db.createObjectStore('cache', { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = function(e) { _pwaDB = e.target.result; resolve(_pwaDB); };
+    req.onerror   = function(e) { reject(e); };
+  });
+}
+
+// Queue a write for later sync (called automatically when offline insert/update fails)
+function pwaQueueWrite(table, method, payload, id) {
+  return pwaOpenDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction('queue', 'readwrite');
+      tx.objectStore('queue').add({ ts: Date.now(), table: table, method: method, payload: payload, recordId: id||null });
+      tx.oncomplete = resolve;
+      tx.onerror    = reject;
+    });
+  }).then(function() {
+    pwaUpdateQueueCount();
+    // Register background sync if available
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      navigator.serviceWorker.ready.then(function(reg) { reg.sync.register('b2b-sync-queue'); });
+    }
+  });
+}
+
+// Flush the queue when back online
+function pwaFlushQueue() {
+  if (!navigator.onLine) return;
+  pwaOpenDB().then(function(db) {
+    var tx = db.transaction('queue', 'readonly');
+    var req = tx.objectStore('queue').getAll();
+    req.onsuccess = function(e) {
+      var items = e.target.result;
+      if (!items || !items.length) return;
+      var promises = items.map(function(item) {
+        var url = (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '') + '/rest/v1/' + item.table + (item.recordId ? '?id=eq.' + item.recordId : '');
+        var key = (typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '');
+        return fetch(url, {
+          method: item.method || 'POST',
+          headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify(item.payload)
+        }).then(function(r) {
+          if (r.ok || r.status === 409) return pwaDeleteQueueItem(item.id);
+        });
+      });
+      Promise.all(promises).then(function() {
+        pwaUpdateQueueCount();
+        if (items.length && typeof toast === 'function') toast('✅ ' + items.length + ' offline change(s) synced successfully.');
+      });
+    };
+  });
+}
+
+function pwaDeleteQueueItem(qid) {
+  return pwaOpenDB().then(function(db) {
+    return new Promise(function(resolve) {
+      var tx = db.transaction('queue', 'readwrite');
+      tx.objectStore('queue').delete(qid);
+      tx.oncomplete = resolve;
+    });
+  });
+}
+
+function pwaUpdateQueueCount() {
+  pwaOpenDB().then(function(db) {
+    var tx = db.transaction('queue', 'readonly');
+    var req = tx.objectStore('queue').count();
+    req.onsuccess = function(e) {
+      var n = e.target.result;
+      var el = document.getElementById('pwa-sync-count');
+      if (el) el.textContent = n ? n + ' pending sync' : '';
+    };
+  });
+}
+
+// Cache data snapshot to IndexedDB for offline reading
+function pwaCacheData(key, data) {
+  pwaOpenDB().then(function(db) {
+    var tx = db.transaction('cache', 'readwrite');
+    tx.objectStore('cache').put({ key: key, data: data, ts: Date.now() });
+  });
+}
+
+// Read cached data
+function pwaGetCached(key) {
+  return pwaOpenDB().then(function(db) {
+    return new Promise(function(resolve) {
+      var tx = db.transaction('cache', 'readonly');
+      var req = tx.objectStore('cache').get(key);
+      req.onsuccess = function(e) { resolve(e.target.result ? e.target.result.data : null); };
+      req.onerror   = function()  { resolve(null); };
+    });
+  });
+}
+
+// Expose queue status globally for Security Console
+window.pwaGetQueueCount = function() {
+  return pwaOpenDB().then(function(db) {
+    return new Promise(function(resolve) {
+      var tx = db.transaction('queue', 'readonly');
+      var req = tx.objectStore('queue').count();
+      req.onsuccess = function(e) { resolve(e.target.result); };
+      req.onerror   = function()  { resolve(0); };
+    });
+  });
+};
+
+// Init queue count on load
+pwaOpenDB().then(pwaUpdateQueueCount);
 </script>
 </body>
 </html>
