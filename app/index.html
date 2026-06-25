@@ -2611,23 +2611,28 @@ function withMinLoadingTime(fn, minMs) {
 
 function dbGet(table, options) {
   options = options || {};
+  var t0 = Date.now();
   var q = sb.from(table).select("*");
   if (options.order) q = q.order(options.order, {ascending: options.asc !== false});
   if (options.limit) q = q.limit(options.limit);
   return q.then(function (res) {
-    if (res.error) { console.error(table, res.error); return []; }
+    _infraCallCount++;
+    _infraLatency.push(Date.now() - t0); if (_infraLatency.length > 20) _infraLatency.shift();
+    if (res.error) { _infraErrorCount++; console.error(table, res.error); return []; }
     return res.data || [];
   });
 }
 function dbInsert(table, row) {
+  _infraCallCount++;
   return sb.from(table).insert(row).select().single().then(function (res) {
-    if (res.error) { console.error(res.error); toast("Error saving: " + res.error.message, true); return null; }
+    if (res.error) { _infraErrorCount++; console.error(res.error); toast("Error saving: " + res.error.message, true); return null; }
     return res.data;
   });
 }
 function dbUpdate(table, id, row) {
+  _infraCallCount++;
   return sb.from(table).update(row).eq("id", id).select().single().then(function (res) {
-    if (res.error) { console.error(res.error); toast("Error updating: " + res.error.message, true); return null; }
+    if (res.error) { _infraErrorCount++; console.error(res.error); toast("Error updating: " + res.error.message, true); return null; }
     return res.data;
   });
 }
@@ -16404,13 +16409,23 @@ function devRenderPerf() {
     pRow('API Calls',_infraCallCount,'this session','var(--acc)')+
     pRow('API Errors',_infraErrorCount,'this session',_infraErrorCount>0?'#ef4444':'#4caf7d')+
     pRow('Avg Latency',infraAvgLatency(),'rolling 20 calls','var(--acc)')+
-    pRow('Offline Queue',typeof pwaGetQueueCount==='function'?'…':'N/A','pending sync writes','var(--t3)')+
+    pRow('Offline Queue','<span id="dev-queue-count">…</span>','pending sync writes','var(--t3)')+
     '</div>'+
     '<div class="card" style="padding:0">'+
     pRow('HTML File Size',Math.round(document.documentElement.innerHTML.length/1024)+'KB','approx uncompressed DOM','var(--t3)')+
     pRow('Global Arrays',clients.length+invoices.length+jobs.length+estimates.length+appUsers.length+' records','sum of all loaded arrays','var(--t3)')+
     pRow('Security Events',_secEventLog.length,'logged this session','var(--t3)')+
-    '</div>';
+    '</div>'+
+    '<div style="text-align:right;margin-top:8px"><button class="btn btn-o btn-sm" onclick="devTab(\'perf\')">↻ Refresh</button></div>';
+  // Populate queue count async after render
+  setTimeout(function(){
+    if(typeof pwaGetQueueCount==='function'){
+      pwaGetQueueCount().then(function(n){
+        var el=document.getElementById('dev-queue-count');
+        if(el) el.textContent = n===0?'0 — all synced':n+' pending';
+      });
+    }
+  }, 50);
 }
 
 // ══════════════════════════════════════════════════════════════
