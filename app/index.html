@@ -1966,10 +1966,10 @@ textarea.fc{resize:vertical;min-height:72px}
 
   <!-- Row 1: Title + Client + Rush flag -->
   <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin-bottom:10px;align-items:end">
-    <div class="fg" style="margin:0"><label class="fl">Job Title *</label><input class="fc" id="job-title"/></div>
-    <div class="fg" style="margin:0"><label class="fl">Client</label><select class="fc" id="job-cli"></select></div>
+    <div class="fg" style="margin:0"><label class="fl" data-i18n="job.field.title">Job Title *</label><input class="fc" id="job-title"/></div>
+    <div class="fg" style="margin:0"><label class="fl" data-i18n="inv.col.client">Client</label><select class="fc" id="job-cli"></select></div>
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:2px;gap:4px">
-      <label class="fl" style="margin:0;font-size:10px;text-align:center">Rush</label>
+      <label class="fl" style="margin:0;font-size:10px;text-align:center" data-i18n="job.field.rush">Rush</label>
       <input type="checkbox" id="job-rush" style="display:none"/>
       <button type="button" id="job-rush-btn" onclick="toggleJobRush()"
         style="padding:5px 14px;border-radius:20px;border:2px solid var(--bor);font-size:11px;font-weight:700;cursor:pointer;background:var(--bg3);color:var(--t3);transition:.2s;white-space:nowrap">
@@ -1980,37 +1980,37 @@ textarea.fc{resize:vertical;min-height:72px}
 
   <!-- Row 2: Service Type + Status + Priority -->
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
-    <div class="fg" style="margin:0"><label class="fl">Service Type</label>
+    <div class="fg" style="margin:0"><label class="fl" data-i18n="job.field.serviceType">Service Type</label>
       <select class="fc" id="job-type" onchange="togglePrintSpecs()">
-        <option>Web Design</option><option>Print / Banners</option><option>Large Format Signs</option>
-        <option>Window Wraps</option><option>Vehicle Wraps</option><option>Signs &amp; Awnings</option>
-        <option>Install</option><option>Design Only</option><option>Other</option>
+        <option data-i18n="job.svc.webDesign">Web Design</option><option data-i18n="job.svc.print">Print / Banners</option><option data-i18n="job.svc.largeFormat">Large Format Signs</option>
+        <option data-i18n="job.svc.windowWraps">Window Wraps</option><option data-i18n="job.svc.vehicleWraps">Vehicle Wraps</option><option data-i18n="job.svc.signs">Signs &amp; Awnings</option>
+        <option data-i18n="job.svc.install">Install</option><option data-i18n="job.svc.designOnly">Design Only</option><option data-i18n="job.svc.other">Other</option>
       </select>
     </div>
-    <div class="fg" style="margin:0"><label class="fl">Status</label>
+    <div class="fg" style="margin:0"><label class="fl" data-i18n="inv.col.status">Status</label>
       <select class="fc" id="job-status" onchange="toggleVoidReason()">
-        <option value="pending">Pending</option><option value="in-progress">In Progress</option>
-        <option value="needs-review">Needs Review</option><option value="done">Done</option><option value="voided">Voided</option>
+        <option value="pending" data-i18n="status.pending">Pending</option><option value="in-progress" data-i18n="status.inProgress">In Progress</option>
+        <option value="needs-review" data-i18n="status.needsReview">Needs Review</option><option value="done" data-i18n="status.done">Done</option><option value="voided" data-i18n="status.voided">Voided</option>
       </select>
     </div>
-    <div class="fg" style="margin:0"><label class="fl">Priority</label>
-      <select class="fc" id="job-priority"><option value="low">🟢 Low</option><option value="medium" selected>🟡 Medium</option><option value="high">🔴 High</option></select>
+    <div class="fg" style="margin:0"><label class="fl" data-i18n="job.field.priority">Priority</label>
+      <select class="fc" id="job-priority"><option value="low" data-i18n="job.priority.low">🟢 Low</option><option value="medium" selected data-i18n="job.priority.med">🟡 Medium</option><option value="high" data-i18n="job.priority.high">🔴 High</option></select>
     </div>
   </div>
 
   <!-- Row 3: Start Date + Due Date + Est. Hours + Material Cost -->
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
-    <div class="fg" style="margin:0"><label class="fl">Start Date</label><input type="date" class="fc" id="job-start"/></div>
-    <div class="fg" style="margin:0"><label class="fl">Due Date</label><input type="date" class="fc" id="job-due"/></div>
-    <div class="fg" style="margin:0"><label class="fl">Est. Hours</label><input type="number" class="fc" id="job-est-hours" min="0" step="0.5" placeholder="0"/></div>
-    <div class="fg" style="margin:0"><label class="fl">Material Cost ($)</label><input type="number" class="fc" id="job-material-cost" min="0" step="0.01" placeholder="0.00"/></div>
+    <div class="fg" style="margin:0"><label class="fl" data-i18n="job.field.startDate">Start Date</label><input type="date" class="fc" id="job-start"/></div>
+    <div class="fg" style="margin:0"><label class="fl" data-i18n="job.field.dueDate">Due Date</label><input type="date" class="fc" id="job-due"/></div>
+    <div class="fg" style="margin:0"><label class="fl" data-i18n="job.field.estHours">Est. Hours</label><input type="number" class="fc" id="job-est-hours" min="0" step="0.5" placeholder="0"/></div>
+    <div class="fg" style="margin:0"><label class="fl" data-i18n="job.field.materialCost">Material Cost ($)</label><input type="number" class="fc" id="job-material-cost" min="0" step="0.01" placeholder="0.00"/></div>
   </div>
 
   <!-- Row 4: Linked Invoice + Linked Estimate (searchable lookups) -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
     <!-- Invoice lookup -->
     <div class="fg" style="margin:0;position:relative">
-      <label class="fl">Linked Invoice</label>
+      <label class="fl" data-i18n="job.field.linkedInv">Linked Invoice</label>
       <input class="fc" id="job-linked-inv-search" placeholder="🔍 Search invoice # or client…" autocomplete="off"
         oninput="searchLinkedDoc('inv')" onfocus="searchLinkedDoc('inv')"
         style="padding-right:30px"/>
@@ -2020,7 +2020,7 @@ textarea.fc{resize:vertical;min-height:72px}
     </div>
     <!-- Estimate lookup -->
     <div class="fg" style="margin:0;position:relative">
-      <label class="fl">Linked Estimate</label>
+      <label class="fl" data-i18n="job.field.linkedEst">Linked Estimate</label>
       <input class="fc" id="job-linked-est-search" placeholder="🔍 Search estimate # or client…" autocomplete="off"
         oninput="searchLinkedDoc('est')" onfocus="searchLinkedDoc('est')"
         style="padding-right:30px"/>
@@ -2032,31 +2032,31 @@ textarea.fc{resize:vertical;min-height:72px}
 
   <!-- Void reason (shown only when status=voided) -->
   <div class="fg" id="job-void-reason-wrap" style="display:none;margin-bottom:10px">
-    <label class="fl">Void Reason</label>
-    <input class="fc" id="job-void-reason" placeholder="Why was this job voided?"/>
+    <label class="fl" data-i18n="job.field.voidReason">Void Reason</label>
+    <input class="fc" id="job-void-reason" data-i18n-placeholder="job.field.voidReasonPh"/>
   </div>
 
   <!-- Print Specs (shown for print/signs/wraps/install) -->
   <div id="job-print-specs-wrap" style="display:none;background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:10px">
-    <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">🖨 Print / Production Specs</div>
+    <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px" data-i18n="job.specs.title">🖨 Print / Production Specs</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
-      <div><label class="fl">Material / Substrate</label><input class="fc" id="job-spec-material" placeholder="e.g. Vinyl, Coroplast"/></div>
-      <div><label class="fl">Size (W × H)</label><input class="fc" id="job-spec-size" placeholder='e.g. 4"×8"'/></div>
-      <div><label class="fl">Quantity</label><input type="number" class="fc" id="job-spec-qty" min="1" placeholder="1"/></div>
-      <div><label class="fl">Finish / Laminate</label>
+      <div><label class="fl" data-i18n="job.specs.material">Material / Substrate</label><input class="fc" id="job-spec-material" data-i18n-placeholder="job.specs.materialPh"/></div>
+      <div><label class="fl" data-i18n="job.specs.size">Size (W × H)</label><input class="fc" id="job-spec-size" placeholder='e.g. 4"×8"'/></div>
+      <div><label class="fl" data-i18n="job.specs.qty">Quantity</label><input type="number" class="fc" id="job-spec-qty" min="1" placeholder="1"/></div>
+      <div><label class="fl" data-i18n="job.specs.finish">Finish / Laminate</label>
         <select class="fc" id="job-spec-finish">
-          <option value="">— None —</option><option>Gloss</option><option>Matte</option><option>Satin</option>
-          <option>UV Gloss</option><option>Dry Erase</option><option>Perforated</option><option>Other</option>
+          <option value="" data-i18n="job.specs.finishNone">— None —</option><option>Gloss</option><option>Matte</option><option>Satin</option>
+          <option>UV Gloss</option><option>Dry Erase</option><option>Perforated</option><option data-i18n="job.svc.other">Other</option>
         </select>
       </div>
     </div>
-    <div style="margin-top:10px"><label class="fl">Install Address / Location</label><input class="fc" id="job-spec-address" placeholder="Where will this be installed?"/></div>
-    <div style="margin-top:8px"><label class="fl">Production Notes</label><textarea class="fc" id="job-spec-notes" placeholder="Color specs, bleed, file format, special instructions…" style="min-height:52px;resize:vertical"></textarea></div>
+    <div style="margin-top:10px"><label class="fl" data-i18n="job.specs.installAddr">Install Address / Location</label><input class="fc" id="job-spec-address" data-i18n-placeholder="job.specs.installAddrPh"/></div>
+    <div style="margin-top:8px"><label class="fl" data-i18n="job.specs.prodNotes">Production Notes</label><textarea class="fc" id="job-spec-notes" data-i18n-placeholder="job.specs.prodNotesPh" style="min-height:52px;resize:vertical"></textarea></div>
   </div>
 
   <!-- Assign Members (search + chips) -->
   <div class="fg" style="margin-bottom:10px;position:relative">
-    <label class="fl">Assign Members</label>
+    <label class="fl" data-i18n="job.field.assignMembers">Assign Members</label>
     <input class="fc" id="job-member-search" placeholder="🔍 Search team member to add…" autocomplete="off"
       oninput="searchJobMember()" onfocus="searchJobMember()"/>
     <div id="job-member-results" style="display:none;position:absolute;top:auto;left:0;right:0;background:var(--bg2);border:1px solid var(--bor);border-radius:8px;z-index:200;max-height:200px;overflow-y:auto;box-shadow:0 6px 18px rgba(0,0,0,.18);margin-top:2px"></div>
@@ -2065,66 +2065,66 @@ textarea.fc{resize:vertical;min-height:72px}
     <div id="job-members-checkboxes" style="display:none"></div>
   </div>
   <div class="fg" id="job-payment-wrap" style="display:none">
-    <label class="fl">Installer Payment</label>
+    <label class="fl" data-i18n="job.field.installerPay">Installer Payment</label>
     <!-- shown to non-admin/manager -->
     <div id="job-pay-locked" style="display:none;background:var(--bg3);border-radius:10px;padding:12px 14px">
-      <div id="job-pay-locked-msg" style="display:flex;align-items:center;gap:10px;color:var(--t3);font-size:13px"><span style="font-size:18px">🔒</span>Only admins and managers can set installer payment</div>
+      <div id="job-pay-locked-msg" style="display:flex;align-items:center;gap:10px;color:var(--t3);font-size:13px"><span style="font-size:18px">🔒</span><span data-i18n="job.pay.adminOnly">Only admins and managers can set installer payment</span></div>
       <div id="job-pay-locked-value" style="display:none;display:flex;align-items:center;gap:10px"><span style="font-size:18px">🔒</span><div><div id="job-pay-locked-amt" style="font-size:14px;font-weight:600;color:var(--ok)"></div><div style="font-size:11px;color:var(--t3);margin-top:2px">Payment set — admin/manager access required to edit</div></div></div>
     </div>
     <!-- shown to admin/manager -->
     <div id="job-pay-form" style="display:none;background:var(--bg3);border-radius:10px;padding:14px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
         <div>
-          <label class="fl">Pay Type</label>
+          <label class="fl" data-i18n="job.pay.type">Pay Type</label>
           <select class="fc" id="job-pay-type" onchange="togglePayFields()">
-            <option value="none">No payment set</option>
-            <option value="flat">Flat fee</option>
-            <option value="hourly">Hourly rate</option>
+            <option value="none" data-i18n="job.pay.none">No payment set</option>
+            <option value="flat" data-i18n="job.pay.flat">Flat fee</option>
+            <option value="hourly" data-i18n="job.pay.hourly">Hourly rate</option>
           </select>
         </div>
         <div id="job-pay-flat-wrap" style="display:none">
-          <label class="fl">Amount ($)</label>
+          <label class="fl" data-i18n="job.pay.amount">Amount ($)</label>
           <input class="fc" type="number" id="job-pay-flat" min="0" step="0.01" placeholder="0.00"/>
         </div>
         <div id="job-pay-hourly-rate-wrap" style="display:none">
-          <label class="fl">Hourly Rate ($)</label>
+          <label class="fl" data-i18n="job.pay.hourlyRate">Hourly Rate ($)</label>
           <input class="fc" type="number" id="job-pay-rate" min="0" step="0.01" placeholder="0.00"/>
         </div>
       </div>
       <div id="job-pay-hourly-hours-row" style="display:none;margin-bottom:10px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div><label class="fl">Hours</label><input class="fc" type="number" id="job-pay-hours" min="0" step="0.25" placeholder="0"/></div>
+          <div><label class="fl" data-i18n="job.pay.hours">Hours</label><input class="fc" type="number" id="job-pay-hours" min="0" step="0.25" placeholder="0"/></div>
           <div id="job-pay-total" style="display:flex;align-items:flex-end;font-size:13px;color:var(--ok);font-weight:600;padding-bottom:6px"></div>
         </div>
       </div>
       <div id="job-pay-flat-total" style="font-size:13px;color:var(--ok);font-weight:600;margin-bottom:8px"></div>
       <div id="job-pay-installer-wrap" style="display:none">
-        <label class="fl">Assign Installer</label>
+        <label class="fl" data-i18n="job.pay.assignInstaller">Assign Installer</label>
         <select class="fc" id="job-pay-installer"></select>
       </div>
     </div>
   </div>
-  <div class="fg" style="margin-bottom:10px"><label class="fl">Description / Scope of Work</label><textarea class="fc" id="job-desc" style="min-height:64px;resize:vertical"></textarea></div>
+  <div class="fg" style="margin-bottom:10px"><label class="fl" data-i18n="job.field.description">Description / Scope of Work</label><textarea class="fc" id="job-desc" style="min-height:64px;resize:vertical"></textarea></div>
 
   <!-- Checklist -->
   <div class="fg" style="margin-bottom:10px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <label class="fl" style="margin:0">Checklist / Tasks</label>
-      <button class="btn btn-o btn-sm" onclick="addChecklistItem('',false)">+ Add Item</button>
+      <label class="fl" style="margin:0" data-i18n="job.field.checklist">Checklist / Tasks</label>
+      <button class="btn btn-o btn-sm" onclick="addChecklistItem('',false)" data-i18n="job.field.addItem">+ Add Item</button>
     </div>
     <div id="job-checklist-items"></div>
   </div>
 
   <!-- Photos -->
   <div class="fg" style="margin-bottom:10px">
-    <label class="fl">Reference / Artwork Photos</label>
+    <label class="fl" data-i18n="job.field.photos">Reference / Artwork Photos</label>
     <input type="file" accept="image/*" multiple class="fc" onchange="handleJobPhotos(event)" style="margin-bottom:6px"/>
     <div id="job-photo-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px"></div>
   </div>
 
   <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
-    <button class="btn btn-o" onclick="closeM('jobModal')">Cancel</button>
-    <button class="btn btn-p" onclick="saveJob()">💾 Save Job</button>
+    <button class="btn btn-o" onclick="closeM('jobModal')" data-i18n="btn.cancel">Cancel</button>
+    <button class="btn btn-p" onclick="saveJob()">💾 <span data-i18n="job.btn.save">Save Job</span></button>
   </div>
 </div>
 </div>
@@ -2807,6 +2807,30 @@ var STRINGS = {
     'fin.status.voided':'Voided','fin.status.refunded':'Refunded',
     'fin.period.today':'Today','fin.period.week':'This Week','fin.period.month':'This Month',
     'job.newTitle':'New Job','job.editTitle':'Edit Job',
+    'job.btn.save':'Save Job',
+    'job.field.title':'Job Title *','job.field.rush':'Rush','job.field.serviceType':'Service Type',
+    'job.field.priority':'Priority','job.field.startDate':'Start Date','job.field.dueDate':'Due Date',
+    'job.field.estHours':'Est. Hours','job.field.materialCost':'Material Cost ($)',
+    'job.field.linkedInv':'Linked Invoice','job.field.linkedEst':'Linked Estimate',
+    'job.field.voidReason':'Void Reason','job.field.voidReasonPh':'Why was this job voided?',
+    'job.field.assignMembers':'Assign Members','job.field.installerPay':'Installer Payment',
+    'job.field.description':'Description / Scope of Work',
+    'job.field.checklist':'Checklist / Tasks','job.field.addItem':'+ Add Item',
+    'job.field.photos':'Reference / Artwork Photos',
+    'job.svc.webDesign':'Web Design','job.svc.print':'Print / Banners','job.svc.largeFormat':'Large Format Signs',
+    'job.svc.windowWraps':'Window Wraps','job.svc.vehicleWraps':'Vehicle Wraps','job.svc.signs':'Signs & Awnings',
+    'job.svc.install':'Install','job.svc.designOnly':'Design Only','job.svc.other':'Other',
+    'job.priority.low':'🟢 Low','job.priority.med':'🟡 Medium','job.priority.high':'🔴 High',
+    'job.specs.title':'🖨 Print / Production Specs',
+    'job.specs.material':'Material / Substrate','job.specs.materialPh':'e.g. Vinyl, Coroplast',
+    'job.specs.size':'Size (W × H)','job.specs.qty':'Quantity','job.specs.finish':'Finish / Laminate',
+    'job.specs.finishNone':'— None —','job.specs.installAddr':'Install Address / Location',
+    'job.specs.installAddrPh':'Where will this be installed?','job.specs.prodNotes':'Production Notes',
+    'job.specs.prodNotesPh':'Color specs, bleed, file format, special instructions…',
+    'job.pay.adminOnly':'Only admins and managers can set installer payment',
+    'job.pay.type':'Pay Type','job.pay.none':'No payment set','job.pay.flat':'Flat fee',
+    'job.pay.hourly':'Hourly rate','job.pay.amount':'Amount ($)','job.pay.hourlyRate':'Hourly Rate ($)',
+    'job.pay.hours':'Hours','job.pay.assignInstaller':'Assign Installer',
     'crm.newTitle':'New Client','crm.editTitle':'Edit Client',
     'btn.view':'View','btn.archive':'Archive','btn.restore':'Restore',
     'inv.col.num':'#','inv.col.client':'Client','inv.col.services':'Services',
@@ -3034,6 +3058,30 @@ var STRINGS = {
     'fin.status.voided':'Anulado','fin.status.refunded':'Reembolsado',
     'fin.period.today':'Hoy','fin.period.week':'Esta Semana','fin.period.month':'Este Mes',
     'job.newTitle':'Nuevo Trabajo','job.editTitle':'Editar Trabajo',
+    'job.btn.save':'Guardar Trabajo',
+    'job.field.title':'Título del Trabajo *','job.field.rush':'Urgente','job.field.serviceType':'Tipo de Servicio',
+    'job.field.priority':'Prioridad','job.field.startDate':'Fecha de Inicio','job.field.dueDate':'Fecha de Entrega',
+    'job.field.estHours':'Horas Est.','job.field.materialCost':'Costo de Material ($)',
+    'job.field.linkedInv':'Factura Vinculada','job.field.linkedEst':'Cotización Vinculada',
+    'job.field.voidReason':'Motivo de Anulación','job.field.voidReasonPh':'¿Por qué se anuló este trabajo?',
+    'job.field.assignMembers':'Asignar Miembros','job.field.installerPay':'Pago al Instalador',
+    'job.field.description':'Descripción / Alcance del Trabajo',
+    'job.field.checklist':'Lista de Tareas','job.field.addItem':'+ Agregar',
+    'job.field.photos':'Fotos de Referencia / Arte',
+    'job.svc.webDesign':'Diseño Web','job.svc.print':'Impresión / Lonas','job.svc.largeFormat':'Señales Gran Formato',
+    'job.svc.windowWraps':'Wraps de Ventanas','job.svc.vehicleWraps':'Wraps de Vehículos','job.svc.signs':'Letreros y Toldos',
+    'job.svc.install':'Instalación','job.svc.designOnly':'Solo Diseño','job.svc.other':'Otro',
+    'job.priority.low':'🟢 Baja','job.priority.med':'🟡 Media','job.priority.high':'🔴 Alta',
+    'job.specs.title':'🖨 Especificaciones de Producción',
+    'job.specs.material':'Material / Sustrato','job.specs.materialPh':'ej. Vinil, Coroplast',
+    'job.specs.size':'Tamaño (A × A)','job.specs.qty':'Cantidad','job.specs.finish':'Acabado / Laminado',
+    'job.specs.finishNone':'— Ninguno —','job.specs.installAddr':'Dirección de Instalación',
+    'job.specs.installAddrPh':'¿Dónde se instalará?','job.specs.prodNotes':'Notas de Producción',
+    'job.specs.prodNotesPh':'Colores, sangría, formato de archivo, instrucciones especiales…',
+    'job.pay.adminOnly':'Solo admins y managers pueden configurar el pago al instalador',
+    'job.pay.type':'Tipo de Pago','job.pay.none':'Sin pago asignado','job.pay.flat':'Tarifa fija',
+    'job.pay.hourly':'Tarifa por hora','job.pay.amount':'Monto ($)','job.pay.hourlyRate':'Tarifa por Hora ($)',
+    'job.pay.hours':'Horas','job.pay.assignInstaller':'Asignar Instalador',
     'crm.newTitle':'Nuevo Cliente','crm.editTitle':'Editar Cliente',
     'btn.view':'Ver','btn.archive':'Archivar','btn.restore':'Restaurar',
     'inv.col.num':'#','inv.col.client':'Cliente','inv.col.services':'Servicios',
