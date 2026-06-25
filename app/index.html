@@ -1033,14 +1033,14 @@ textarea.fc{resize:vertical;min-height:72px}
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select id="an-period" class="fc" style="padding:6px 10px;font-size:12px" onchange="renderAnalytics()">
-            <option value="week">This Week</option>
-            <option value="month" selected>This Month</option>
-            <option value="quarter">This Quarter</option>
-            <option value="year">This Year</option>
-            <option value="all">All Time</option>
+            <option value="week" data-i18n="an.period.week">This Week</option>
+            <option value="month" selected data-i18n="an.period.month">This Month</option>
+            <option value="quarter" data-i18n="an.period.quarter">This Quarter</option>
+            <option value="year" data-i18n="an.period.year">This Year</option>
+            <option value="all" data-i18n="an.period.all">All Time</option>
           </select>
-          <button class="btn btn-o btn-sm" onclick="exportAnalyticsCSV()">⬇ Export CSV</button>
-          <button class="btn btn-o btn-sm" onclick="window.print()">🖨 Print</button>
+          <button class="btn btn-o btn-sm" onclick="exportAnalyticsCSV()" data-i18n="an.export.csv">⬇ Export CSV</button>
+          <button class="btn btn-o btn-sm" onclick="window.print()" data-i18n="an.print">🖨 Print</button>
         </div>
       </div>
       <!-- Tab bar -->
@@ -3015,6 +3015,107 @@ var STRINGS = {
     'fin.col.amount':'Amount','fin.col.type':'Type','fin.col.status':'Status',
     // ── Last updated
     'dash.lastUpdated':'Last updated','dash.autoRefresh':'Auto-refreshes every 60s',
+    // ── Analytics page
+    'an.title':'📊 Financial Reports','an.subtitle':'CFO-grade reporting suite',
+    'an.tab.overview':'Overview','an.tab.pl':'P&L','an.tab.ar':'AR & Cash',
+    'an.tab.sales':'Sales','an.tab.clients':'Clients','an.tab.ops':'Operations','an.tab.forecast':'Forecast',
+    'an.period.week':'This Week','an.period.month':'This Month','an.period.quarter':'This Quarter',
+    'an.period.year':'This Year','an.period.all':'All Time',
+    'an.months':'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec',
+    'an.export.csv':'⬇ Export CSV','an.print':'🖨 Print','an.export.ar':'⬇ Export AR',
+    'an.export.clients':'⬇ Export','an.export.team':'⬇ Export',
+    'an.generated':'Generated:','an.period.lbl':'Period:',
+    // KPI labels
+    'an.kpi.revenue':'Revenue','an.kpi.grossProfit':'Gross Profit','an.kpi.arOutstanding':'AR Outstanding',
+    'an.kpi.dso':'DSO','an.kpi.convRate':'Conversion Rate','an.kpi.pipeline':'Pipeline Value',
+    'an.kpi.avgInv':'Avg Invoice','an.kpi.clv':'CLV','an.kpi.grossRevenue':'Gross Revenue',
+    'an.kpi.laborCost':'Labor Cost','an.kpi.vsPrior':'vs Prior Period','an.kpi.totalAR':'Total AR',
+    'an.kpi.collected':'Collected','an.kpi.overdue30':'Overdue (30d+)',
+    'an.kpi.totalSales':'Total Sales','an.kpi.invRevenue':'Invoice Revenue',
+    'an.kpi.posRevenue':'POS Revenue','an.kpi.avgSale':'Avg Sale Value',
+    'an.kpi.totalClients':'Total Clients','an.kpi.avgClv':'Avg CLV','an.kpi.revConc':'Revenue Concentration',
+    'an.kpi.jobCompletion':'Job Completion Rate','an.kpi.onTimeRate':'On-Time Rate',
+    'an.kpi.overdueJobs':'Overdue Jobs','an.kpi.avgJobVal':'Avg Job Value',
+    'an.kpi.forecast3mo':'3-Mo Forecast','an.kpi.bestCase':'Best Case','an.kpi.worstCase':'Worst Case',
+    // Section titles
+    'an.sec.monthly':'Monthly Revenue','an.sec.revByService':'Revenue by Service',
+    'an.sec.topClients':'Top Clients','an.sec.keyRatios':'Key Ratios',
+    'an.sec.incomeStatement':'Income Statement','an.sec.periodComparison':'Period Comparison',
+    'an.sec.revBreakdown':'Revenue Breakdown by Service','an.sec.invoiceDetail':'Invoice Detail',
+    'an.sec.arAging':'AR Aging Schedule','an.sec.cashFlow':'Cash Flow',
+    'an.sec.openInvoices':'Open Invoices — Aging Detail',
+    'an.sec.monthlySales':'Monthly Sales','an.sec.estFunnel':'Estimate Conversion Funnel',
+    'an.sec.revByServicePeriod':'Revenue by Service','an.sec.salesVelocity':'Sales Velocity',
+    'an.sec.clientRevenue':'Client Revenue','an.sec.clientMetrics':'Client Metrics',
+    'an.sec.clientReport':'Client Profitability Report',
+    'an.sec.jobPipeline':'Job Pipeline Status','an.sec.laborCost':'Labor Cost Analysis',
+    'an.sec.teamPerf':'Team Performance Report',
+    'an.sec.revTrend':'Revenue Trend & 3-Month Forecast','an.sec.forecastAssumptions':'Forecast Assumptions',
+    'an.sec.forecastDetail':'3-Month Forecast Detail',
+    // KPI subs / misc labels
+    'an.invoicesPaid':'invoices paid','an.openInvoices':'open invoices','an.newAccounts':'New accounts',
+    'an.allAccounts':'All accounts','an.cashReceived':'Cash received',
+    'an.dsoSub':'Days Sales Outstanding','an.perInvoice':'Per invoice','an.openEst':'Open estimates',
+    'an.ltvPerClient':'Lifetime value / client','an.top3share':'Top 3 clients share',
+    'an.jobsOnSchedule':'Jobs delivered on schedule','an.reqAttn':'Requires attention',
+    'an.allOnTrack':'All on track','an.revPerJob':'Revenue / completed job',
+    'an.based6mo':'Based on 6-month trend','an.upside20':'+20% upside scenario',
+    'an.cons20':'-20% conservative scenario','an.openEstWin':'Open estimates · ','an.winRateSuffix':'% win rate',
+    'an.accrualBasis':'Accrual basis',
+    // Row labels
+    'an.r.grossMargin':'Gross Margin','an.r.collectionRate':'Collection Rate',
+    'an.r.jobCompRate':'Job Completion Rate','an.r.estWinRate':'Estimate Win Rate',
+    'an.r.revPerEmp':'Revenue / Employee','an.r.overdueJobs':'Overdue Jobs',
+    'an.r.avgJobVal':'Avg Job Value','an.r.pipelineRev':'Pipeline / Revenue',
+    'an.r.revenue':'REVENUE','an.r.totalRevenue':'Total Revenue',
+    'an.r.costOfLabor':'COST OF LABOR','an.r.installerPay':'Installer / Labor Payments',
+    'an.r.totalCost':'Total Cost','an.r.grossProfit':'GROSS PROFIT','an.r.grossMargin':'Gross Margin',
+    'an.r.netOpIncome':'Net Operating Income',
+    'an.cash.collected':'Invoices Collected','an.cash.pos':'POS Sales',
+    'an.cash.labor':'Labor Paid Out','an.cash.est':'Outstanding Estimates',
+    'an.cash.net':'Net Cash Position','an.totalAR':'Total AR',
+    'an.sl.best':'Best:','an.sl.total':'Total:',
+    'an.sl.estimatesSent':'Estimates Sent','an.sl.underReview':'Under Review',
+    'an.sl.acceptedWon':'Accepted / Won','an.sl.rejectedLost':'Rejected / Lost',
+    'an.sl.winRate':'Win Rate:','an.sl.avgEst':'Avg Est Value:','an.sl.pipeline':'Pipeline:',
+    'an.sl.revPerDay':'Revenue / Day','an.sl.invPerDay':'Invoices / Day',
+    'an.sl.avgDaysClose':'Avg Days to Close','an.sl.bestMonth':'Best Month',
+    'an.sl.totalAllTime':'Total All-Time Revenue','an.sl.allTimeCount':'All-Time Invoice Count',
+    'an.sl.yoyGrowth':'YoY Growth',
+    'an.cli.activePeriod':'Active Clients (period)','an.cli.newPeriod':'New This Period',
+    'an.cli.returning':'Returning Clients','an.cli.avgRev':'Avg Revenue / Client',
+    'an.cli.highestCLV':'Highest CLV Client','an.cli.top3conc':'Top 3 Concentration',
+    'an.cli.revPerEmp':'Revenue / Employee',
+    'an.ops.pending':'Pending','an.ops.inProgress':'In Progress','an.ops.done':'Done','an.ops.overdue':'Overdue',
+    'an.ops.totalLaborCost':'Total Labor Cost','an.ops.laborPct':'Labor % of Revenue',
+    'an.ops.grossProfitAfter':'Gross Profit After Labor','an.ops.paidInstallers':'Paid Installers (period)',
+    'an.ops.pendingPayments':'Pending Payments','an.ops.totals':'Totals',
+    'an.fc.avgMo':'6-Month Avg Revenue','an.fc.trend':'Monthly Trend (slope)',
+    'an.fc.nextMo':'Next Month Forecast','an.fc.pipelineClose':'Pipeline Expected Close',
+    'an.fc.total3mo':'Total 3-Mo Projected','an.fc.requiredGrowth':'Required MoM Growth',
+    'an.fc.onTrack':'On track','an.fc.actual':'Actual','an.fc.forecast':'Forecast',
+    'an.fc.subtitleTrend':'Based on 6-month trend','an.fc.subtitleBest':'+20% upside scenario',
+    'an.fc.subtitleWorst':'-20% conservative scenario','an.fc.openEst':'Open estimates',
+    'an.fc.winRate':'win rate','an.fc.recovery':'recovery',
+    'an.sec.fc3moDetail':'3-Month Forecast Detail','an.fc.3moTotal':'3-Month Total',
+    'an.kpi.pipelineVal':'Pipeline Value',
+    // Table headers
+    'an.th.metric':'Metric','an.th.priorPeriod':'Prior Period','an.th.change':'Δ Change',
+    'an.th.invoice':'Invoice','an.th.client':'Client','an.th.issueDate':'Issue Date',
+    'an.th.ageDays':'Age (Days)','an.th.amount':'Amount','an.th.status':'Status',
+    'an.th.date':'Date','an.th.subtotal':'Subtotal','an.th.tax':'Tax',
+    'an.th.discount':'Discount','an.th.total':'Total',
+    'an.th.invoices':'Invoices','an.th.periodRevenue':'Period Revenue',
+    'an.th.lifetimeValue':'Lifetime Value','an.th.avgInvoice':'Avg Invoice','an.th.share':'Share %',
+    'an.th.teamMember':'Team Member','an.th.role':'Role','an.th.totalJobs':'Total Jobs',
+    'an.th.done':'Done','an.th.active':'Active','an.th.overdue':'Overdue','an.th.completion':'Completion %',
+    'an.th.month':'Month','an.th.conservative':'Conservative (-20%)','an.th.baseForecast':'Base Forecast',
+    'an.th.optimistic':'Optimistic (+20%)','an.th.pipelineContrib':'Pipeline Contrib.',
+    // Empty states
+    'an.noRevPeriod':'No revenue in period','an.noSvcData':'No service data',
+    'an.noOutstanding':'✅ No outstanding invoices',
+    'an.noTeamData':'Add team members and assign them to jobs to see performance data',
+    'an.noPaidInv':'No paid invoices in period',
     // ── Intake Wizard
     'wiz.title':'New Order Intake',
     'wiz.back':'← Back','wiz.next':'Next →','wiz.create':'🚀 Create Order','wiz.creating':'⏳ Creating…',
@@ -3353,6 +3454,107 @@ var STRINGS = {
     'fin.col.amount':'Monto','fin.col.type':'Tipo','fin.col.status':'Estado',
     // ── Last updated
     'dash.lastUpdated':'Última actualización','dash.autoRefresh':'Se actualiza cada 60s',
+    // ── Analytics page
+    'an.title':'📊 Informes Financieros','an.subtitle':'Suite de informes nivel CFO',
+    'an.tab.overview':'Resumen','an.tab.pl':'P&G','an.tab.ar':'CxC y Caja',
+    'an.tab.sales':'Ventas','an.tab.clients':'Clientes','an.tab.ops':'Operaciones','an.tab.forecast':'Pronóstico',
+    'an.period.week':'Esta Semana','an.period.month':'Este Mes','an.period.quarter':'Este Trimestre',
+    'an.period.year':'Este Año','an.period.all':'Todo el Tiempo',
+    'an.months':'Ene,Feb,Mar,Abr,May,Jun,Jul,Ago,Sep,Oct,Nov,Dic',
+    'an.export.csv':'⬇ Exportar CSV','an.print':'🖨 Imprimir','an.export.ar':'⬇ Exportar CxC',
+    'an.export.clients':'⬇ Exportar','an.export.team':'⬇ Exportar',
+    'an.generated':'Generado:','an.period.lbl':'Período:',
+    // KPI labels
+    'an.kpi.revenue':'Ingresos','an.kpi.grossProfit':'Utilidad Bruta','an.kpi.arOutstanding':'CxC Pendiente',
+    'an.kpi.dso':'DSO','an.kpi.convRate':'Tasa de Conversión','an.kpi.pipeline':'Valor del Pipeline',
+    'an.kpi.avgInv':'Factura Promedio','an.kpi.clv':'VLC','an.kpi.grossRevenue':'Ingresos Brutos',
+    'an.kpi.laborCost':'Costo de Mano de Obra','an.kpi.vsPrior':'vs Período Anterior','an.kpi.totalAR':'CxC Total',
+    'an.kpi.collected':'Cobrado','an.kpi.overdue30':'Vencido (30d+)',
+    'an.kpi.totalSales':'Ventas Totales','an.kpi.invRevenue':'Ingresos por Facturas',
+    'an.kpi.posRevenue':'Ingresos POS','an.kpi.avgSale':'Venta Promedio',
+    'an.kpi.totalClients':'Total Clientes','an.kpi.avgClv':'VLC Promedio','an.kpi.revConc':'Concentración de Ingresos',
+    'an.kpi.jobCompletion':'Tasa de Finalización','an.kpi.onTimeRate':'Tasa a Tiempo',
+    'an.kpi.overdueJobs':'Trabajos Vencidos','an.kpi.avgJobVal':'Valor Promedio de Trabajo',
+    'an.kpi.forecast3mo':'Pronóstico 3 Meses','an.kpi.bestCase':'Mejor Escenario','an.kpi.worstCase':'Peor Escenario',
+    // Section titles
+    'an.sec.monthly':'Ingresos Mensuales','an.sec.revByService':'Ingresos por Servicio',
+    'an.sec.topClients':'Mejores Clientes','an.sec.keyRatios':'Indicadores Clave',
+    'an.sec.incomeStatement':'Estado de Resultados','an.sec.periodComparison':'Comparación de Períodos',
+    'an.sec.revBreakdown':'Desglose de Ingresos por Servicio','an.sec.invoiceDetail':'Detalle de Facturas',
+    'an.sec.arAging':'Antigüedad de CxC','an.sec.cashFlow':'Flujo de Caja',
+    'an.sec.openInvoices':'Facturas Abiertas — Detalle de Antigüedad',
+    'an.sec.monthlySales':'Ventas Mensuales','an.sec.estFunnel':'Embudo de Conversión de Cotizaciones',
+    'an.sec.revByServicePeriod':'Ingresos por Servicio','an.sec.salesVelocity':'Velocidad de Ventas',
+    'an.sec.clientRevenue':'Ingresos por Cliente','an.sec.clientMetrics':'Métricas de Clientes',
+    'an.sec.clientReport':'Reporte de Rentabilidad por Cliente',
+    'an.sec.jobPipeline':'Estado del Pipeline de Trabajos','an.sec.laborCost':'Análisis de Costo Laboral',
+    'an.sec.teamPerf':'Reporte de Desempeño del Equipo',
+    'an.sec.revTrend':'Tendencia de Ingresos y Pronóstico 3 Meses','an.sec.forecastAssumptions':'Supuestos del Pronóstico',
+    'an.sec.forecastDetail':'Detalle del Pronóstico a 3 Meses',
+    // KPI subs / misc labels
+    'an.invoicesPaid':'facturas pagadas','an.openInvoices':'facturas abiertas','an.newAccounts':'Cuentas nuevas',
+    'an.allAccounts':'Todas las cuentas','an.cashReceived':'Efectivo recibido',
+    'an.dsoSub':'Días de Ventas Pendientes','an.perInvoice':'Por factura','an.openEst':'Cotizaciones abiertas',
+    'an.ltvPerClient':'Valor de vida / cliente','an.top3share':'Participación top 3 clientes',
+    'an.jobsOnSchedule':'Trabajos entregados a tiempo','an.reqAttn':'Requiere atención',
+    'an.allOnTrack':'Todo al día','an.revPerJob':'Ingresos / trabajo terminado',
+    'an.based6mo':'Basado en tendencia de 6 meses','an.upside20':'+20% escenario optimista',
+    'an.cons20':'-20% escenario conservador','an.openEstWin':'Cotizaciones abiertas · ','an.winRateSuffix':'% tasa de cierre',
+    'an.accrualBasis':'Base devengado',
+    // Row labels
+    'an.r.grossMargin':'Margen Bruto','an.r.collectionRate':'Tasa de Cobro',
+    'an.r.jobCompRate':'Tasa de Finalización','an.r.estWinRate':'Tasa de Cierre de Cotizaciones',
+    'an.r.revPerEmp':'Ingresos / Empleado','an.r.overdueJobs':'Trabajos Vencidos',
+    'an.r.avgJobVal':'Valor Promedio de Trabajo','an.r.pipelineRev':'Pipeline / Ingresos',
+    'an.r.revenue':'INGRESOS','an.r.totalRevenue':'Total Ingresos',
+    'an.r.costOfLabor':'COSTO DE MANO DE OBRA','an.r.installerPay':'Pagos a Instaladores / Mano de Obra',
+    'an.r.totalCost':'Total Costos','an.r.grossProfit':'UTILIDAD BRUTA','an.r.grossMargin':'Margen Bruto',
+    'an.r.netOpIncome':'Ingreso Neto Operativo',
+    'an.cash.collected':'Facturas Cobradas','an.cash.pos':'Ventas POS',
+    'an.cash.labor':'Mano de Obra Pagada','an.cash.est':'Cotizaciones Pendientes',
+    'an.cash.net':'Posición Neta de Caja','an.totalAR':'CxC Total',
+    'an.sl.best':'Mejor:','an.sl.total':'Total:',
+    'an.sl.estimatesSent':'Cotizaciones Enviadas','an.sl.underReview':'En Revisión',
+    'an.sl.acceptedWon':'Aceptadas / Ganadas','an.sl.rejectedLost':'Rechazadas / Perdidas',
+    'an.sl.winRate':'Tasa de Cierre:','an.sl.avgEst':'Valor Promedio Cot.:','an.sl.pipeline':'Pipeline:',
+    'an.sl.revPerDay':'Ingresos / Día','an.sl.invPerDay':'Facturas / Día',
+    'an.sl.avgDaysClose':'Días Promedio para Cerrar','an.sl.bestMonth':'Mejor Mes',
+    'an.sl.totalAllTime':'Ingresos Totales Históricos','an.sl.allTimeCount':'Total Facturas Históricas',
+    'an.sl.yoyGrowth':'Crecimiento Anual',
+    'an.cli.activePeriod':'Clientes Activos (período)','an.cli.newPeriod':'Nuevos Este Período',
+    'an.cli.returning':'Clientes Recurrentes','an.cli.avgRev':'Ingresos Promedio / Cliente',
+    'an.cli.highestCLV':'Cliente con Mayor VLC','an.cli.top3conc':'Concentración Top 3',
+    'an.cli.revPerEmp':'Ingresos / Empleado',
+    'an.ops.pending':'Pendiente','an.ops.inProgress':'En Proceso','an.ops.done':'Completado','an.ops.overdue':'Vencido',
+    'an.ops.totalLaborCost':'Costo Total de Mano de Obra','an.ops.laborPct':'% Mano de Obra sobre Ingresos',
+    'an.ops.grossProfitAfter':'Utilidad Bruta Después de Mano de Obra','an.ops.paidInstallers':'Instaladores Pagados (período)',
+    'an.ops.pendingPayments':'Pagos Pendientes','an.ops.totals':'Totales',
+    'an.fc.avgMo':'Promedio 6 Meses','an.fc.trend':'Tendencia Mensual (pendiente)',
+    'an.fc.nextMo':'Pronóstico Próximo Mes','an.fc.pipelineClose':'Cierre Esperado del Pipeline',
+    'an.fc.total3mo':'Total Proyectado 3 Meses','an.fc.requiredGrowth':'Crecimiento MoM Requerido',
+    'an.fc.onTrack':'En camino','an.fc.actual':'Real','an.fc.forecast':'Pronóstico',
+    'an.fc.subtitleTrend':'Basado en tendencia 6 meses','an.fc.subtitleBest':'+20% escenario optimista',
+    'an.fc.subtitleWorst':'-20% escenario conservador','an.fc.openEst':'Estimados abiertos',
+    'an.fc.winRate':'tasa de cierre','an.fc.recovery':'recuperación',
+    'an.sec.fc3moDetail':'Detalle Pronóstico 3 Meses','an.fc.3moTotal':'Total 3 Meses',
+    'an.kpi.pipelineVal':'Valor Pipeline',
+    // Table headers
+    'an.th.metric':'Métrica','an.th.priorPeriod':'Período Anterior','an.th.change':'Δ Cambio',
+    'an.th.invoice':'Factura','an.th.client':'Cliente','an.th.issueDate':'Fecha Emisión',
+    'an.th.ageDays':'Antigüedad (Días)','an.th.amount':'Monto','an.th.status':'Estado',
+    'an.th.date':'Fecha','an.th.subtotal':'Subtotal','an.th.tax':'IVA',
+    'an.th.discount':'Descuento','an.th.total':'Total',
+    'an.th.invoices':'Facturas','an.th.periodRevenue':'Ingresos del Período',
+    'an.th.lifetimeValue':'Valor de Vida','an.th.avgInvoice':'Factura Promedio','an.th.share':'% Participación',
+    'an.th.teamMember':'Miembro del Equipo','an.th.role':'Rol','an.th.totalJobs':'Total Trabajos',
+    'an.th.done':'Completados','an.th.active':'Activos','an.th.overdue':'Vencidos','an.th.completion':'% Completado',
+    'an.th.month':'Mes','an.th.conservative':'Conservador (-20%)','an.th.baseForecast':'Pronóstico Base',
+    'an.th.optimistic':'Optimista (+20%)','an.th.pipelineContrib':'Contrib. Pipeline',
+    // Empty states
+    'an.noRevPeriod':'Sin ingresos en el período','an.noSvcData':'Sin datos de servicio',
+    'an.noOutstanding':'✅ Sin facturas pendientes',
+    'an.noTeamData':'Agrega miembros al equipo y asígnalos a trabajos para ver datos de desempeño',
+    'an.noPaidInv':'Sin facturas pagadas en el período',
     // ── Intake Wizard
     'wiz.title':'Nueva Orden de Trabajo',
     'wiz.back':'← Atrás','wiz.next':'Siguiente →','wiz.create':'🚀 Crear Orden','wiz.creating':'⏳ Creando…',
@@ -13446,7 +13648,7 @@ function buildReport(id) {
   var todayStr = today();
   var sel = (document.getElementById('mr-rpt-period')||{}).value || 'month';
   var yr = now.getFullYear(); var mo = now.getMonth();
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var months = t('an.months').split(',');
   var isAdmin = canEditPayment();
   var myId = currentUser ? currentUser.id : null;
 
@@ -15436,7 +15638,7 @@ function renderAnalytics() {
   var revPerEmp = (teamMembers&&teamMembers.length>0) ? revCur/teamMembers.length : 0;
 
   // Months data (for charts)
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var months = t('an.months').split(',');
   var mData=[], mDataPrev=[];
   for (var mi=0;mi<12;mi++) {
     var pfx = yr+'-'+(mi+1<10?'0':'')+(mi+1);
@@ -15456,11 +15658,11 @@ function renderAnalytics() {
 
   // Palette
   var pal = ['#6c63ff','#4caf7d','#f59e0b','#38bdf8','#ef4444','#a78bfa','#ec4899','#14b8a6'];
-  var periodLabel = {week:'This Week',month:'This Month',quarter:'This Quarter',year:'This Year',all:'All Time'}[period]||'Period';
+  var periodLabel = t('an.period.'+(period||'month'));
 
   // Update subtitle
   var gen = document.getElementById('an-generated');
-  if (gen) gen.textContent = 'Generated: '+now.toLocaleString([])+' · Period: '+periodLabel;
+  if (gen) gen.textContent = t('an.generated')+' '+now.toLocaleString([])+' · '+t('an.period.lbl')+' '+periodLabel;
 
   // ── Helper builders ───────────────────────────────────────────
   function anKpi(label,val,sub,color,delta) {
@@ -15505,25 +15707,25 @@ function renderAnalytics() {
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="an-ov-kpi1"></div>'+
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px" id="an-ov-kpi2"></div>'+
       '<div style="display:grid;grid-template-columns:1fr 280px;gap:16px;margin-bottom:18px">'+
-        '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>Monthly Revenue ('+yr+' vs '+(yr-1)+')</b></div><div class="chart-wrap"><canvas id="an-mo-chart"></canvas></div></div>'+
-        '<div class="card"><b>Revenue by Service</b><div class="chart-wrap" style="max-height:200px"><canvas id="an-cat-chart"></canvas></div></div>'+
+        '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>'+t('an.sec.monthly')+' ('+yr+' vs '+(yr-1)+')</b></div><div class="chart-wrap"><canvas id="an-mo-chart"></canvas></div></div>'+
+        '<div class="card"><b>'+t('an.sec.revByService')+'</b><div class="chart-wrap" style="max-height:200px"><canvas id="an-cat-chart"></canvas></div></div>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
-        '<div class="card"><b>Top Clients — '+periodLabel+'</b><div id="an-ov-clients" style="margin-top:12px"></div></div>'+
-        '<div class="card"><b>Key Ratios</b><div id="an-ov-ratios" style="margin-top:12px"></div></div>'+
+        '<div class="card"><b>'+t('an.sec.topClients')+' — '+periodLabel+'</b><div id="an-ov-clients" style="margin-top:12px"></div></div>'+
+        '<div class="card"><b>'+t('an.sec.keyRatios')+'</b><div id="an-ov-ratios" style="margin-top:12px"></div></div>'+
       '</div>';
 
     document.getElementById('an-ov-kpi1').innerHTML =
-      anKpi(periodLabel+' Revenue', fmt(revCur), paidCur.length+' invoices paid', '#6c63ff', growth)+
-      anKpi('Gross Profit', fmt(grossProfit), 'Margin: '+grossMargin.toFixed(1)+'%', grossMargin>=40?'#4caf7d':'#f59e0b', null)+
-      anKpi('AR Outstanding', fmt(arTotal), unpaid.length+' open invoices', arTotal>0?'#f59e0b':'#4caf7d', null)+
-      anKpi('DSO', dso+'d', 'Days Sales Outstanding', dso<30?'#4caf7d':dso<60?'#f59e0b':'#ef4444', null);
+      anKpi(periodLabel+' '+t('an.kpi.revenue'), fmt(revCur), paidCur.length+' '+t('an.invoicesPaid'), '#6c63ff', growth)+
+      anKpi(t('an.kpi.grossProfit'), fmt(grossProfit), t('an.r.grossMargin')+': '+grossMargin.toFixed(1)+'%', grossMargin>=40?'#4caf7d':'#f59e0b', null)+
+      anKpi(t('an.kpi.arOutstanding'), fmt(arTotal), unpaid.length+' '+t('an.openInvoices'), arTotal>0?'#f59e0b':'#4caf7d', null)+
+      anKpi(t('an.kpi.dso'), dso+'d', t('an.dsoSub'), dso<30?'#4caf7d':dso<60?'#f59e0b':'#ef4444', null);
 
     document.getElementById('an-ov-kpi2').innerHTML =
-      anKpi('Conversion Rate', convRate+'%', wonCur.length+'/'+estCur.length+' estimates', convRate>=50?'#4caf7d':'#f59e0b', null)+
-      anKpi('Pipeline Value', fmt(pipelineVal), 'Open estimates', '#a78bfa', null)+
-      anKpi('Avg Invoice', fmt(paidCur.length>0?revCur/paidCur.length:0), periodLabel, '#38bdf8', null)+
-      anKpi('CLV', fmt(clv), 'Avg revenue/client', '#14b8a6', null);
+      anKpi(t('an.kpi.convRate'), convRate+'%', wonCur.length+'/'+estCur.length+' estimates', convRate>=50?'#4caf7d':'#f59e0b', null)+
+      anKpi(t('an.kpi.pipeline'), fmt(pipelineVal), t('an.openEst'), '#a78bfa', null)+
+      anKpi(t('an.kpi.avgInv'), fmt(paidCur.length>0?revCur/paidCur.length:0), periodLabel, '#38bdf8', null)+
+      anKpi(t('an.kpi.clv'), fmt(clv), t('an.ltvPerClient'), '#14b8a6', null);
 
     // Monthly chart
     setTimeout(function(){
@@ -15544,20 +15746,22 @@ function renderAnalytics() {
       ocEl.innerHTML = topCli.map(function(cid,i){
         var r=cliRevMap[cid]; var p=Math.round(r/maxC*100);
         return '<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px"><span style="font-weight:500">'+inits(cName(cid))+' '+cName(cid)+'</span><span style="font-weight:700;color:'+pal[i%pal.length]+'">'+fmt(r)+'</span></div>'+bar(p,pal[i%pal.length])+'</div>';
-      }).join('')||'<div class="empty">No revenue in period</div>';
+      }).join('')||'<div class="empty">'+t('an.noRevPeriod')+'</div>';
     }
 
     // Key ratios
+    var ocEl = document.getElementById('an-ov-clients');
+    if(!ocEl) { var ocEl2 = document.getElementById('an-ov-clients'); }
     var orEl = document.getElementById('an-ov-ratios');
     if(orEl) orEl.innerHTML=[
-      {l:'Gross Margin',v:grossMargin.toFixed(1)+'%',c:grossMargin>=40?'#4caf7d':grossMargin>=20?'#f59e0b':'#ef4444'},
-      {l:'Collection Rate',v:revAll>0?pct(revCur,revCur+arTotal):'—',c:'#38bdf8'},
-      {l:'Job Completion Rate',v:pct(jobsDone,jobsTotal),c:jobsDone/Math.max(1,jobsTotal)>=.7?'#4caf7d':'#f59e0b'},
-      {l:'Estimate Win Rate',v:convRate+'%',c:convRate>=50?'#4caf7d':'#f59e0b'},
-      {l:'Revenue / Employee',v:revPerEmp>0?fmt(revPerEmp):'—',c:'#6c63ff'},
-      {l:'Overdue Jobs',v:jobsOver,c:jobsOver>0?'#ef4444':'#4caf7d'},
-      {l:'Avg Job Value',v:fmt(avgJobVal),c:'#a78bfa'},
-      {l:'Pipeline / Revenue',v:revCur>0?Math.round(pipelineVal/revCur*100)+'%':'—',c:'#14b8a6'},
+      {l:t('an.r.grossMargin'),v:grossMargin.toFixed(1)+'%',c:grossMargin>=40?'#4caf7d':grossMargin>=20?'#f59e0b':'#ef4444'},
+      {l:t('an.r.collectionRate'),v:revAll>0?pct(revCur,revCur+arTotal):'—',c:'#38bdf8'},
+      {l:t('an.r.jobCompRate'),v:pct(jobsDone,jobsTotal),c:jobsDone/Math.max(1,jobsTotal)>=.7?'#4caf7d':'#f59e0b'},
+      {l:t('an.r.estWinRate'),v:convRate+'%',c:convRate>=50?'#4caf7d':'#f59e0b'},
+      {l:t('an.r.revPerEmp'),v:revPerEmp>0?fmt(revPerEmp):'—',c:'#6c63ff'},
+      {l:t('an.r.overdueJobs'),v:jobsOver,c:jobsOver>0?'#ef4444':'#4caf7d'},
+      {l:t('an.r.avgJobVal'),v:fmt(avgJobVal),c:'#a78bfa'},
+      {l:t('an.r.pipelineRev'),v:revCur>0?Math.round(pipelineVal/revCur*100)+'%':'—',c:'#14b8a6'},
     ].map(function(r){
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bor)">'+
         '<span style="font-size:12px;color:var(--t2)">'+r.l+'</span>'+
@@ -15580,60 +15784,60 @@ function renderAnalytics() {
 
     pl.innerHTML =
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'+
-        anKpi('Gross Revenue',fmt(revCur),'',growthColor(growth)+'',growth)+
-        anKpi('Labor Cost',fmt(laborCur),pct(laborCur,revCur)+' of revenue','#ef4444',null)+
-        anKpi('Gross Profit',fmt(grossProfit),grossMargin.toFixed(1)+'% margin',grossMargin>=40?'#4caf7d':'#f59e0b',null)+
-        anKpi('vs Prior Period',revPrev>0?fmt(revCur-revPrev):'—',growth!=null?(growth>=0?'▲':'▼')+Math.abs(growth).toFixed(1)+'%':'No prior data',growth==null?'var(--t3)':growth>=0?'#4caf7d':'#ef4444',null)+
+        anKpi(t('an.kpi.grossRevenue'),fmt(revCur),'',growthColor(growth)+'',growth)+
+        anKpi(t('an.kpi.laborCost'),fmt(laborCur),pct(laborCur,revCur)+' '+t('an.accrualBasis'),'#ef4444',null)+
+        anKpi(t('an.kpi.grossProfit'),fmt(grossProfit),grossMargin.toFixed(1)+'% '+t('an.r.grossMargin'),grossMargin>=40?'#4caf7d':'#f59e0b',null)+
+        anKpi(t('an.kpi.vsPrior'),revPrev>0?fmt(revCur-revPrev):'—',growth!=null?(growth>=0?'▲':'▼')+Math.abs(growth).toFixed(1)+'%':t('an.fc.onTrack'),growth==null?'var(--t3)':growth>=0?'#4caf7d':'#ef4444',null)+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">'+
         '<div class="card">'+
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><b>Income Statement — '+periodLabel+'</b><span style="font-size:11px;color:var(--t3)">Accrual basis</span></div>'+
-          plRow('REVENUE','','','',true)+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><b>'+t('an.sec.incomeStatement')+' — '+periodLabel+'</b><span style="font-size:11px;color:var(--t3)">'+t('an.accrualBasis')+'</span></div>'+
+          plRow(t('an.r.revenue'),'','','',true)+
           Object.keys(svcRev).map(function(k){ return plRow(k,fmt(svcRev[k]),'var(--t2)',true,false); }).join('')+
-          plRow('Total Revenue',fmt(revCur),'var(--acc)',false,true)+
+          plRow(t('an.r.totalRevenue'),fmt(revCur),'var(--acc)',false,true)+
           '<div style="height:10px"></div>'+
-          plRow('COST OF LABOR','','','',true)+
-          plRow('Installer / Labor Payments',fmt(laborCur),'var(--err)',true,false)+
-          plRow('Total Cost',fmt(laborCur),'var(--err)',false,true)+
+          plRow(t('an.r.costOfLabor'),'','','',true)+
+          plRow(t('an.r.installerPay'),fmt(laborCur),'var(--err)',true,false)+
+          plRow(t('an.r.totalCost'),fmt(laborCur),'var(--err)',false,true)+
           '<div style="height:10px"></div>'+
-          plRow('GROSS PROFIT',fmt(grossProfit),grossProfit>=0?'#4caf7d':'#ef4444',false,true)+
-          plRow('Gross Margin',grossMargin.toFixed(1)+'%',grossProfit>=0?'#4caf7d':'#ef4444',true,false)+
+          plRow(t('an.r.grossProfit'),fmt(grossProfit),grossProfit>=0?'#4caf7d':'#ef4444',false,true)+
+          plRow(t('an.r.grossMargin'),grossMargin.toFixed(1)+'%',grossProfit>=0?'#4caf7d':'#ef4444',true,false)+
           '<div style="height:10px"></div>'+
           '<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-top:8px">'+
-          plRow('Net Operating Income',fmt(netIncome),netIncome>=0?'#4caf7d':'#ef4444',false,true)+
+          plRow(t('an.r.netOpIncome'),fmt(netIncome),netIncome>=0?'#4caf7d':'#ef4444',false,true)+
           '</div>'+
         '</div>'+
         '<div class="card">'+
-          '<b>Period Comparison</b>'+
+          '<b>'+t('an.sec.periodComparison')+'</b>'+
           '<div style="margin-top:14px">'+
-          anTable(['Metric',periodLabel,'Prior Period','Δ Change'],[
-            ['Gross Revenue',fmt(revCur),fmt(revPrev),growth!=null?{html:'<span style="color:'+(growth>=0?'#4caf7d':'#ef4444')+'">'+(growth>=0?'+':'')+growth.toFixed(1)+'%</span>'}:'—'],
-            ['Labor Cost',fmt(laborCur),fmt(Math.max(0,revPrev-prevGross)),'—'],
-            ['Gross Profit',fmt(grossProfit),fmt(prevGross),prevGross>0?{html:'<span style="color:'+(grossProfit>=prevGross?'#4caf7d':'#ef4444')+'">'+(grossProfit>=prevGross?'▲':'▼')+'</span>'}:'—'],
-            ['Invoice Count',paidCur.length,paidPrev.length,(paidCur.length-paidPrev.length>=0?'+':'')+(paidCur.length-paidPrev.length)],
-            ['Avg Invoice',fmt(paidCur.length?revCur/paidCur.length:0),fmt(paidPrev.length?revPrev/paidPrev.length:0),'—'],
+          anTable([t('an.th.metric'),periodLabel,t('an.th.priorPeriod'),t('an.th.change')],[
+            [t('an.kpi.grossRevenue'),fmt(revCur),fmt(revPrev),growth!=null?{html:'<span style="color:'+(growth>=0?'#4caf7d':'#ef4444')+'">'+(growth>=0?'+':'')+growth.toFixed(1)+'%</span>'}:'—'],
+            [t('an.kpi.laborCost'),fmt(laborCur),fmt(Math.max(0,revPrev-prevGross)),'—'],
+            [t('an.kpi.grossProfit'),fmt(grossProfit),fmt(prevGross),prevGross>0?{html:'<span style="color:'+(grossProfit>=prevGross?'#4caf7d':'#ef4444')+'">'+(grossProfit>=prevGross?'▲':'▼')+'</span>'}:'—'],
+            [t('an.th.invoices'),paidCur.length,paidPrev.length,(paidCur.length-paidPrev.length>=0?'+':'')+(paidCur.length-paidPrev.length)],
+            [t('an.kpi.avgInv'),fmt(paidCur.length?revCur/paidCur.length:0),fmt(paidPrev.length?revPrev/paidPrev.length:0),'—'],
           ])+
           '</div>'+
           '<div style="height:16px"></div>'+
-          '<b>Revenue Breakdown by Service</b>'+
+          '<b>'+t('an.sec.revBreakdown')+'</b>'+
           '<div style="margin-top:12px">'+
           (Object.keys(svcRev).length ? Object.keys(svcRev).sort(function(a,b){return svcRev[b]-svcRev[a];}).map(function(k,i){
             var p=Math.round(svcRev[k]/Math.max(1,revCur)*100);
             return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--t2)">'+k+'</span><span style="font-weight:700;color:'+pal[i%pal.length]+'">'+fmt(svcRev[k])+' ('+p+'%)</span></div>'+bar(p,pal[i%pal.length])+'</div>';
-          }).join('') : '<div class="empty">No service data</div>')+
+          }).join('') : '<div class="empty">'+t('an.noSvcData')+'</div>')+
           '</div>'+
         '</div>'+
       '</div>'+
       '<div class="card">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
-          '<b>Invoice Detail — '+periodLabel+'</b>'+
-          '<span style="font-size:12px;color:var(--t3)">'+paidCur.length+' paid invoices</span>'+
+          '<b>'+t('an.sec.invoiceDetail')+' — '+periodLabel+'</b>'+
+          '<span style="font-size:12px;color:var(--t3)">'+paidCur.length+' '+t('an.invoicesPaid')+'</span>'+
         '</div>'+
-        (paidCur.length ? anTable(['Invoice','Client','Date','Subtotal','Tax','Discount','Total','Status'],
+        (paidCur.length ? anTable([t('an.th.invoice'),t('an.th.client'),t('an.th.date'),t('an.th.subtotal'),t('an.th.tax'),t('an.th.discount'),t('an.th.total'),t('an.th.status')],
           paidCur.slice().sort(function(a,b){return b.id-a.id;}).slice(0,20).map(function(inv){
-            return ['#'+String(inv.id).padStart(4,'0'),cName(inv.cid),inv.date,fmt(inv.sub),fmt(inv.tax),inv.disc>0?'-'+fmt(inv.disc):'—',{html:'<b>'+fmt(inv.grand)+'</b>'},{html:'<span style="color:#4caf7d;font-weight:600">paid</span>'}];
+            return ['#'+String(inv.id).padStart(4,'0'),cName(inv.cid),inv.date,fmt(inv.sub),fmt(inv.tax),inv.disc>0?'-'+fmt(inv.disc):'—',{html:'<b>'+fmt(inv.grand)+'</b>'},{html:'<span style="color:#4caf7d;font-weight:600">'+t('inv.status.paid')+'</span>'}];
           }),['','','','','',' ','<b>'+fmt(revCur)+'</b>','']
-        ) : '<div class="empty">No paid invoices in period</div>')+
+        ) : '<div class="empty">'+t('an.noPaidInv')+'</div>')+
       '</div>';
   }
 
@@ -15653,14 +15857,14 @@ function renderAnalytics() {
 
     arEl.innerHTML=
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'+
-        anKpi('Total AR',''+fmt(arTotal),unpaid.length+' open invoices',arTotal>0?'#f59e0b':'#4caf7d',null)+
-        anKpi('Collected '+periodLabel,fmt(cashIn),'Cash received','#4caf7d',null)+
-        anKpi('DSO',dso+'d','Days Sales Outstanding',dso<30?'#4caf7d':dso<60?'#f59e0b':'#ef4444',null)+
-        anKpi('Overdue (30d+)',fmt(sum(aged[1].rows)+sum(aged[2].rows)+sum(aged[3].rows)),aged[1].rows.length+aged[2].rows.length+aged[3].rows.length+' invoices','#ef4444',null)+
+        anKpi(t('an.kpi.totalAR'),''+fmt(arTotal),unpaid.length+' '+t('an.openInvoices'),arTotal>0?'#f59e0b':'#4caf7d',null)+
+        anKpi(t('an.kpi.collected')+' '+periodLabel,fmt(cashIn),t('an.cashReceived'),'#4caf7d',null)+
+        anKpi(t('an.kpi.dso'),dso+'d',t('an.dsoSub'),dso<30?'#4caf7d':dso<60?'#f59e0b':'#ef4444',null)+
+        anKpi(t('an.kpi.overdue30'),fmt(sum(aged[1].rows)+sum(aged[2].rows)+sum(aged[3].rows)),aged[1].rows.length+aged[2].rows.length+aged[3].rows.length+' '+t('an.th.invoices'),'#ef4444',null)+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">'+
         '<div class="card">'+
-          '<b>AR Aging Schedule</b>'+
+          '<b>'+t('an.sec.arAging')+'</b>'+
           '<div style="margin-top:14px">'+
           aged.map(function(b){
             var pct=arTotal>0?Math.round(b.total/arTotal*100):0;
@@ -15670,17 +15874,17 @@ function renderAnalytics() {
               '<div style="text-align:right"><span style="font-size:14px;font-weight:700;color:'+b.color+'">'+fmt(b.total)+'</span><span style="font-size:11px;color:var(--t3);margin-left:6px">'+b.rows.length+' inv · '+pct+'%</span></div></div>'+
               bar(pct,b.color)+'</div>';
           }).join('')+
-          '<div style="border-top:2px solid var(--bor);padding-top:10px;display:flex;justify-content:space-between"><b>Total AR</b><b>'+fmt(arTotal)+'</b></div>'+
+          '<div style="border-top:2px solid var(--bor);padding-top:10px;display:flex;justify-content:space-between"><b>'+t('an.totalAR')+'</b><b>'+fmt(arTotal)+'</b></div>'+
           '</div>'+
         '</div>'+
         '<div class="card">'+
-          '<b>Cash Flow — '+periodLabel+'</b>'+
+          '<b>'+t('an.sec.cashFlow')+' — '+periodLabel+'</b>'+
           '<div style="margin-top:14px">'+
           [
-            {l:'Invoices Collected',v:fmt(cashIn),c:'#4caf7d',icon:'💰'},
-            {l:'POS Sales',v:fmt(sum(paidCur.filter(function(i){return (i.notes||'').indexOf('POS Sale')===0;}))),c:'#38bdf8',icon:'🛒'},
-            {l:'Labor Paid Out',v:fmt(laborCur),c:'#ef4444',icon:'💸'},
-            {l:'Outstanding Estimates',v:fmt(pipelineVal),c:'#a78bfa',icon:'🔭'},
+            {l:t('an.cash.collected'),v:fmt(cashIn),c:'#4caf7d',icon:'💰'},
+            {l:t('an.cash.pos'),v:fmt(sum(paidCur.filter(function(i){return (i.notes||'').indexOf('POS Sale')===0;}))),c:'#38bdf8',icon:'🛒'},
+            {l:t('an.cash.labor'),v:fmt(laborCur),c:'#ef4444',icon:'💸'},
+            {l:t('an.cash.est'),v:fmt(pipelineVal),c:'#a78bfa',icon:'🔭'},
           ].map(function(r){
             return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bor)">'+
               '<span style="font-size:20px">'+r.icon+'</span>'+
@@ -15688,21 +15892,21 @@ function renderAnalytics() {
               '<span style="font-size:16px;font-weight:700;color:'+r.c+'">'+r.v+'</span></div>';
           }).join('')+
           '<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-top:12px;display:flex;justify-content:space-between;align-items:center">'+
-          '<span style="font-weight:700">Net Cash Position</span><span style="font-size:18px;font-weight:800;color:'+(cashIn-laborCur>=0?'#4caf7d':'#ef4444')+'">'+fmt(cashIn-laborCur)+'</span></div>'+
+          '<span style="font-weight:700">'+t('an.cash.net')+'</span><span style="font-size:18px;font-weight:800;color:'+(cashIn-laborCur>=0?'#4caf7d':'#ef4444')+'">'+fmt(cashIn-laborCur)+'</span></div>'+
           '</div>'+
         '</div>'+
       '</div>'+
       '<div class="card">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
-          '<b>Open Invoices — Aging Detail</b><button class="btn btn-o btn-sm" onclick="exportARCSV()">⬇ Export AR</button>'+
+          '<b>'+t('an.sec.openInvoices')+'</b><button class="btn btn-o btn-sm" onclick="exportARCSV()">'+t('an.export.ar')+'</button>'+
         '</div>'+
-        (unpaid.length ? anTable(['Invoice','Client','Issue Date','Age (Days)','Amount','Status'],
+        (unpaid.length ? anTable([t('an.th.invoice'),t('an.th.client'),t('an.th.issueDate'),t('an.th.ageDays'),t('an.th.amount'),t('an.th.status')],
           unpaid.slice().sort(function(a,b){ return new Date(a.date)-new Date(b.date); }).map(function(inv){
             var age=inv.date?Math.floor((now-new Date(inv.date))/86400000):0;
             var ageColor=age<30?'#4caf7d':age<60?'#f59e0b':'#ef4444';
             return ['#'+String(inv.id).padStart(4,'0'),cName(inv.cid),inv.date||'—',{html:'<span style="color:'+ageColor+';font-weight:700">'+age+'d</span>'},fmt(inv.grand),{html:'<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:rgba(245,158,11,.15);color:#f59e0b;font-weight:700">'+inv.status+'</span>'}];
           }),['','','',unpaid.length+' invoices','<b>'+fmt(arTotal)+'</b>','']
-        ) : '<div class="empty" style="padding:20px;text-align:center">✅ No outstanding invoices</div>')+
+        ) : '<div class="empty" style="padding:20px;text-align:center">'+t('an.noOutstanding')+'</div>')+
       '</div>';
   }
 
@@ -15719,23 +15923,23 @@ function renderAnalytics() {
 
     slEl.innerHTML=
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'+
-        anKpi('Total Sales',fmt(revCur),paidCur.length+' transactions','#6c63ff',growth)+
-        anKpi('Invoice Revenue',fmt(invRev),pct(invRev,revCur)+' of total','#4caf7d',null)+
-        anKpi('POS Revenue',fmt(posRev),pct(posRev,revCur)+' of total','#38bdf8',null)+
-        anKpi('Avg Sale Value',fmt(paidCur.length?revCur/paidCur.length:0),'Per invoice','#f59e0b',null)+
+        anKpi(t('an.kpi.totalSales'),fmt(revCur),paidCur.length+' '+t('an.th.invoices'),'#6c63ff',growth)+
+        anKpi(t('an.kpi.invRevenue'),fmt(invRev),pct(invRev,revCur)+' of total','#4caf7d',null)+
+        anKpi(t('an.kpi.posRevenue'),fmt(posRev),pct(posRev,revCur)+' of total','#38bdf8',null)+
+        anKpi(t('an.kpi.avgSale'),fmt(paidCur.length?revCur/paidCur.length:0),t('an.perInvoice'),'#f59e0b',null)+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">'+
-        '<div class="card"><b>Monthly Sales ('+yr+')</b><div style="display:flex;gap:16px;font-size:11px;color:var(--t3);margin:6px 0 10px">'+
-          '<span>Best: <b style="color:#4caf7d">'+bestMo+'</b></span>'+
-          '<span>Total: <b style="color:var(--acc)">'+fmt(revAll)+'</b></span>'+
+        '<div class="card"><b>'+t('an.sec.monthlySales')+' ('+yr+')</b><div style="display:flex;gap:16px;font-size:11px;color:var(--t3);margin:6px 0 10px">'+
+          '<span>'+t('an.sl.best')+' <b style="color:#4caf7d">'+bestMo+'</b></span>'+
+          '<span>'+t('an.sl.total')+' <b style="color:var(--acc)">'+fmt(revAll)+'</b></span>'+
         '</div><div class="chart-wrap"><canvas id="an-sl-chart"></canvas></div></div>'+
-        '<div class="card"><b>Estimate Conversion Funnel</b>'+
+        '<div class="card"><b>'+t('an.sec.estFunnel')+'</b>'+
           '<div style="margin-top:16px">'+
           [
-            {l:'Estimates Sent',v:estCur.length,color:'#6c63ff'},
-            {l:'Under Review',v:estCur.filter(function(e){return e.status==='draft'||e.status==='sent';}).length,color:'#38bdf8'},
-            {l:'Accepted / Won',v:wonCur.length,color:'#4caf7d'},
-            {l:'Rejected / Lost',v:estCur.filter(function(e){return e.status==='rejected';}).length,color:'#ef4444'},
+            {l:t('an.sl.estimatesSent'),v:estCur.length,color:'#6c63ff'},
+            {l:t('an.sl.underReview'),v:estCur.filter(function(e){return e.status==='draft'||e.status==='sent';}).length,color:'#38bdf8'},
+            {l:t('an.sl.acceptedWon'),v:wonCur.length,color:'#4caf7d'},
+            {l:t('an.sl.rejectedLost'),v:estCur.filter(function(e){return e.status==='rejected';}).length,color:'#ef4444'},
           ].map(function(s){
             var p=estCur.length>0?Math.round(s.v/estCur.length*100):0;
             return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'+
@@ -15745,28 +15949,28 @@ function renderAnalytics() {
             '</div>';
           }).join('')+
           '<div style="border-top:1px solid var(--bor);padding-top:10px;display:flex;justify-content:space-between;font-size:12px">'+
-          '<span>Win Rate: <b style="color:'+(convRate>=50?'#4caf7d':'#f59e0b')+'">'+convRate+'%</b></span>'+
-          '<span>Avg Est Value: <b>'+fmt(avgEstVal)+'</b></span>'+
-          '<span>Pipeline: <b style="color:#a78bfa">'+fmt(pipelineVal)+'</b></span></div>'+
+          '<span>'+t('an.sl.winRate')+' <b style="color:'+(convRate>=50?'#4caf7d':'#f59e0b')+'">'+convRate+'%</b></span>'+
+          '<span>'+t('an.sl.avgEst')+' <b>'+fmt(avgEstVal)+'</b></span>'+
+          '<span>'+t('an.sl.pipeline')+' <b style="color:#a78bfa">'+fmt(pipelineVal)+'</b></span></div>'+
           '</div>'+
         '</div>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
-        '<div class="card"><b>Revenue by Service — '+periodLabel+'</b><div style="margin-top:12px">'+
+        '<div class="card"><b>'+t('an.sec.revByServicePeriod')+' — '+periodLabel+'</b><div style="margin-top:12px">'+
           (Object.keys(cats).length ? Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];}).map(function(k,i){
             var p=Math.round(cats[k]/Math.max(1,revCur)*100);
             return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="font-weight:500">'+k+'</span><span style="font-weight:700;color:'+pal[i%pal.length]+'">'+fmt(cats[k])+' · '+p+'%</span></div>'+bar(p,pal[i%pal.length])+'</div>';
-          }).join('') : '<div class="empty">No service data</div>')+
+          }).join('') : '<div class="empty">'+t('an.noSvcData')+'</div>')+
         '</div></div>'+
-        '<div class="card"><b>Sales Velocity</b><div style="margin-top:12px">'+
+        '<div class="card"><b>'+t('an.sec.salesVelocity')+'</b><div style="margin-top:12px">'+
           [
-            {l:'Revenue / Day',v:fmt(revCur/periodDays)},
-            {l:'Invoices / Day',v:(paidCur.length/periodDays).toFixed(1)},
-            {l:'Avg Days to Close',v:dso+'d'},
-            {l:'Best Month',v:bestMo+' '+yr},
-            {l:'Total All-Time Revenue',v:fmt(revAll)},
-            {l:'All-Time Invoice Count',v:paidAll.length},
-            {l:'YoY Growth',v:(function(){ var py=sum(paidAll.filter(function(i){return i.date&&i.date.indexOf((yr-1)+'-')===0;})); var cy=sum(paidAll.filter(function(i){return i.date&&i.date.indexOf(yr+'-')===0;})); return py>0?{html:'<span style="color:'+(cy>=py?'#4caf7d':'#ef4444')+'">'+(cy>=py?'▲':'▼')+Math.abs((cy-py)/py*100).toFixed(1)+'%</span>'}:{html:'—'}; })()},
+            {l:t('an.sl.revPerDay'),v:fmt(revCur/periodDays)},
+            {l:t('an.sl.invPerDay'),v:(paidCur.length/periodDays).toFixed(1)},
+            {l:t('an.sl.avgDaysClose'),v:dso+'d'},
+            {l:t('an.sl.bestMonth'),v:bestMo+' '+yr},
+            {l:t('an.sl.totalAllTime'),v:fmt(revAll)},
+            {l:t('an.sl.allTimeCount'),v:paidAll.length},
+            {l:t('an.sl.yoyGrowth'),v:(function(){ var py=sum(paidAll.filter(function(i){return i.date&&i.date.indexOf((yr-1)+'-')===0;})); var cy=sum(paidAll.filter(function(i){return i.date&&i.date.indexOf(yr+'-')===0;})); return py>0?{html:'<span style="color:'+(cy>=py?'#4caf7d':'#ef4444')+'">'+(cy>=py?'▲':'▼')+Math.abs((cy-py)/py*100).toFixed(1)+'%</span>'}:{html:'—'}; })()},
           ].map(function(r){
             return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bor)">'+
               '<span style="font-size:12px;color:var(--t2)">'+r.l+'</span>'+
@@ -15803,13 +16007,13 @@ function renderAnalytics() {
 
     clEl.innerHTML=
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'+
-        anKpi('Total Clients',clients.length,'All accounts','#6c63ff',null)+
-        anKpi('New '+periodLabel,'+'+newCli,'New accounts','#4caf7d',null)+
-        anKpi('Avg CLV',fmt(clv),'Lifetime value / client','#38bdf8',null)+
-        anKpi('Revenue Concentration',conc+'%','Top 3 clients share',conc>60?'#ef4444':conc>40?'#f59e0b':'#4caf7d',null)+
+        anKpi(t('an.kpi.totalClients'),clients.length,t('an.allAccounts'),'#6c63ff',null)+
+        anKpi(t('an.kpi.collected')+' '+periodLabel,'+'+newCli,t('an.newAccounts'),'#4caf7d',null)+
+        anKpi(t('an.kpi.avgClv'),fmt(clv),t('an.ltvPerClient'),'#38bdf8',null)+
+        anKpi(t('an.kpi.revConc'),conc+'%',t('an.top3share'),conc>60?'#ef4444':conc>40?'#f59e0b':'#4caf7d',null)+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">'+
-        '<div class="card"><b>Client Revenue — '+periodLabel+'</b><div style="margin-top:12px">'+
+        '<div class="card"><b>'+t('an.sec.clientRevenue')+' — '+periodLabel+'</b><div style="margin-top:12px">'+
           (topCli.length ? topCli.map(function(cid,i){
             var r=cliRevMap[cid]; var p=Math.round(r/Math.max(1,revCur)*100);
             return '<div style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">'+
@@ -15818,23 +16022,23 @@ function renderAnalytics() {
               '<span style="font-size:12px;font-weight:700;color:'+pal[i%pal.length]+'">'+fmt(r)+'</span>'+
               '<span style="font-size:10px;color:var(--t3);width:30px;text-align:right">'+p+'%</span>'+
             '</div>'+bar(p,pal[i%pal.length])+'</div>';
-          }).join('') : '<div class="empty">No revenue in period</div>')+
+          }).join('') : '<div class="empty">'+t('an.noRevPeriod')+'</div>')+
         '</div></div>'+
-        '<div class="card"><b>Client Metrics</b><div style="margin-top:12px">'+
+        '<div class="card"><b>'+t('an.sec.clientMetrics')+'</b><div style="margin-top:12px">'+
           [
-            {l:'Active Clients (period)',v:topCli.length},
-            {l:'New This Period',v:'+'+newCli,c:'#4caf7d'},
-            {l:'Returning Clients',v:retCli},
-            {l:'Avg Revenue / Client',v:fmt(topCli.length?revCur/topCli.length:0)},
-            {l:'Highest CLV Client',v:topCli.length?cName(topCli[0]):'—',c:'#6c63ff'},
-            {l:'Top 3 Concentration',v:conc+'%',c:conc>60?'#ef4444':conc>40?'#f59e0b':'#4caf7d'},
-            {l:'Revenue / Employee',v:revPerEmp>0?fmt(revPerEmp):'—'},
+            {l:t('an.cli.activePeriod'),v:topCli.length},
+            {l:t('an.cli.newPeriod'),v:'+'+newCli,c:'#4caf7d'},
+            {l:t('an.cli.returning'),v:retCli},
+            {l:t('an.cli.avgRev'),v:fmt(topCli.length?revCur/topCli.length:0)},
+            {l:t('an.cli.highestCLV'),v:topCli.length?cName(topCli[0]):'—',c:'#6c63ff'},
+            {l:t('an.cli.top3conc'),v:conc+'%',c:conc>60?'#ef4444':conc>40?'#f59e0b':'#4caf7d'},
+            {l:t('an.cli.revPerEmp'),v:revPerEmp>0?fmt(revPerEmp):'—'},
           ].map(function(r){ return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bor)"><span style="font-size:12px;color:var(--t2)">'+r.l+'</span><span style="font-size:13px;font-weight:700;color:'+(r.c||'var(--t1)')+'">'+r.v+'</span></div>'; }).join('')+
         '</div></div>'+
       '</div>'+
       '<div class="card">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>Client Profitability Report</b><button class="btn btn-o btn-sm" onclick="exportClientsCSV()">⬇ Export</button></div>'+
-        anTable(['Client','Invoices','Period Revenue','Lifetime Value','Avg Invoice','Share %'],
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>'+t('an.sec.clientReport')+'</b><button class="btn btn-o btn-sm" onclick="exportClientsCSV()">'+t('an.export.clients')+'</button></div>'+
+        anTable([t('an.th.client'),t('an.th.invoices'),t('an.th.periodRevenue'),t('an.th.lifetimeValue'),t('an.th.avgInvoice'),t('an.th.share')],
           cliData.slice(0,15).map(function(c){
             var share=revCur>0?Math.round(c.rev/revCur*100):0;
             return [c.name,c.count,fmt(c.rev),fmt(c.ltv),fmt(c.avgInv),{html:'<div style="display:flex;align-items:center;gap:6px"><div style="height:4px;border-radius:2px;width:'+share*2+'px;max-width:60px;background:#6c63ff"></div><span>'+share+'%</span></div>'}];
@@ -15864,40 +16068,40 @@ function renderAnalytics() {
 
     opEl.innerHTML=
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'+
-        anKpi('Job Completion Rate',Math.round(jobsDone/Math.max(1,jobsTotal)*100)+'%',jobsDone+'/'+jobsTotal+' jobs',Math.round(jobsDone/Math.max(1,jobsTotal)*100)>=70?'#4caf7d':'#f59e0b',null)+
-        anKpi('On-Time Rate',onTimeRate+'%','Jobs delivered on schedule',onTimeRate>=80?'#4caf7d':onTimeRate>=60?'#f59e0b':'#ef4444',null)+
-        anKpi('Overdue Jobs',jobsOver+'',jobsOver>0?'Requires attention':'All on track',jobsOver>0?'#ef4444':'#4caf7d',null)+
-        anKpi('Avg Job Value',fmt(avgJobVal),'Revenue / completed job','#6c63ff',null)+
+        anKpi(t('an.kpi.jobCompletion'),Math.round(jobsDone/Math.max(1,jobsTotal)*100)+'%',jobsDone+'/'+jobsTotal+' jobs',Math.round(jobsDone/Math.max(1,jobsTotal)*100)>=70?'#4caf7d':'#f59e0b',null)+
+        anKpi(t('an.kpi.onTimeRate'),onTimeRate+'%',t('an.jobsOnSchedule'),onTimeRate>=80?'#4caf7d':onTimeRate>=60?'#f59e0b':'#ef4444',null)+
+        anKpi(t('an.kpi.overdueJobs'),jobsOver+'',jobsOver>0?t('an.reqAttn'):t('an.allOnTrack'),jobsOver>0?'#ef4444':'#4caf7d',null)+
+        anKpi(t('an.kpi.avgJobVal'),fmt(avgJobVal),t('an.revPerJob'),'#6c63ff',null)+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">'+
-        '<div class="card"><b>Job Pipeline Status</b><div style="margin-top:14px">'+
-          [{l:'Pending',v:jobsPend,c:'#38bdf8'},{l:'In Progress',v:jobsAct,c:'#f59e0b'},{l:'Done',v:jobsDone,c:'#4caf7d'},{l:'Overdue',v:jobsOver,c:'#ef4444'}].map(function(s){
+        '<div class="card"><b>'+t('an.sec.jobPipeline')+'</b><div style="margin-top:14px">'+
+          [{l:t('an.ops.pending'),v:jobsPend,c:'#38bdf8'},{l:t('an.ops.inProgress'),v:jobsAct,c:'#f59e0b'},{l:t('an.ops.done'),v:jobsDone,c:'#4caf7d'},{l:t('an.ops.overdue'),v:jobsOver,c:'#ef4444'}].map(function(s){
             var p=jobsTotal>0?Math.round(s.v/jobsTotal*100):0;
             return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="min-width:80px;font-size:12px;color:var(--t2)">'+s.l+'</div><div style="flex:1">'+bar(p,s.c)+'</div><div style="min-width:50px;text-align:right;font-size:13px;font-weight:700;color:'+s.c+'">'+s.v+' <span style="font-weight:400;color:var(--t3);font-size:10px">'+p+'%</span></div></div>';
           }).join('')+
           '<div style="border-top:1px solid var(--bor);padding-top:10px;display:flex;gap:20px;font-size:11px;color:var(--t3)">'+
-          '<span>Total: <b style="color:var(--t1)">'+jobsTotal+'</b></span>'+
-          '<span>Active: <b style="color:#f59e0b">'+jobsAct+'</b></span>'+
-          '<span>Avg Value: <b style="color:#6c63ff">'+fmt(avgJobVal)+'</b></span></div>'+
+          '<span>'+t('an.sl.total')+' <b style="color:var(--t1)">'+jobsTotal+'</b></span>'+
+          '<span>'+t('an.ops.inProgress')+': <b style="color:#f59e0b">'+jobsAct+'</b></span>'+
+          '<span>'+t('an.r.avgJobVal')+': <b style="color:#6c63ff">'+fmt(avgJobVal)+'</b></span></div>'+
         '</div></div>'+
-        '<div class="card"><b>Labor Cost Analysis</b><div style="margin-top:12px">'+
+        '<div class="card"><b>'+t('an.sec.laborCost')+'</b><div style="margin-top:12px">'+
           [
-            {l:'Total Labor Cost',v:fmt(laborCur),c:'#ef4444'},
-            {l:'Labor % of Revenue',v:pct(laborCur,revCur),c:laborCur/Math.max(1,revCur)<.4?'#4caf7d':'#f59e0b'},
-            {l:'Gross Profit After Labor',v:fmt(grossProfit),c:grossProfit>=0?'#4caf7d':'#ef4444'},
-            {l:'Gross Margin',v:grossMargin.toFixed(1)+'%',c:grossMargin>=40?'#4caf7d':grossMargin>=20?'#f59e0b':'#ef4444'},
-            {l:'Paid Installers (period)',v:jobPayments.filter(function(p){return p.status==='paid';}).length},
-            {l:'Pending Payments',v:fmt(jobPayments.filter(function(p){return p.status!=='paid';}).reduce(function(s,p){return s+payAmt(p);},0)),c:'#f59e0b'},
+            {l:t('an.ops.totalLaborCost'),v:fmt(laborCur),c:'#ef4444'},
+            {l:t('an.ops.laborPct'),v:pct(laborCur,revCur),c:laborCur/Math.max(1,revCur)<.4?'#4caf7d':'#f59e0b'},
+            {l:t('an.ops.grossProfitAfter'),v:fmt(grossProfit),c:grossProfit>=0?'#4caf7d':'#ef4444'},
+            {l:t('an.r.grossMargin'),v:grossMargin.toFixed(1)+'%',c:grossMargin>=40?'#4caf7d':grossMargin>=20?'#f59e0b':'#ef4444'},
+            {l:t('an.ops.paidInstallers'),v:jobPayments.filter(function(p){return p.status==='paid';}).length},
+            {l:t('an.ops.pendingPayments'),v:fmt(jobPayments.filter(function(p){return p.status!=='paid';}).reduce(function(s,p){return s+payAmt(p);},0)),c:'#f59e0b'},
           ].map(function(r){ return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bor)"><span style="font-size:12px;color:var(--t2)">'+r.l+'</span><span style="font-size:13px;font-weight:700;color:'+(r.c||'var(--t1)')+'">'+r.v+'</span></div>'; }).join('')+
         '</div></div>'+
       '</div>'+
       '<div class="card">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>Team Performance Report</b><button class="btn btn-o btn-sm" onclick="exportTeamCSV()">⬇ Export</button></div>'+
-        (memberPerf.length ? anTable(['Team Member','Role','Total Jobs','Done','Active','Overdue','Completion %'],
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>'+t('an.sec.teamPerf')+'</b><button class="btn btn-o btn-sm" onclick="exportTeamCSV()">'+t('an.export.team')+'</button></div>'+
+        (memberPerf.length ? anTable([t('an.th.teamMember'),t('an.th.role'),t('an.th.totalJobs'),t('an.th.done'),t('an.th.active'),t('an.th.overdue'),t('an.th.completion')],
           memberPerf.map(function(m){
             return [m.name,m.role,m.total,{html:'<span style="color:#4caf7d;font-weight:700">'+m.done+'</span>'},m.active,{html:m.overdue>0?'<span style="color:#ef4444;font-weight:700">'+m.overdue+'</span>':'0'},{html:'<span style="color:'+(m.rate>=70?'#4caf7d':m.rate>=40?'#f59e0b':'#ef4444')+';font-weight:700">'+m.rate+'%</span>'}];
-          }),['Totals','',jobsTotal,jobsDone,jobsAct,jobsOver,'']
-        ) : '<div class="empty" style="padding:20px">Add team members and assign them to jobs to see performance data</div>')+
+          }),[t('an.ops.totals'),'',jobsTotal,jobsDone,jobsAct,jobsOver,'']
+        ) : '<div class="empty" style="padding:20px">'+t('an.noTeamData')+'</div>')+
       '</div>';
   }
 
@@ -15933,35 +16137,35 @@ function renderAnalytics() {
 
     fcEl.innerHTML=
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'+
-        anKpi('3-Mo Forecast',fmt(forecastTotal),'Based on 6-month trend','#6c63ff',null)+
-        anKpi('Best Case',fmt(bestCase),'+20% upside scenario','#4caf7d',null)+
-        anKpi('Worst Case',fmt(worstCase),'-20% conservative scenario','#ef4444',null)+
-        anKpi('Pipeline Value',fmt(pipelineVal),'Open estimates · '+convRate+'% win rate','#a78bfa',null)+
+        anKpi(t('an.kpi.forecast3mo'),fmt(forecastTotal),t('an.fc.subtitleTrend'),'#6c63ff',null)+
+        anKpi(t('an.kpi.bestCase'),fmt(bestCase),t('an.fc.subtitleBest'),'#4caf7d',null)+
+        anKpi(t('an.kpi.worstCase'),fmt(worstCase),t('an.fc.subtitleWorst'),'#ef4444',null)+
+        anKpi(t('an.kpi.pipelineVal'),fmt(pipelineVal),t('an.fc.openEst')+' · '+convRate+'% '+t('an.fc.winRate'),'#a78bfa',null)+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">'+
-        '<div class="card"><b>Revenue Trend & 3-Month Forecast</b>'+
+        '<div class="card"><b>'+t('an.sec.revTrend')+'</b>'+
           '<div style="display:flex;gap:16px;font-size:11px;color:var(--t3);margin:6px 0 10px">'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#6c63ff;display:inline-block;border-radius:2px"></span>Actual</span>'+
-          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#f59e0b;display:inline-block;border-radius:2px;border:1px dashed #f59e0b"></span>Forecast</span></div>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#6c63ff;display:inline-block;border-radius:2px"></span>'+t('an.fc.actual')+'</span>'+
+          '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#f59e0b;display:inline-block;border-radius:2px;border:1px dashed #f59e0b"></span>'+t('an.tab.forecast')+'</span></div>'+
           '<div class="chart-wrap"><canvas id="an-fc-chart"></canvas></div></div>'+
-        '<div class="card"><b>Forecast Assumptions</b><div style="margin-top:14px">'+
+        '<div class="card"><b>'+t('an.sec.forecastAssumptions')+'</b><div style="margin-top:14px">'+
           [
-            {l:'6-Month Avg Revenue',v:fmt(avgMo)},
-            {l:'Monthly Trend (slope)',v:(slope>=0?'+':'')+fmt(slope)+'/mo',c:slope>=0?'#4caf7d':'#ef4444'},
-            {l:'Next Month Forecast',v:fmt(next3[0]),c:'#6c63ff'},
-            {l:'Pipeline Expected Close',v:fmt(pipelineVal*convRate/100),c:'#a78bfa'},
-            {l:'Total 3-Mo Projected',v:fmt(forecastTotal),c:'#6c63ff'},
-            {l:'Required MoM Growth',v:revPrev>0&&revCur<revPrev?Math.round((revPrev-revCur)/revPrev*100)+'% recovery':'On track',c:revCur>=revPrev?'#4caf7d':'#f59e0b'},
+            {l:t('an.fc.avgMo'),v:fmt(avgMo)},
+            {l:t('an.fc.trend'),v:(slope>=0?'+':'')+fmt(slope)+'/mo',c:slope>=0?'#4caf7d':'#ef4444'},
+            {l:t('an.fc.nextMo'),v:fmt(next3[0]),c:'#6c63ff'},
+            {l:t('an.fc.pipelineClose'),v:fmt(pipelineVal*convRate/100),c:'#a78bfa'},
+            {l:t('an.fc.total3mo'),v:fmt(forecastTotal),c:'#6c63ff'},
+            {l:t('an.fc.requiredGrowth'),v:revPrev>0&&revCur<revPrev?Math.round((revPrev-revCur)/revPrev*100)+'% '+t('an.fc.recovery'):t('an.fc.onTrack'),c:revCur>=revPrev?'#4caf7d':'#f59e0b'},
           ].map(function(r){ return '<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bor)"><span style="font-size:12px;color:var(--t2)">'+r.l+'</span><span style="font-size:13px;font-weight:700;color:'+(r.c||'var(--t1)')+'">'+r.v+'</span></div>'; }).join('')+
         '</div></div>'+
       '</div>'+
       '<div class="card">'+
-        '<b>3-Month Forecast Detail</b>'+
+        '<b>'+t('an.sec.fc3moDetail')+'</b>'+
         '<div style="margin-top:14px">'+
-        anTable(['Month','Conservative (-20%)','Base Forecast','Optimistic (+20%)','Pipeline Contrib.'],
+        anTable([t('an.th.month'),t('an.th.conservative'),t('an.th.baseForecast'),t('an.th.optimistic'),t('an.th.pipelineContrib')],
           next3.map(function(v,i){
             return [next3Labels[i],{html:'<span style="color:#ef4444">'+fmt(v*.8)+'</span>'},{html:'<b style="color:#6c63ff">'+fmt(v)+'</b>'},{html:'<span style="color:#4caf7d">'+fmt(v*1.2)+'</span>'},fmt(pipelineVal*convRate/100/3)];
-          }),['3-Month Total',fmt(worstCase),{html:'<b>'+fmt(forecastTotal)+'</b>'},fmt(bestCase),fmt(pipelineVal*convRate/100)]
+          }),[t('an.fc.3moTotal'),fmt(worstCase),{html:'<b>'+fmt(forecastTotal)+'</b>'},fmt(bestCase),fmt(pipelineVal*convRate/100)]
         )+
         '</div>'+
       '</div>';
