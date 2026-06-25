@@ -2912,6 +2912,10 @@ function loadAppData() {
     dbGet("price_list",  {order: "created_at", asc: false}).catch(function(){ return []; })
   ]).then(function (results) {
     appRoles     = results[0];
+    // Inject Developer role into the list if not already present (virtual role, not in DB)
+    if (!appRoles.find(function(r){ return r.id === 9999; })) {
+      appRoles.push(DEV_ROLE);
+    }
     appUsers     = results[1];
     clients      = results[2];
     invoices     = results[3];
