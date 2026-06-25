@@ -15352,7 +15352,7 @@ function renderRolesList() {
       "</div></div><div style=\"display:flex;flex-wrap:wrap;gap:6px\">";
     for (var mi = 0; mi < ALL_MODULES.length; mi++) {
       var modKey = ALL_MODULES[mi];
-      var has = perms.indexOf(modKey) > -1;
+      var has = r.locked ? true : perms.indexOf(modKey) > -1;
       html += '<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;background:' + (has ? r.color + "20" : "var(--bg3)") + ";color:" + (has ? r.color : "var(--t3)") + '">' + MODULE_LABELS[modKey] + "</span>";
     }
     html += "</div></div>";
