@@ -3043,8 +3043,38 @@ function toggleRev() {
 }
 
 function renderDash() {
+  if (isDeveloper() && !_sandboxMode) { renderDevDash(); return; }
   if (!canEditPayment()) { renderInstallerDash(); return; }
   renderAdminDash();
+}
+
+function renderDevDash() {
+  var el = document.getElementById('page-dashboard');
+  if (!el) return;
+  el.innerHTML =
+    '<div style="max-width:680px;margin:60px auto;text-align:center;padding:0 24px">' +
+      '<div style="font-size:56px;margin-bottom:16px">🛠️</div>' +
+      '<div style="font-size:22px;font-weight:800;color:var(--t1);margin-bottom:8px">Developer Mode — Sandbox Off</div>' +
+      '<div style="font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:32px">' +
+        'Customer data is hidden to protect live records.<br>' +
+        'Enable <strong style="color:#a855f7">Sandbox Mode</strong> to work with demo data, or use the Dev Panel for system health &amp; diagnostics.' +
+      '</div>' +
+      '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
+        '<button class="btn btn-p" style="background:#a855f7;padding:12px 24px;font-size:14px" onclick="toggleSandbox()">🧪 Enable Sandbox</button>' +
+        '<button class="btn btn-o" style="padding:12px 24px;font-size:14px" onclick="devPanelOpen()">🛠️ Open Dev Panel</button>' +
+      '</div>' +
+      '<div style="margin-top:40px;background:var(--bg2);border:1px solid var(--bor);border-radius:12px;padding:20px;text-align:left">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.8px;margin-bottom:12px">SYSTEM STATS</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">' +
+          '<div style="color:var(--t2)">API Calls this session</div><div style="color:var(--t1);font-weight:600">' + _infraCallCount + '</div>' +
+          '<div style="color:var(--t2)">API Errors</div><div style="color:' + (_infraErrorCount > 0 ? 'var(--err)' : 'var(--ok)') + ';font-weight:600">' + _infraErrorCount + '</div>' +
+          '<div style="color:var(--t2)">Users in system</div><div style="color:var(--t1);font-weight:600">' + appUsers.length + '</div>' +
+          '<div style="color:var(--t2)">Roles defined</div><div style="color:var(--t1);font-weight:600">' + appRoles.length + '</div>' +
+          '<div style="color:var(--t2)">Console errors</div><div style="color:' + (_devLogs.length > 0 ? 'var(--warn)' : 'var(--ok)') + ';font-weight:600">' + _devLogs.length + '</div>' +
+          '<div style="color:var(--t2)">Sandbox mode</div><div style="color:var(--err);font-weight:600">OFF — live data</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
 }
 
 function renderAdminDash() {
