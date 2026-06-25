@@ -56,6 +56,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.dev-tab{background:none;border:none;border-bottom:3px solid transparent;color:var(--t3);padding:10px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:color .2s}
+.dev-tab:hover{color:var(--t1)}.dev-tab.active{color:#a855f7;border-bottom-color:#a855f7}
+#dev-float-btn{position:fixed;bottom:80px;right:20px;z-index:9997;background:#a855f7;color:#fff;border:none;border-radius:50px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(168,85,247,.5);letter-spacing:.3px;display:flex;align-items:center;gap:6px}
+.kb-card{background:var(--bg2);border:1px solid var(--bor);border-radius:12px;padding:18px 20px;margin-bottom:10px;cursor:pointer;transition:border-color .2s}
+.kb-card:hover{border-color:#a855f7}.kb-art{font-size:13px;line-height:1.7;color:var(--t2)}
+.kb-art h3{font-size:14px;font-weight:700;color:var(--t1);margin:14px 0 6px}.kb-art code{background:var(--bg3);padding:1px 6px;border-radius:4px;font-size:12px;font-family:monospace}
+.kb-art pre{background:var(--bg3);padding:12px;border-radius:8px;font-size:11px;overflow-x:auto;line-height:1.5;margin:8px 0}
 .b-ok{background:rgba(76,175,125,.15);color:var(--ok)}.b-warn{background:rgba(245,158,11,.15);color:var(--warn)}
 .b-err{background:rgba(239,68,68,.15);color:var(--err)}.b-inf{background:rgba(56,189,248,.15);color:var(--inf)}.b-gray{background:var(--bg3);color:var(--t2)}
 table{width:100%;border-collapse:collapse}
@@ -278,6 +285,7 @@ textarea.fc{resize:vertical;min-height:70px}
       <button class="nav-i" onclick="gotoPage('analytics',this)" data-perm="analytics"><span>📊</span>Analytics</button>
       <button class="nav-i" onclick="gotoPage('myreports',this)" data-perm="installer_portal" id="nav-myreports-btn"><span>📋</span>My Reports</button>
       <button class="nav-i" onclick="gotoPage('settings',this)" data-perm="settings"><span>⚙️</span>Settings</button>
+      <button class="nav-i" id="nav-kb-btn" style="display:none" onclick="gotoPage('knowledgebase',this)" data-perm="settings"><span>📚</span>Knowledge Base</button>
     </div>
   </nav>
   <div class="sb-user">
@@ -917,6 +925,22 @@ textarea.fc{resize:vertical;min-height:70px}
       <div id="an-tab-forecast" style="display:none"></div>
     </div>
 
+    <!-- ══ KNOWLEDGE BASE PAGE ══════════════════════════════════ -->
+    <div class="page" id="page-knowledgebase">
+      <div style="max-width:900px;margin:0 auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:22px;font-weight:700">📚 Knowledge Base</div>
+            <div style="font-size:13px;color:var(--t3);margin-top:2px">Guides · Manuals · Technical Docs · Error Reference</div>
+          </div>
+          <input id="kb-search" class="fc" placeholder="🔍 Search articles…" oninput="kbSearch(this.value)"
+            style="width:260px;padding:9px 14px;border-radius:10px;font-size:13px"/>
+        </div>
+        <div id="kb-content"></div>
+      </div>
+    </div>
+
+    <!-- ══ MY REPORTS PAGE ══════════════════════════════════════ -->
     <div class="page" id="page-myreports">
       <!-- Header -->
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
@@ -2296,6 +2320,32 @@ textarea.fc{resize:vertical;min-height:70px}
 
 <div id="toast">Done <span id="toast-msg"></span></div>
 
+<!-- Sandbox mode banner -->
+<div id="sandbox-bar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:#f59e0b;color:#000;font-size:12px;font-weight:800;text-align:center;padding:5px 16px;letter-spacing:.5px;align-items:center;justify-content:center;gap:12px">
+  🧪 SANDBOX MODE — Mock data only · No changes saved to database
+  <button onclick="toggleSandbox()" style="background:rgba(0,0,0,.15);border:none;border-radius:6px;padding:2px 10px;cursor:pointer;font-size:11px;font-weight:700">Exit Sandbox</button>
+</div>
+
+<!-- Dev Panel overlay -->
+<div id="dev-panel" style="display:none;position:fixed;top:0;right:0;bottom:0;width:680px;max-width:95vw;z-index:9999;background:var(--bg1);border-left:2px solid #a855f7;box-shadow:-8px 0 40px rgba(0,0,0,.5);overflow:hidden;flex-direction:column">
+  <div style="background:#a855f7;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">🛠️</span>
+      <div><div style="font-size:15px;font-weight:800;color:#fff">Developer Panel</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.7)" id="dev-panel-subtitle">b2bprinthub · Full Access</div></div>
+    </div>
+    <button onclick="devPanelClose()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700">✕ Close</button>
+  </div>
+  <div style="display:flex;border-bottom:1px solid var(--bor);flex-shrink:0;overflow-x:auto">
+    <button class="dev-tab active" onclick="devTab('health',this)">🏥 Health</button>
+    <button class="dev-tab" onclick="devTab('console',this)">⚠️ Console</button>
+    <button class="dev-tab" onclick="devTab('state',this)">🔬 State</button>
+    <button class="dev-tab" onclick="devTab('sandbox',this)">🧪 Sandbox</button>
+    <button class="dev-tab" onclick="devTab('perf',this)">📈 Performance</button>
+  </div>
+  <div id="dev-panel-body" style="flex:1;overflow-y:auto;padding:16px"></div>
+</div>
+
 <script>
 "use strict";
 
@@ -2410,25 +2460,90 @@ function cName(id) {
   }
   return "Unknown";
 }
+// ── DEVELOPER ROLE ────────────────────────────────────────────
+var DEV_EMAIL = 'b2bprinthub@gmail.com';
+var DEV_ROLE  = { id:9999, name:'Developer', color:'#a855f7', perms:'__ALL__',
+  description:'Full unrestricted access — troubleshooting, testing, feature development' };
+
+function isDeveloper(u) {
+  u = u || currentUser;
+  return !!(u && (u.email === DEV_EMAIL || getUserRole(u).id === 9999));
+}
 function getUserRole(u) {
-  if (!u) return {name:"Unknown",color:"#9ea3c0",perms:[]};
+  if (!u) return {name:'Unknown',color:'#9ea3c0',perms:[]};
+  if (u.email === DEV_EMAIL) return DEV_ROLE;
   for (var i = 0; i < appRoles.length; i++) {
     if (appRoles[i].id === u.role_id) return appRoles[i];
   }
-  return {name:"Unknown",color:"#9ea3c0",perms:[]};
+  return {name:'Unknown',color:'#9ea3c0',perms:[]};
 }
 function hasPermission(mod) {
   if (!currentUser) return false;
+  if (isDeveloper()) return true;
   if (mod === 'messages') return true;
-  if (canEditPayment()) return true; // admins/managers can access everything
+  if (canEditPayment()) return true;
   var r = getUserRole(currentUser);
   return Array.isArray(r.perms) && r.perms.indexOf(mod) > -1;
 }
 function canEditPayment() {
   if (!currentUser) return false;
+  if (isDeveloper()) return true;
   var roleName = getUserRole(currentUser).name.toLowerCase();
-  return roleName.indexOf("admin") > -1 || roleName.indexOf("manager") > -1;
+  return roleName.indexOf('admin') > -1 || roleName.indexOf('manager') > -1;
 }
+
+// ── SANDBOX MODE ──────────────────────────────────────────────
+var _sandboxMode = false;
+var _sandboxStore = {};   // in-memory DB for sandbox writes
+var _sandboxMockData = {
+  clients:     [{id:1,name:'Acme Corp (DEMO)',email:'acme@demo.com',phone:'555-0101',address:'123 Main St'},{id:2,name:'Green Valley (DEMO)',email:'gv@demo.com',phone:'555-0102',address:'456 Oak Ave'}],
+  invoices:    [{id:1,client_id:1,status:'sent',total:1250.00,created_at:new Date().toISOString(),due_date:new Date(Date.now()+7*86400000).toISOString()},{id:2,client_id:2,status:'paid',total:840.00,created_at:new Date(Date.now()-5*86400000).toISOString()}],
+  jobs:        [{id:1,title:'Demo Banner Print (SANDBOX)',status:'in_progress',client_id:1,created_at:new Date().toISOString()},{id:2,title:'Demo Vehicle Wrap (SANDBOX)',status:'pending',client_id:2,created_at:new Date().toISOString()}],
+  transactions:[{id:1,type:'payment',amount:840.00,method:'card',created_at:new Date().toISOString()}],
+  expenses:    [],messages:[],activity_log:[],price_list:[],estimates:[],suppliers:[],purchase_orders:[],settings:[]
+};
+
+function sbGet(table, options) {
+  if (_sandboxMode) {
+    var data = (_sandboxStore[table] || _sandboxMockData[table] || []).slice();
+    return Promise.resolve(data);
+  }
+  return dbGet(table, options);
+}
+function sbInsert(table, row) {
+  if (_sandboxMode) {
+    if (!_sandboxStore[table]) _sandboxStore[table] = (_sandboxMockData[table]||[]).slice();
+    var newRow = Object.assign({id: Date.now()}, row);
+    _sandboxStore[table].unshift(newRow);
+    toast('[SANDBOX] Write intercepted — not saved to DB');
+    return Promise.resolve(newRow);
+  }
+  return dbInsert(table, row);
+}
+function toggleSandbox() {
+  _sandboxMode = !_sandboxMode;
+  _sandboxStore = {};
+  var bar = document.getElementById('sandbox-bar');
+  if (bar) bar.style.display = _sandboxMode ? 'flex' : 'none';
+  toast(_sandboxMode ? '🧪 Sandbox ON — using mock data, writes intercepted' : '✅ Sandbox OFF — live data restored');
+  devPanelRefresh();
+}
+
+// ── DEV CONSOLE CAPTURE ───────────────────────────────────────
+var _devLogs = [];
+(function() {
+  var origError = console.error.bind(console);
+  var origWarn  = console.warn.bind(console);
+  function capture(level, args) {
+    _devLogs.unshift({ ts: new Date().toISOString(), level: level, msg: Array.from(args).map(function(a){ try{return typeof a==='object'?JSON.stringify(a,null,2):String(a);}catch(e){return String(a);} }).join(' ') });
+    if (_devLogs.length > 200) _devLogs.pop();
+    devPanelRefreshConsole();
+  }
+  console.error = function() { origError.apply(console, arguments); capture('ERROR', arguments); };
+  console.warn  = function() { origWarn.apply(console,  arguments); capture('WARN',  arguments); };
+  window.addEventListener('error', function(e) { capture('UNCAUGHT', [e.message + ' @ ' + e.filename + ':' + e.lineno]); });
+  window.addEventListener('unhandledrejection', function(e) { capture('PROMISE', [String(e.reason)]); });
+})();
 
 function toast(m, isErr) {
   var t = document.getElementById("toast");
@@ -2759,6 +2874,18 @@ function applyUserUI() {
     }
     grps[g].style.display = anyVisible ? "" : "none";
   }
+  // Developer-only UI
+  var kbBtn  = document.getElementById('nav-kb-btn');
+  var devBtn = document.getElementById('dev-float-btn');
+  var sbBar  = document.getElementById('sandbox-bar');
+  if (isDeveloper()) {
+    if (kbBtn)  kbBtn.style.display  = 'flex';
+    if (!devBtn) injectDevFloatBtn();
+    if (sbBar)  sbBar.style.display  = _sandboxMode ? 'flex' : 'none';
+    // Purple dev badge next to name
+    document.getElementById('sb-role').innerHTML =
+      '<span style="background:#a855f7;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;letter-spacing:.5px">DEV</span> Developer';
+  }
 }
 
 function loadAppData() {
@@ -2822,7 +2949,7 @@ function gotoPage(p, el) {
     designer: "designer_portal",
     crm: "crm", analytics: "analytics", settings: "settings",
     messages: "messages", myreports: "installer_portal",
-    inventory: "inventory"
+    inventory: "inventory", knowledgebase: "settings"
   };
   var requiredPerm = permMap[p] || p;
   if (!hasPermission(requiredPerm)) { toast("Access denied for this module", true); return; }
@@ -2833,7 +2960,7 @@ function gotoPage(p, el) {
   document.getElementById("page-" + p).classList.add("active");
   if (el) el.classList.add("active");
   curPage = p;
-  var titles = {dashboard:"Dashboard",invoices:"Invoices",estimates:"Estimates",pos:"Point of Sale",jobs:"Jobs Board",crm:"CRM / Clients",analytics:"Analytics",settings:"Settings",messages:"Messages",myportal:"My Work",designer:"My Studio"};
+  var titles = {dashboard:"Dashboard",invoices:"Invoices",estimates:"Estimates",pos:"Point of Sale",jobs:"Jobs Board",crm:"CRM / Clients",analytics:"Analytics",settings:"Settings",messages:"Messages",myportal:"My Work",designer:"My Studio",knowledgebase:"Knowledge Base"};
   var btns = {invoices:"New Invoice",estimates:"New Estimate",jobs: canEditPayment() ? "New Job" : null,crm:"New Client"};
   if (!btns.jobs) delete btns.jobs;
   document.getElementById("pageTitle").textContent = titles[p] || p;
@@ -2858,6 +2985,7 @@ function gotoPage(p, el) {
   else if (p === "myreports") renderMyReports();
   else if (p === "inventory") renderInventory();
   else if (p === "settings") renderSettings();
+  else if (p === "knowledgebase") renderKnowledgeBase();
 }
 
 function topAction() {
@@ -16040,6 +16168,433 @@ function dbBackupGDriveUpload() {
     }).catch(function(){snapshot.tables[t]=[];next(i+1);});
   }
   next(0);
+}
+
+// ══════════════════════════════════════════════════════════════
+// DEVELOPER PANEL
+// ══════════════════════════════════════════════════════════════
+var _devPanelTab = 'health';
+var _devHealthResults = null;
+var _perfStart = Date.now();
+
+function injectDevFloatBtn() {
+  var btn = document.createElement('button');
+  btn.id = 'dev-float-btn';
+  btn.innerHTML = '🛠️ DEV';
+  btn.onclick = devPanelOpen;
+  document.body.appendChild(btn);
+}
+
+function devPanelOpen() {
+  var p = document.getElementById('dev-panel');
+  if (p) { p.style.display = 'flex'; devTab(_devPanelTab); }
+}
+function devPanelClose() {
+  var p = document.getElementById('dev-panel');
+  if (p) p.style.display = 'none';
+}
+function devPanelRefresh() {
+  if (document.getElementById('dev-panel').style.display !== 'none') devTab(_devPanelTab);
+}
+function devPanelRefreshConsole() {
+  if (_devPanelTab === 'console' && document.getElementById('dev-panel').style.display !== 'none') {
+    document.getElementById('dev-panel-body').innerHTML = devRenderConsole();
+  }
+}
+
+function devTab(name, el) {
+  _devPanelTab = name;
+  document.querySelectorAll('.dev-tab').forEach(function(b){ b.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  else { var t=document.querySelector('.dev-tab[onclick*="\''+name+'\'"]'); if(t) t.classList.add('active'); }
+  var body = document.getElementById('dev-panel-body');
+  if (!body) return;
+  if (name === 'health')   { body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--t3)">Running health checks…</div>'; devRunHealth(); }
+  if (name === 'console')  body.innerHTML = devRenderConsole();
+  if (name === 'state')    body.innerHTML = devRenderState();
+  if (name === 'sandbox')  body.innerHTML = devRenderSandbox();
+  if (name === 'perf')     body.innerHTML = devRenderPerf();
+}
+
+// ── Health Tab ────────────────────────────────────────────────
+function devRunHealth() {
+  var checks = [
+    { name:'Supabase Client',    fn: function(){ return Promise.resolve({ok:!!sb, msg: sb?'Connected':'Client init failed'}); } },
+    { name:'Auth Session',       fn: function(){ return Promise.resolve({ok:!!currentUser, msg: currentUser?currentUser.email:'Not signed in'}); } },
+    { name:'Developer Role',     fn: function(){ return Promise.resolve({ok:isDeveloper(), msg: isDeveloper()?'Active':'Not a developer account'}); } },
+    { name:'Supabase API',       fn: function(){ var t=Date.now(); return fetch(SUPABASE_URL+'/rest/v1/settings?select=key&limit=1',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}).then(function(r){return {ok:r.ok,msg:r.status+' · '+(Date.now()-t)+'ms'};}).catch(function(e){return {ok:false,msg:e.message};}); } },
+    { name:'RLS Protection',     fn: function(){ return fetch(SUPABASE_URL+'/rest/v1/clients',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({_test:true})}).then(function(r){return {ok:r.status!==201&&r.status!==200,msg:r.status===401||r.status===400?'Blocking unauthorized inserts ('+r.status+')':'⚠️ INSERT returned '+r.status};}).catch(function(e){return {ok:false,msg:e.message};}); } },
+    { name:'Service Worker',     fn: function(){ return Promise.resolve({ok:'serviceWorker' in navigator && !!navigator.serviceWorker.controller, msg: navigator.serviceWorker&&navigator.serviceWorker.controller?'Active & controlling':'Not yet active (reload after first visit)'}); } },
+    { name:'IndexedDB',          fn: function(){ return pwaOpenDB().then(function(db){return {ok:!!db,msg:db?'b2bprinthub_offline open':'Failed to open'};}).catch(function(e){return {ok:false,msg:e.message};}); } },
+    { name:'PWA Manifest',       fn: function(){ return fetch('./manifest.json').then(function(r){return r.json().then(function(d){return {ok:!!d.name,msg:d.name+' · '+d.icons.length+' icons'};});}).catch(function(e){return {ok:false,msg:e.message};}); } },
+    { name:'Chart.js',           fn: function(){ return Promise.resolve({ok:typeof Chart!=='undefined', msg:typeof Chart!=='undefined'?'v'+Chart.version:'Not loaded'}); } },
+    { name:'DOMPurify',          fn: function(){ return Promise.resolve({ok:typeof DOMPurify!=='undefined', msg:typeof DOMPurify!=='undefined'?'Loaded':'Not loaded — XSS risk!'}); } },
+    { name:'SheetJS (xlsx)',     fn: function(){ return Promise.resolve({ok:typeof XLSX!=='undefined', msg:typeof XLSX!=='undefined'?'Loaded':'Not loaded'}); } },
+    { name:'Offline Queue',      fn: function(){ return pwaGetQueueCount().then(function(n){return {ok:n===0,msg:n===0?'Empty — all synced':n+' pending writes'};}).catch(function(){return {ok:true,msg:'0 pending'};}); } },
+    { name:'Sandbox Mode',       fn: function(){ return Promise.resolve({ok:true, msg:_sandboxMode?'🟡 ACTIVE — using mock data':'Off — live data'}); } },
+    { name:'JS Error Count',     fn: function(){ var errs=_devLogs.filter(function(l){return l.level==='ERROR'||l.level==='UNCAUGHT';}).length; return Promise.resolve({ok:errs===0,msg:errs===0?'No errors':errs+' error(s) captured'}); } },
+    { name:'App Users Loaded',   fn: function(){ return Promise.resolve({ok:appUsers.length>0, msg:appUsers.length+' users · '+appRoles.length+' roles'}); } },
+    { name:'Clients Loaded',     fn: function(){ return Promise.resolve({ok:clients.length>=0, msg:clients.length+' clients in memory'}); } },
+  ];
+  Promise.all(checks.map(function(c){ return c.fn().then(function(r){ return Object.assign({name:c.name},r); }).catch(function(e){ return {name:c.name,ok:false,msg:e.message}; }); })).then(function(res){
+    _devHealthResults = res;
+    var pass=res.filter(function(r){return r.ok;}).length;
+    var fail=res.filter(function(r){return !r.ok;}).length;
+    var body=document.getElementById('dev-panel-body');
+    if(!body) return;
+    body.innerHTML =
+      '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">'+
+        '<span style="font-size:13px;font-weight:700;color:#4caf7d">✅ '+pass+' Passed</span>'+
+        (fail?'<span style="font-size:13px;font-weight:700;color:#ef4444">❌ '+fail+' Failed</span>':'')+
+        '<span style="font-size:12px;color:var(--t3)">· '+res.length+' checks</span>'+
+        '<button class="btn btn-o btn-sm" style="margin-left:auto" onclick="devTab(\'health\')">↻ Re-run</button>'+
+      '</div>'+
+      res.map(function(r){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:6px;background:var(--bg2)">'+
+          '<span style="font-size:14px;flex-shrink:0">'+(r.ok?'✅':'❌')+'</span>'+
+          '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--t1)">'+r.name+'</div>'+
+          '<div style="font-size:11px;color:'+(r.ok?'var(--t3)':'#ef4444')+'">'+san(r.msg)+'</div></div>'+
+        '</div>';
+      }).join('');
+  });
+}
+
+// ── Console Tab ───────────────────────────────────────────────
+function devRenderConsole() {
+  var filter = (document.getElementById('dev-console-filter')||{}).value || 'ALL';
+  var logs = _devLogs.filter(function(l){ return filter==='ALL'||l.level===filter; });
+  return '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">'+
+    '<select id="dev-console-filter" class="fc" style="padding:5px 8px;font-size:12px;width:auto" onchange="document.getElementById(\'dev-panel-body\').innerHTML=devRenderConsole()">'+
+      '<option>ALL</option><option>ERROR</option><option>UNCAUGHT</option><option>PROMISE</option><option>WARN</option>'+
+    '</select>'+
+    '<button class="btn btn-o btn-sm" onclick="_devLogs=[];document.getElementById(\'dev-panel-body\').innerHTML=devRenderConsole()">Clear</button>'+
+    '<span style="font-size:11px;color:var(--t3);margin-left:auto">'+_devLogs.length+' events captured</span>'+
+  '</div>'+
+  (logs.length?logs.map(function(l){
+    var c=l.level==='ERROR'||l.level==='UNCAUGHT'?'#ef4444':l.level==='WARN'?'#f59e0b':'#38bdf8';
+    return '<div style="padding:8px 10px;border-radius:6px;margin-bottom:4px;background:var(--bg2);border-left:3px solid '+c+'">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'+
+        '<span style="font-size:10px;font-weight:700;color:'+c+'">'+l.level+'</span>'+
+        '<span style="font-size:10px;color:var(--t3)">'+l.ts.substring(11,19)+'</span>'+
+      '</div>'+
+      '<div style="font-size:11px;color:var(--t2);font-family:monospace;white-space:pre-wrap;word-break:break-word">'+san(l.msg)+'</div>'+
+    '</div>';
+  }).join(''):'<div style="text-align:center;padding:30px;color:var(--t3);font-size:13px">✅ No console errors captured this session</div>');
+}
+
+// ── State Tab ─────────────────────────────────────────────────
+function devRenderState() {
+  function stateRow(label, val, color) {
+    return '<div style="display:flex;justify-content:space-between;padding:7px 10px;border-bottom:1px solid var(--bor);font-size:12px">'+
+      '<span style="color:var(--t3);font-family:monospace">'+label+'</span>'+
+      '<span style="font-weight:600;color:'+(color||'var(--t1)')+';font-family:monospace;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+san(String(val))+'</span>'+
+    '</div>';
+  }
+  var role = getUserRole(currentUser);
+  return '<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Auth & Session</div>'+
+    '<div class="card" style="margin-bottom:12px;padding:0">'+
+      stateRow('currentUser.name', currentUser?currentUser.name:'null','#a855f7')+
+      stateRow('currentUser.email', currentUser?currentUser.email:'null')+
+      stateRow('currentUser.id', currentUser?currentUser.id:'null')+
+      stateRow('isDeveloper()', isDeveloper(),'#4caf7d')+
+      stateRow('role.name', role.name)+
+      stateRow('canEditPayment()', canEditPayment())+
+      stateRow('_sandboxMode', _sandboxMode, _sandboxMode?'#f59e0b':'var(--t3)')+
+    '</div>'+
+    '<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Data Arrays</div>'+
+    '<div class="card" style="margin-bottom:12px;padding:0">'+
+      stateRow('appUsers.length', appUsers.length)+
+      stateRow('appRoles.length', appRoles.length)+
+      stateRow('clients.length', clients.length)+
+      stateRow('invoices.length', invoices.length)+
+      stateRow('jobs.length', jobs.length)+
+      stateRow('estimates.length', estimates.length)+
+      stateRow('appMessages.length', appMessages.length)+
+      stateRow('posItems.length', posItems.length)+
+    '</div>'+
+    '<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">App State</div>'+
+    '<div class="card" style="margin-bottom:12px;padding:0">'+
+      stateRow('curPage', typeof curPage!=='undefined'?curPage:'—')+
+      stateRow('_secEventLog.length', _secEventLog.length)+
+      stateRow('_devLogs.length', _devLogs.length)+
+      stateRow('_infraCallCount', _infraCallCount)+
+      stateRow('_backupRunning', _backupRunning)+
+      stateRow('navigator.onLine', navigator.onLine,'#4caf7d')+
+    '</div>'+
+    '<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Quick Actions</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn btn-o btn-sm" onclick="window.location.reload()">↻ Hard Reload</button>'+
+      '<button class="btn btn-o btn-sm" onclick="localStorage.clear();window.location.reload()">🗑️ Clear Storage + Reload</button>'+
+      '<button class="btn btn-o btn-sm" onclick="devTab(\'state\')">↻ Refresh State</button>'+
+      '<button class="btn btn-o btn-sm" onclick="devForceLoadData()">⬇ Re-fetch All Data</button>'+
+    '</div>';
+}
+
+function devForceLoadData() {
+  toast('Re-fetching all data…');
+  loadAppData().then(function(){ toast('✅ Data reloaded'); devTab('state'); });
+}
+
+// ── Sandbox Tab ───────────────────────────────────────────────
+function devRenderSandbox() {
+  var queueCount = Object.values(_sandboxStore).reduce(function(a,t){return a+t.length;},0);
+  return '<div style="background:'+ (_sandboxMode?'rgba(245,158,11,.1)':'var(--bg2)')+';border:2px solid '+(_sandboxMode?'#f59e0b':'var(--bor)')+';border-radius:12px;padding:20px;margin-bottom:16px;text-align:center">'+
+    '<div style="font-size:32px;margin-bottom:8px">🧪</div>'+
+    '<div style="font-size:16px;font-weight:800;margin-bottom:4px">Sandbox Mode</div>'+
+    '<div style="font-size:12px;color:var(--t3);margin-bottom:16px">All reads use mock data · All writes intercepted to memory · Zero impact on production</div>'+
+    '<button onclick="toggleSandbox();devTab(\'sandbox\')" style="padding:10px 24px;border-radius:10px;border:none;font-size:13px;font-weight:800;cursor:pointer;background:'+(_sandboxMode?'#4caf7d':'#f59e0b')+';color:'+(_sandboxMode?'#fff':'#000')+'">'+(_sandboxMode?'✅ Exit Sandbox Mode':'▶ Enter Sandbox Mode')+'</button>'+
+  '</div>'+
+  (_sandboxMode?
+    '<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Intercepted Writes ('+queueCount+')</div>'+
+    '<div class="card" style="padding:0">'+
+      (queueCount?Object.keys(_sandboxStore).map(function(t){
+        return _sandboxStore[t].map(function(r){
+          return '<div style="padding:7px 12px;border-bottom:1px solid var(--bor);font-size:11px;display:flex;justify-content:space-between">'+
+            '<span style="color:var(--t3)">'+t+'</span><span style="font-family:monospace;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+san(JSON.stringify(r))+'</span></div>';
+        }).join('');
+      }).join(''):'<div style="padding:16px;text-align:center;color:var(--t3);font-size:12px">No intercepted writes yet</div>')+
+    '</div>':
+    '<div style="font-size:12px;color:var(--t3);line-height:1.8">'+
+      '<b>Mock data includes:</b><br>'+
+      '• 2 demo clients (Acme Corp, Green Valley)<br>'+
+      '• 2 demo invoices ($1,250 sent · $840 paid)<br>'+
+      '• 2 demo jobs (Banner Print · Vehicle Wrap)<br>'+
+      '• 1 demo transaction<br>'+
+      'All other tables return empty arrays.<br><br>'+
+      '<b>Writes:</b> captured to memory, shown above, cleared on Sandbox exit.'+
+    '</div>');
+}
+
+// ── Performance Tab ───────────────────────────────────────────
+function devRenderPerf() {
+  var uptime = Date.now() - _perfStart;
+  var mem = performance.memory ? Math.round(performance.memory.usedJSHeapSize/1048576*10)/10 : null;
+  var nav = performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null;
+  var loadTime = nav ? Math.round(nav.loadEventEnd - nav.startTime) : '—';
+  var domTime  = nav ? Math.round(nav.domContentLoadedEventEnd - nav.startTime) : '—';
+  function pRow(l,v,sub,c){
+    return '<div style="padding:10px 14px;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;align-items:center">'+
+      '<div><div style="font-size:12px;font-weight:600">'+l+'</div>'+(sub?'<div style="font-size:10px;color:var(--t3)">'+sub+'</div>':'')+'</div>'+
+      '<div style="font-size:16px;font-weight:800;color:'+(c||'var(--acc)')+'">'+v+'</div></div>';
+  }
+  return '<div class="card" style="margin-bottom:14px;padding:0">'+
+    pRow('Session Uptime',infraFmtUptime(uptime),'time since page load','#4caf7d')+
+    pRow('Page Load Time',loadTime+'ms','full load event','var(--acc)')+
+    pRow('DOM Ready',domTime+'ms','DOMContentLoaded','var(--acc)')+
+    (mem?pRow('JS Heap Used',mem+'MB','current memory usage',mem>100?'#ef4444':mem>50?'#f59e0b':'#4caf7d'):'')+'</div>'+
+    '<div class="card" style="margin-bottom:14px;padding:0">'+
+    pRow('API Calls',_infraCallCount,'this session','var(--acc)')+
+    pRow('API Errors',_infraErrorCount,'this session',_infraErrorCount>0?'#ef4444':'#4caf7d')+
+    pRow('Avg Latency',infraAvgLatency(),'rolling 20 calls','var(--acc)')+
+    pRow('Offline Queue',typeof pwaGetQueueCount==='function'?'…':'N/A','pending sync writes','var(--t3)')+
+    '</div>'+
+    '<div class="card" style="padding:0">'+
+    pRow('HTML File Size',Math.round(document.documentElement.innerHTML.length/1024)+'KB','approx uncompressed DOM','var(--t3)')+
+    pRow('Global Arrays',clients.length+invoices.length+jobs.length+estimates.length+appUsers.length+' records','sum of all loaded arrays','var(--t3)')+
+    pRow('Security Events',_secEventLog.length,'logged this session','var(--t3)')+
+    '</div>';
+}
+
+// ══════════════════════════════════════════════════════════════
+// KNOWLEDGE BASE
+// ══════════════════════════════════════════════════════════════
+var KB_ARTICLES = [
+  // ── GETTING STARTED ─────────────────────────────────────────
+  { id:'gs1', cat:'Getting Started', icon:'🚀', title:'Welcome to B2B Print Hub',
+    body:'<p>B2B Print Hub is a full business management suite built for print shops and sign companies. It covers the entire workflow from customer quote to job delivery and payment.</p>'+
+    '<h3>Key Modules</h3><ul><li><b>Dashboard</b> — live KPIs, revenue, job pipeline</li><li><b>Invoices & Estimates</b> — create, send, collect payments</li><li><b>Point of Sale</b> — quick walk-in transactions</li><li><b>Jobs Board</b> — full production pipeline</li><li><b>CRM</b> — client profiles, history, notes</li><li><b>Inventory</b> — stock levels, price list import</li><li><b>Messages</b> — internal team messaging</li><li><b>Settings</b> — users, roles, security, backups</li></ul>'+
+    '<h3>First Login</h3><p>Sign in with your approved Google account. If access is denied, your email must be added to <code>app_users</code> in Settings → Users.</p>'},
+
+  { id:'gs2', cat:'Getting Started', icon:'👥', title:'User Roles & Permissions',
+    body:'<p>Every user has a role that controls what they can see and do. Roles are managed in Settings → Roles.</p>'+
+    '<h3>Built-in Roles</h3><ul><li><b>Administrator</b> — full access, user management, security console</li><li><b>Manager</b> — all operations, no user management</li><li><b>Designer</b> — My Studio, job cards they\'re assigned to</li><li><b>Installer</b> — My Work, job reports</li><li><b>Developer</b> — everything above + Dev Panel + Knowledge Base (b2bprinthub@gmail.com only)</li></ul>'+
+    '<h3>Adding a User</h3><p>Settings → Users → Add User. Enter name, email, and assign role. The user must sign in with that exact Google email.</p>'},
+
+  // ── INVOICES ────────────────────────────────────────────────
+  { id:'inv1', cat:'User Guides', icon:'🧾', title:'Creating & Sending Invoices',
+    body:'<h3>Create an Invoice</h3><ol><li>Click <b>Invoices</b> in the sidebar</li><li>Click <b>+ New Invoice</b></li><li>Select or search a client</li><li>Add line items: description, quantity, unit price</li><li>Apply discount % if needed</li><li>Click <b>Save</b></li></ol>'+
+    '<h3>Sending</h3><p>Click the invoice → <b>Mark as Sent</b>. For estimates with approval links, the client gets a shareable URL.</p>'+
+    '<h3>Line Item Lock</h3><p>Once a payment is recorded against an invoice, line items are locked (🔒). To make changes, void and reissue the invoice.</p>'},
+
+  { id:'inv2', cat:'User Guides', icon:'💳', title:'Recording Payments',
+    body:'<h3>Quick Pay</h3><p>Open an invoice → click <b>Collect Payment</b>. Enter amount and method (cash/card/check/transfer). Balance due updates instantly.</p>'+
+    '<h3>Payment History</h3><p>All payments appear in the invoice modal and in Transaction Ledger. Partial payments are supported — balance due is always shown.</p>'+
+    '<h3>Overpayment</h3><p>If total payments exceed the invoice total, the balance shows as a credit (negative number). Issue a refund transaction manually.</p>'},
+
+  // ── JOBS ────────────────────────────────────────────────────
+  { id:'job1', cat:'User Guides', icon:'🏗️', title:'Jobs Board — Production Pipeline',
+    body:'<h3>Job Statuses</h3><ul><li><b>Pending</b> — created, not started</li><li><b>In Progress</b> — actively being worked</li><li><b>Ready</b> — done, awaiting pickup/install</li><li><b>Complete</b> — delivered/installed</li><li><b>On Hold</b> — waiting on client or materials</li></ul>'+
+    '<h3>Assigning Jobs</h3><p>Open a job card → Assigned To → select team member. Installers see their assigned jobs under <b>My Work</b>. Designers see theirs under <b>My Studio</b>.</p>'+
+    '<h3>Job Notes</h3><p>Each job has a notes thread. All team members with access can add notes. Notes are timestamped and attributed.</p>'},
+
+  // ── SECURITY ────────────────────────────────────────────────
+  { id:'sec1', cat:'Security Guide', icon:'🛡️', title:'Security Architecture Overview',
+    body:'<h3>Authentication</h3><p>All users authenticate via <b>Google OAuth 2.0</b> through Supabase Auth. No passwords are stored in the app database. Google handles all credential security.</p>'+
+    '<h3>Database Security — Row Level Security (RLS)</h3><p>Every table in Supabase has RLS enabled. Anonymous (unauthenticated) requests cannot read or write any data. This is verified by the Security Console → RLS Scanner.</p>'+
+    '<h3>XSS Prevention</h3><p>All user-generated content rendered in innerHTML is passed through <code>san()</code>, which calls <b>DOMPurify v3</b> to strip malicious HTML/JS.</p>'+
+    '<h3>Tokens</h3><p>Estimate approval tokens use <code>crypto.getRandomValues(32 bytes)</code> — cryptographically secure random. Math.random() is never used for security-sensitive values.</p>'+
+    '<h3>Backup PIN</h3><p>The database backup PIN is stored as <code>SHA-256("b2bprinthub:backup:" + pin)</code>. The plain PIN is never stored. 3 wrong attempts = 30-second lockout.</p>'},
+
+  { id:'sec2', cat:'Security Guide', icon:'🔍', title:'Running a Security Scan',
+    body:'<h3>RLS Scanner</h3><ol><li>Settings → Security tab</li><li>Scroll to <b>Database RLS Scanner</b></li><li>Click <b>Run Scan</b></li></ol><p>The scanner tests all 13 tables with anonymous SELECT and INSERT requests. <b>PASS</b> = blocked. <b>FAIL</b> = data exposed (action required).</p>'+
+    '<h3>Interpreting Results</h3><ul><li><code>Blocked (400)</code> — schema rejection = safe</li><li><code>Blocked (401/403)</code> — RLS rejection = safe</li><li><code>ALLOWED (200/201)</code> — critical vulnerability, RLS missing on this table</li></ul>'+
+    '<h3>If a table fails</h3><p>Go to Supabase Dashboard → Table Editor → [table] → Policies. Enable RLS and add a policy: <code>auth.role() = \'authenticated\'</code> for all operations.</p>'},
+
+  // ── BACKUP ──────────────────────────────────────────────────
+  { id:'bak1', cat:'Admin Guides', icon:'💾', title:'Database Backup Guide',
+    body:'<h3>Where to find it</h3><p>Settings → Security → scroll to <b>Database Backup</b> panel.</p>'+
+    '<h3>Setting up a PIN</h3><p>Click <b>Set Backup PIN</b>. Choose 4–12 characters. Confirm. This PIN is required for every export — it\'s stored as a SHA-256 hash, never plain text.</p>'+
+    '<h3>Local Backup</h3><p>Click <b>Download Local</b> → enter PIN → a <code>.json</code> file downloads with all 13 tables. Store it somewhere safe (external drive, cloud folder).</p>'+
+    '<h3>Google Drive Backup</h3><p>Click <b>Save to Google Drive</b> → enter PIN → authorize with your Google account (first time only) → file uploads to your Drive root.</p>'+
+    '<h3>Recommended schedule</h3><p>Weekly minimum. Daily if processing high invoice volume.</p>'+
+    '<h3>Forgot PIN</h3><p>Click the backup button → "Forgot PIN?" → sends reset email to b2bprinthub@gmail.com with a one-time key valid for 15 minutes.</p>'},
+
+  // ── DEVELOPER DOCS ──────────────────────────────────────────
+  { id:'dev1', cat:'Developer Docs', icon:'🏗️', title:'App Architecture',
+    body:'<h3>Technology Stack</h3><ul>'+
+    '<li><b>Frontend</b>: Single-file SPA — all HTML, CSS, JavaScript in <code>app/index.html</code> (~16,000+ lines)</li>'+
+    '<li><b>Database</b>: Supabase (PostgreSQL) — hosted, managed, RLS-protected</li>'+
+    '<li><b>Auth</b>: Supabase Auth + Google OAuth 2.0</li>'+
+    '<li><b>Deployment</b>: GitHub Pages (HTTPS, CDN-cached)</li>'+
+    '<li><b>PWA</b>: Service Worker + manifest.json + IndexedDB offline queue</li>'+
+    '</ul>'+
+    '<h3>CDN Dependencies</h3><ul>'+
+    '<li><code>@supabase/supabase-js@2</code> — database client</li>'+
+    '<li><code>Chart.js@4.4.1</code> — dashboard charts</li>'+
+    '<li><code>DOMPurify@3</code> — XSS sanitization</li>'+
+    '<li><code>xlsx@0.18.5</code> — Excel/CSV import</li>'+
+    '<li><code>mammoth@1.6.0</code> — Word doc import</li>'+
+    '<li><code>pdf.js@3.11.174</code> — PDF import</li>'+
+    '</ul>'+
+    '<h3>File Structure</h3><pre>b2bmanagement/\n├── app/\n│   ├── index.html     ← entire app\n│   ├── manifest.json  ← PWA manifest\n│   ├── sw.js          ← service worker\n│   └── icons/         ← PWA icons\n└── sample_price_list.csv</pre>'},
+
+  { id:'dev2', cat:'Developer Docs', icon:'🗄️', title:'Database Schema',
+    body:'<h3>Core Tables</h3><table style="font-size:11px;width:100%;border-collapse:collapse">'+
+    '<tr style="border-bottom:1px solid var(--bor)"><th style="padding:4px 8px;text-align:left">Table</th><th style="padding:4px 8px;text-align:left">Key Columns</th><th style="padding:4px 8px;text-align:left">Purpose</th></tr>'+
+    '<tr style="border-bottom:1px solid var(--bor)"><td style="padding:4px 8px"><code>app_users</code></td><td style="padding:4px 8px">name, email, role_id, status, last_login</td><td style="padding:4px 8px">App user accounts</td></tr>'+
+    '<tr style="border-bottom:1px solid var(--bor)"><td style="padding:4px 8px"><code>roles</code></td><td style="padding:4px 8px">name, color, perms (array)</td><td style="padding:4px 8px">Permission system</td></tr>'+
+    '<tr style="border-bottom:1px solid var(--bor)"><td style="padding:4px 8px"><code>clients</code></td><td style="padding:4px 8px">name, email, phone, address</td><td style="padding:4px 8px">Customer CRM</td></tr>'+
+    '<tr style="border-bottom:1px solid var(--bor)"><td style="padding:4px 8px"><code>invoices</code></td><td style="padding:4px 8px">client_id, status, total, line_items (json)</td><td style="padding:4px 8px">Billing</td></tr>'+
+    '<tr style="border-bottom:1px solid var(--bor)"><td style="padding:4px 8px"><code>transactions</code></td><td style="padding:4px 8px">type, amount, method, invoice_id, client_id</td><td style="padding:4px 8px">Payments & expenses</td></tr>'+
+    '<tr style="border-bottom:1px solid var(--bor)"><td style="padding:4px 8px"><code>jobs</code></td><td style="padding:4px 8px">title, status, client_id, assigned_to, due_date</td><td style="padding:4px 8px">Production</td></tr>'+
+    '<tr style="border-bottom:1px solid var(--bor)"><td style="padding:4px 8px"><code>estimates</code></td><td style="padding:4px 8px">client_id, status, description (json w/ approval token)</td><td style="padding:4px 8px">Quotes</td></tr>'+
+    '<tr style="border-bottom:1px solid var(--bor)"><td style="padding:4px 8px"><code>messages</code></td><td style="padding:4px 8px">thread_id, sender_id, body, created_at</td><td style="padding:4px 8px">Internal chat</td></tr>'+
+    '<tr style="border-bottom:1px solid var(--bor)"><td style="padding:4px 8px"><code>price_list</code></td><td style="padding:4px 8px">sku, description, cost_price, sale_price, status</td><td style="padding:4px 8px">Inventory pricing</td></tr>'+
+    '<tr><td style="padding:4px 8px"><code>activity_log</code></td><td style="padding:4px 8px">action, module, username, time</td><td style="padding:4px 8px">Audit trail</td></tr>'+
+    '</table>'},
+
+  { id:'dev3', cat:'Developer Docs', icon:'⚙️', title:'Role & Permission System',
+    body:'<h3>How roles work</h3><p>Roles are stored in the <code>roles</code> table. Each role has a <code>perms</code> array of module slugs the role can access.</p>'+
+    '<pre>// Module slugs:\n"dashboard", "invoices", "estimates", "pos",\n"jobs", "installer_portal", "designer_portal",\n"crm", "analytics", "settings"</pre>'+
+    '<h3>Key functions</h3><ul>'+
+    '<li><code>getUserRole(u)</code> — returns role object for user <code>u</code>. Developer email returns DEV_ROLE directly.</li>'+
+    '<li><code>hasPermission(mod)</code> — returns true if currentUser can access module. Developer always returns true.</li>'+
+    '<li><code>canEditPayment()</code> — true for admin, manager, developer. Controls payment editing, user management, security console.</li>'+
+    '<li><code>isDeveloper(u)</code> — true if email matches DEV_EMAIL (b2bprinthub@gmail.com).</li>'+
+    '</ul>'+
+    '<h3>Developer role</h3><p>Not stored in DB — injected at runtime when the signed-in email matches <code>DEV_EMAIL</code>. Cannot be accidentally deleted or modified.</p>'},
+
+  { id:'dev4', cat:'Developer Docs', icon:'🔧', title:'Adding a New Module / Page',
+    body:'<h3>Steps to add a new page</h3>'+
+    '<ol>'+
+    '<li><b>HTML page div</b>: Add <code>&lt;div class="page" id="page-yourmodule"&gt;</code> inside the pages container</li>'+
+    '<li><b>Nav button</b>: Add <code>&lt;button class="nav-i" onclick="gotoPage(\'yourmodule\',this)" data-perm="yourmodule"&gt;</code></li>'+
+    '<li><b>Module slug</b>: Add <code>"yourmodule"</code> to ALL_MODULES array</li>'+
+    '<li><b>Label</b>: Add entry to MODULE_LABELS object</li>'+
+    '<li><b>Permission</b>: Add to relevant role\'s perms array in Supabase</li>'+
+    '<li><b>Render function</b>: Create <code>renderYourmodule()</code> function</li>'+
+    '<li><b>gotoPage hook</b>: Add <code>if(page===\'yourmodule\') renderYourmodule();</code> in the gotoPage switch</li>'+
+    '</ol>'+
+    '<h3>gotoPage function</h3><p>Located around line 2700. All page navigation goes through this function. It hides all <code>.page</code> divs, shows the target, updates the header title, and calls the render function.</p>'},
+
+  // ── ERROR REFERENCE ─────────────────────────────────────────
+  { id:'err1', cat:'Error Reference', icon:'🔴', title:'Common Errors & Fixes',
+    body:'<h3>Could not find column X of table Y in the schema cache</h3>'+
+    '<p><b>Cause</b>: Code is trying to insert/update a column that doesn\'t exist in the Supabase table.<br>'+
+    '<b>Fix</b>: Check the column names in Supabase Table Editor. Update the JS object to use the correct column name, or add the column to the table.</p>'+
+    '<h3>JWT expired / Invalid JWT</h3>'+
+    '<p><b>Cause</b>: Auth session timed out.<br><b>Fix</b>: User needs to sign out and sign back in. Session tokens auto-refresh but can fail on very long sessions.</p>'+
+    '<h3>Fetch failed / NetworkError</h3>'+
+    '<p><b>Cause</b>: No internet connection, or Supabase is down.<br>'+
+    '<b>Fix</b>: Check navigator.onLine. Check status.supabase.com. If offline, the PWA offline queue will hold writes until reconnected.</p>'+
+    '<h3>toast("Error saving: ...")</h3>'+
+    '<p><b>Cause</b>: dbInsert() or dbUpdate() returned a Supabase error.<br>'+
+    '<b>Fix</b>: Open Dev Panel → Console tab to see the full error. Usually a RLS policy block or wrong column name.</p>'+
+    '<h3>Blank page / Page does not render</h3>'+
+    '<p><b>Cause</b>: JavaScript error in a render function.<br>'+
+    '<b>Fix</b>: Open Dev Panel → Console tab. The uncaught error will show with a line number. Fix the JS error, hard reload.</p>'+
+    '<h3>RLS Scan shows FAIL</h3>'+
+    '<p><b>Cause</b>: A table returned HTTP 200/201 to an anonymous INSERT — RLS is not enabled.<br>'+
+    '<b>Fix</b>: Supabase Dashboard → Table Editor → [table] → Policies → Enable RLS + add authenticated policy.</p>'+
+    '<h3>Install prompt does not appear</h3>'+
+    '<p><b>Cause</b>: App must be served over HTTPS and the service worker must be active.<br>'+
+    '<b>Fix</b>: Use the GitHub Pages URL (not localhost). Clear browser cache and reload. Chrome requires a brief engagement before showing the prompt.</p>'},
+
+  { id:'err2', cat:'Error Reference', icon:'🟡', title:'Supabase RLS Policy Setup',
+    body:'<p>If the RLS scanner flags a table, run this SQL in Supabase → SQL Editor:</p>'+
+    '<pre>-- Enable RLS on all tables\nALTER TABLE clients ENABLE ROW LEVEL SECURITY;\nALTER TABLE invoices ENABLE ROW LEVEL SECURITY;\nALTER TABLE transactions ENABLE ROW LEVEL SECURITY;\nALTER TABLE jobs ENABLE ROW LEVEL SECURITY;\nALTER TABLE app_users ENABLE ROW LEVEL SECURITY;\nALTER TABLE expenses ENABLE ROW LEVEL SECURITY;\nALTER TABLE messages ENABLE ROW LEVEL SECURITY;\nALTER TABLE activity_log ENABLE ROW LEVEL SECURITY;\nALTER TABLE price_list ENABLE ROW LEVEL SECURITY;\nALTER TABLE estimates ENABLE ROW LEVEL SECURITY;\nALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;\nALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;\nALTER TABLE settings ENABLE ROW LEVEL SECURITY;\n\n-- Allow authenticated users full access\nCREATE POLICY "Auth users only" ON clients\n  FOR ALL TO authenticated USING (true) WITH CHECK (true);\n-- Repeat for each table</pre>'+
+    '<p>Replace <code>clients</code> with each table name. Run the scanner again after — all should show PASS.</p>'},
+];
+
+function renderKnowledgeBase() {
+  kbSearch('');
+}
+
+function kbSearch(query) {
+  var q = (query || '').toLowerCase().trim();
+  var articles = q ? KB_ARTICLES.filter(function(a){
+    return a.title.toLowerCase().includes(q) || a.cat.toLowerCase().includes(q) || a.body.toLowerCase().includes(q);
+  }) : KB_ARTICLES;
+
+  var cats = {};
+  articles.forEach(function(a){ if(!cats[a.cat]) cats[a.cat]=[];  cats[a.cat].push(a); });
+
+  var con = document.getElementById('kb-content');
+  if (!con) return;
+
+  if (q) {
+    con.innerHTML = '<div style="font-size:13px;color:var(--t3);margin-bottom:14px">'+articles.length+' result(s) for "'+san(query)+'"</div>'+
+      articles.map(kbCardHTML).join('');
+    return;
+  }
+
+  con.innerHTML = Object.keys(cats).map(function(cat) {
+    var catIcons = {'Getting Started':'🚀','User Guides':'📖','Admin Guides':'🔧','Security Guide':'🛡️','Developer Docs':'💻','Error Reference':'🔴'};
+    return '<div style="margin-bottom:24px">'+
+      '<div style="font-size:15px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px">'+
+        '<span>'+(catIcons[cat]||'📄')+'</span><span>'+san(cat)+'</span>'+
+        '<span style="font-size:11px;font-weight:500;color:var(--t3);margin-left:4px">'+cats[cat].length+' article'+(cats[cat].length>1?'s':'')+'</span>'+
+      '</div>'+
+      cats[cat].map(kbCardHTML).join('')+
+    '</div>';
+  }).join('');
+}
+
+function kbCardHTML(a) {
+  return '<div class="kb-card" onclick="kbOpenArticle(\''+a.id+'\')">'+
+    '<div style="display:flex;align-items:center;gap:10px">'+
+      '<span style="font-size:20px">'+a.icon+'</span>'+
+      '<div><div style="font-size:13px;font-weight:700">'+san(a.title)+'</div>'+
+      '<div style="font-size:11px;color:var(--t3);margin-top:2px">'+san(a.cat)+'</div></div>'+
+      '<span style="margin-left:auto;color:var(--t3);font-size:18px">›</span>'+
+    '</div>'+
+  '</div>';
+}
+
+function kbOpenArticle(id) {
+  var art = KB_ARTICLES.find(function(a){ return a.id===id; });
+  if (!art) return;
+  var con = document.getElementById('kb-content');
+  con.innerHTML =
+    '<button class="btn btn-o btn-sm" onclick="renderKnowledgeBase()" style="margin-bottom:16px">← Back to Knowledge Base</button>'+
+    '<div class="card">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--bor)">'+
+        '<span style="font-size:28px">'+art.icon+'</span>'+
+        '<div><div style="font-size:18px;font-weight:800">'+san(art.title)+'</div>'+
+        '<div style="font-size:12px;color:var(--t3);margin-top:2px">'+san(art.cat)+'</div></div>'+
+      '</div>'+
+      '<div class="kb-art">'+art.body+'</div>'+
+    '</div>';
 }
 
 function changePassword() {
