@@ -15073,8 +15073,10 @@ function approveRequest(id) {
     var roleSel = document.getElementById("req-role-" + id);
     var roleId = roleSel ? parseInt(roleSel.value) : (appRoles[0] ? appRoles[0].id : null);
     if (!roleId) { toast("No roles available to assign", true); return; }
+    // Developer role (9999) is virtual — not in DB. Store null; email-based check identifies them.
+    var dbRoleId = roleId === 9999 ? null : roleId;
 
-    var userRow = {name: r.name, email: r.email, role_id: roleId, status: "active", notes: r.reason || ""};
+    var userRow = {name: r.name, email: r.email, role_id: dbRoleId, status: "active", notes: r.reason || ""};
 
     dbInsert("app_users", userRow).then(function (created) {
       if (!created) return; // dbInsert already showed the specific error toast
