@@ -2528,15 +2528,52 @@ function sbInsert(table, row) {
   }
   return dbInsert(table, row);
 }
+var _realDataBackup = {};
+
 function toggleSandbox() {
   _sandboxMode = !_sandboxMode;
   _sandboxStore = {};
+
+  if (_sandboxMode) {
+    // Back up live arrays, then replace with mock data
+    _realDataBackup = {
+      clients: clients, invoices: invoices, jobs: jobs,
+      estimates: estimates, appMessages: appMessages,
+      posItems: posItems, expenses: expenses,
+      transactions: transactions, activityLog: activityLog
+    };
+    clients      = (_sandboxMockData.clients      || []).slice();
+    invoices     = (_sandboxMockData.invoices     || []).slice();
+    jobs         = (_sandboxMockData.jobs         || []).slice();
+    estimates    = (_sandboxMockData.estimates    || []).slice();
+    appMessages  = (_sandboxMockData.messages     || []).slice();
+    posItems     = (_sandboxMockData.price_list   || []).slice();
+    expenses     = (_sandboxMockData.expenses     || []).slice();
+    transactions = (_sandboxMockData.transactions || []).slice();
+    activityLog  = (_sandboxMockData.activity_log || []).slice();
+  } else {
+    // Restore live arrays
+    if (_realDataBackup.clients !== undefined) {
+      clients      = _realDataBackup.clients;
+      invoices     = _realDataBackup.invoices;
+      jobs         = _realDataBackup.jobs;
+      estimates    = _realDataBackup.estimates;
+      appMessages  = _realDataBackup.appMessages;
+      posItems     = _realDataBackup.posItems;
+      expenses     = _realDataBackup.expenses;
+      transactions = _realDataBackup.transactions;
+      activityLog  = _realDataBackup.activityLog;
+    }
+    _realDataBackup = {};
+  }
+
   var bar = document.getElementById('sandbox-bar');
   if (bar) bar.style.display = _sandboxMode ? 'flex' : 'none';
-  toast(_sandboxMode ? '🧪 Sandbox ON — customer data modules unlocked with mock data' : '✅ Sandbox OFF — customer data modules hidden');
-  // Refresh nav so restricted modules appear/disappear
+  toast(_sandboxMode ? '🧪 Sandbox ON — showing mock data only' : '✅ Sandbox OFF — live data restored');
   applyUserUI();
-  // If sandbox turned off and current page is restricted, go to dashboard
+  // Re-render current page with swapped data
+  gotoPage(curPage, document.querySelector('.nav-i.active'));
+  // If sandbox turned off and on a restricted page, go to dashboard
   if (!_sandboxMode && isDeveloper() && DEV_RESTRICTED_MODS.indexOf(curPage) > -1) {
     gotoPage('dashboard', document.querySelector('.nav-i[onclick*="dashboard"]'));
   }
