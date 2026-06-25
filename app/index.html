@@ -2146,7 +2146,7 @@ textarea.fc{resize:vertical;min-height:72px}
     <div style="display:flex;align-items:center;gap:14px">
       <div style="font-size:22px">📋</div>
       <div>
-        <div style="font-weight:800;font-size:16px;color:var(--t1)">New Order Intake</div>
+        <div style="font-weight:800;font-size:16px;color:var(--t1)" data-i18n="wiz.title">New Order Intake</div>
         <div style="font-size:11px;color:var(--t3)" id="wiz-subtitle">Step 1 of 6</div>
       </div>
     </div>
@@ -2169,9 +2169,9 @@ textarea.fc{resize:vertical;min-height:72px}
 
   <!-- Footer -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-top:1px solid var(--bor);background:var(--bg2);flex-shrink:0">
-    <button id="wiz-back-btn" onclick="wizBack()" class="btn btn-o" style="min-width:120px">← Back</button>
+    <button id="wiz-back-btn" onclick="wizBack()" class="btn btn-o" style="min-width:120px" data-i18n="wiz.back">← Back</button>
     <div id="wiz-progress-dots" style="display:flex;gap:8px"></div>
-    <button id="wiz-next-btn" onclick="wizNext()" class="btn btn-p" style="min-width:140px;font-weight:700">Next →</button>
+    <button id="wiz-next-btn" onclick="wizNext()" class="btn btn-p" style="min-width:140px;font-weight:700" data-i18n="wiz.next">Next →</button>
   </div>
 </div>
 
@@ -3015,6 +3015,89 @@ var STRINGS = {
     'fin.col.amount':'Amount','fin.col.type':'Type','fin.col.status':'Status',
     // ── Last updated
     'dash.lastUpdated':'Last updated','dash.autoRefresh':'Auto-refreshes every 60s',
+    // ── Intake Wizard
+    'wiz.title':'New Order Intake',
+    'wiz.back':'← Back','wiz.next':'Next →','wiz.create':'🚀 Create Order','wiz.creating':'⏳ Creating…',
+    'wiz.step.customer':'Customer','wiz.step.service':'Service','wiz.step.details':'Details',
+    'wiz.step.brief':'Brief','wiz.step.quote':'Quote','wiz.step.confirm':'Confirm',
+    'wiz.subtitle':'Step','wiz.subtitleOf':'of',
+    'wiz.summary.title':'Order Summary',
+    'wiz.sum.customer':'👤 Customer','wiz.sum.service':'🛠 Service','wiz.sum.job':'📌 Job',
+    'wiz.sum.specs':'📐 Specs','wiz.sum.qty':'🔢 Qty','wiz.sum.location':'📍 Location',
+    'wiz.sum.urgency':'⚡ Urgency','wiz.sum.price':'💵 Price','wiz.sum.due':'📅 Due',
+    'wiz.sum.rush':'🔴 RUSH ORDER','wiz.sum.creates':'📄 Also create',
+    'wiz.sum.estimate':'Estimate','wiz.sum.invoice':'Invoice','wiz.sum.newCustomer':'New Customer',
+    'wiz.s1.title':'Who is this order for?','wiz.s1.sub':'Search an existing customer or add a new one right here',
+    'wiz.s1.search':'🔍  Search by name, company or phone…','wiz.s1.or':'or',
+    'wiz.s1.newBtn':'+ New Customer — Add Details',
+    'wiz.s1.fullName':'Full Name *','wiz.s1.company':'Company / Business',
+    'wiz.s1.phone':'Phone *','wiz.s1.email':'Email',
+    'wiz.s1.namePh':'Customer full name','wiz.s1.companyPh':'Business name (optional)',
+    'wiz.s1.phonePh':'(555) 000-0000','wiz.s1.emailPh':'customer@email.com',
+    'wiz.s1.err.name':'Enter customer name','wiz.s1.err.noClient':'Please select or add a customer',
+    'wiz.s2.title':'What service does the customer need?',
+    'wiz.s2.sub':'Select the primary service — this will tailor the details form to capture exactly what you need',
+    'wiz.svc.print.label':'Print & Banners','wiz.svc.print.desc':'Banners, flyers, coroplast, foam board, posters, stickers',
+    'wiz.svc.signs.label':'Signs & Awnings','wiz.svc.signs.desc':'Channel letters, monument signs, awnings, wall & post signs',
+    'wiz.svc.wraps.label':'Wraps','wiz.svc.wraps.desc':'Window wraps, vehicle wraps, full/partial, perforated vinyl',
+    'wiz.svc.design.label':'Graphic Design','wiz.svc.design.desc':'Logo, branding, business cards, flyers, social media, artwork',
+    'wiz.svc.web.label':'Web / App Design','wiz.svc.web.desc':'Websites, landing pages, e-commerce, iOS/Android apps',
+    'wiz.svc.install.label':'Install / Site Work','wiz.svc.install.desc':'Sign installation, site survey, permits, field work only',
+    'wiz.s2.err':'Please select a service type',
+    'wiz.s3.sub':'Fill in as much detail as possible — designers and installers use this to start the work',
+    'wiz.f.jobTitle':'Job Title *','wiz.f.jobTitlePh':'Short descriptive title (e.g. 3×6 Vinyl Banner — Smith Auto)',
+    'wiz.f.material':'Material','wiz.f.finish':'Finish / Laminate',
+    'wiz.f.width':'Width','wiz.f.widthPh':'e.g. 3ft','wiz.f.height':'Height','wiz.f.heightPh':'e.g. 6ft',
+    'wiz.f.qty':'Quantity','wiz.f.doubleSided':'Double-Sided?',
+    'wiz.f.needsInstall':'Needs Installation?','wiz.f.installNo':'No — pickup/delivery','wiz.f.installYes':'Yes — install on-site',
+    'wiz.f.installAddr':'Install Address','wiz.f.installAddrPh':'Full installation address',
+    'wiz.f.signType':'Sign Type','wiz.f.illuminated':'Illuminated?',
+    'wiz.f.approxWidth':'Approx Width','wiz.f.approxWidthPh':'e.g. 10ft',
+    'wiz.f.approxHeight':'Approx Height','wiz.f.approxHeightPh':'e.g. 3ft',
+    'wiz.f.permit':'Permit Required?','wiz.f.permitStatus':'Permit Status',
+    'wiz.f.survey':'Site Survey Needed?','wiz.f.wrapType':'Wrap Type',
+    'wiz.f.coverage':'Coverage','wiz.f.vehYear':'Year','wiz.f.vehMake':'Make','wiz.f.vehModel':'Model',
+    'wiz.f.panels':'# of Panels / Windows',
+    'wiz.f.siteParkingAddr':'Site / Parking Address','wiz.f.siteParkingAddrPh':'Where will the wrap be installed?',
+    'wiz.f.surveyNo':'No','wiz.f.surveyYes':'Yes — need measurements',
+    'wiz.f.designType':'Design Type','wiz.f.fileFormat':'Final File Format',
+    'wiz.f.hasBrand':'Has Existing Logo/Brand?','wiz.f.usage':'Where Will It Be Used?',
+    'wiz.f.qtyVersions':'Quantity / Versions','wiz.f.colors':'Color Preferences',
+    'wiz.f.colorsPh':'e.g. Navy blue, gold — no red','wiz.f.refs':'Reference Examples',
+    'wiz.f.refsPh':'URLs or describe styles they like (e.g. minimalist, bold, modern)',
+    'wiz.f.webType':'Project Type','wiz.f.platform':'Platform Preference',
+    'wiz.f.estPages':'Est. # of Pages / Screens','wiz.f.hasLogoAndBrand':'Has Logo & Branding?',
+    'wiz.f.hasDomainHosting':'Has Domain & Hosting?','wiz.f.contentReady':'Content Ready?',
+    'wiz.f.webRefs':'Reference Websites / Apps (up to 3)',
+    'wiz.f.webRefsPh':'e.g. apple.com, airbnb.com — sites they like the style of',
+    'wiz.f.integrations':'Special Integrations Needed',
+    'wiz.f.integrationsPh':'e.g. booking system, payment gateway, inventory, CRM',
+    'wiz.f.installItem':'What Is Being Installed?','wiz.f.installItemPh':'e.g. Channel letter sign, vehicle wrap, banner',
+    'wiz.f.lift':'Lift / Bucket Truck?',
+    'wiz.f.installAddrFull':'Installation Address *','wiz.f.installAddrFullPh':'Full address where installation takes place',
+    'wiz.f.access':'Access / Site Notes','wiz.f.accessPh':'e.g. Park on side street, contact John at (555)…',
+    'wiz.f.notes':'Additional Notes','wiz.f.notesPh':'Anything else the team needs to know about this job…',
+    'wiz.s3.err':'Enter a job title',
+    'wiz.s4.title':'Design Brief','wiz.s4.sub':'This is what your designer will read first — the more detail, the better the result',
+    'wiz.f.brief':'Project Brief',
+    'wiz.f.urgency':'Urgency / Turnaround',
+    'wiz.urg.standard':'Standard (5–7 days)','wiz.urg.expedited':'Expedited (2–3 days)',
+    'wiz.urg.rush':'Rush (Next Day)','wiz.urg.superRush':'Super Rush (Same Day)',
+    'wiz.f.refUrls':'Reference URLs','wiz.f.refUrlAdd':'+ Add Reference URL',
+    'wiz.f.rushOrder':'Rush Order?','wiz.f.rushLabel':'Mark as RUSH — priority handling, higher rates may apply',
+    'wiz.s5.title':'Quote & Timeline','wiz.s5.sub':'Set the price, deadline, and assign the team — all optional, can be updated later',
+    'wiz.f.estPrice':'Estimated Price','wiz.f.priceSub':'Leave at 0 for quote-only (TBD) or enter final price',
+    'wiz.f.dueDate':'Due Date',
+    'wiz.due.today':'Today','wiz.due.3days':'+3 Days','wiz.due.1week':'+1 Week','wiz.due.2weeks':'+2 Weeks','wiz.due.1month':'+1 Month',
+    'wiz.f.assignTo':'Assign To (Optional)','wiz.f.unassigned':'Unassigned',
+    'wiz.f.alsoCreate':'Also Create',
+    'wiz.out.job':'📋 Job Only','wiz.out.jobEst':'📋 Job + Estimate','wiz.out.jobInv':'📋 Job + Invoice',
+    'wiz.s6.title':'Review & Confirm','wiz.s6.sub':'Everything looks good? Hit Create Order to send this to the board',
+    'wiz.c.customer':'👤 Customer','wiz.c.dueDate':'📅 Due Date','wiz.c.price':'💵 Price',
+    'wiz.c.urgency':'⚡ Urgency','wiz.c.assignedTo':'👷 Assigned To','wiz.c.creates':'📄 Creates',
+    'wiz.c.unassigned':'Unassigned','wiz.c.standard':'Standard','wiz.c.quoteTbd':'Quote TBD',
+    'wiz.c.jobOnly':'Job Only','wiz.c.jobEst':'Job + Estimate','wiz.c.jobInv':'Job + Invoice',
+    'wiz.c.designBrief':'🎨 Design Brief',
   },
   es: {
     // ── Nav groups
@@ -3270,6 +3353,89 @@ var STRINGS = {
     'fin.col.amount':'Monto','fin.col.type':'Tipo','fin.col.status':'Estado',
     // ── Last updated
     'dash.lastUpdated':'Última actualización','dash.autoRefresh':'Se actualiza cada 60s',
+    // ── Intake Wizard
+    'wiz.title':'Nueva Orden de Trabajo',
+    'wiz.back':'← Atrás','wiz.next':'Siguiente →','wiz.create':'🚀 Crear Orden','wiz.creating':'⏳ Creando…',
+    'wiz.step.customer':'Cliente','wiz.step.service':'Servicio','wiz.step.details':'Detalles',
+    'wiz.step.brief':'Brief','wiz.step.quote':'Cotización','wiz.step.confirm':'Confirmar',
+    'wiz.subtitle':'Paso','wiz.subtitleOf':'de',
+    'wiz.summary.title':'Resumen del Pedido',
+    'wiz.sum.customer':'👤 Cliente','wiz.sum.service':'🛠 Servicio','wiz.sum.job':'📌 Trabajo',
+    'wiz.sum.specs':'📐 Especif.','wiz.sum.qty':'🔢 Cant.','wiz.sum.location':'📍 Ubicación',
+    'wiz.sum.urgency':'⚡ Urgencia','wiz.sum.price':'💵 Precio','wiz.sum.due':'📅 Fecha Límite',
+    'wiz.sum.rush':'🔴 ORDEN URGENTE','wiz.sum.creates':'📄 También crear',
+    'wiz.sum.estimate':'Cotización','wiz.sum.invoice':'Factura','wiz.sum.newCustomer':'Nuevo Cliente',
+    'wiz.s1.title':'¿Para quién es esta orden?','wiz.s1.sub':'Busca un cliente existente o agrega uno nuevo aquí',
+    'wiz.s1.search':'🔍  Buscar por nombre, empresa o teléfono…','wiz.s1.or':'o',
+    'wiz.s1.newBtn':'+ Nuevo Cliente — Agregar Detalles',
+    'wiz.s1.fullName':'Nombre Completo *','wiz.s1.company':'Empresa / Negocio',
+    'wiz.s1.phone':'Teléfono *','wiz.s1.email':'Correo',
+    'wiz.s1.namePh':'Nombre completo del cliente','wiz.s1.companyPh':'Nombre del negocio (opcional)',
+    'wiz.s1.phonePh':'(555) 000-0000','wiz.s1.emailPh':'cliente@email.com',
+    'wiz.s1.err.name':'Ingresa el nombre del cliente','wiz.s1.err.noClient':'Selecciona o agrega un cliente',
+    'wiz.s2.title':'¿Qué servicio necesita el cliente?',
+    'wiz.s2.sub':'Selecciona el servicio principal — esto adaptará el formulario para capturar exactamente lo que necesitas',
+    'wiz.svc.print.label':'Impresión y Letreros','wiz.svc.print.desc':'Lonas, volantes, coroplast, foam board, posters, stickers',
+    'wiz.svc.signs.label':'Señalización y Toldos','wiz.svc.signs.desc':'Letras de canal, señales de monumento, toldos, señales de pared',
+    'wiz.svc.wraps.label':'Wraps','wiz.svc.wraps.desc':'Wraps de ventana, wraps de vehículo, completo/parcial, vinilo perforado',
+    'wiz.svc.design.label':'Diseño Gráfico','wiz.svc.design.desc':'Logo, branding, tarjetas, volantes, redes sociales, arte',
+    'wiz.svc.web.label':'Diseño Web / App','wiz.svc.web.desc':'Sitios web, landing pages, e-commerce, apps iOS/Android',
+    'wiz.svc.install.label':'Instalación / Campo','wiz.svc.install.desc':'Instalación de señales, visita de sitio, permisos, solo trabajo de campo',
+    'wiz.s2.err':'Selecciona un tipo de servicio',
+    'wiz.s3.sub':'Llena con tanto detalle como sea posible — diseñadores e instaladores usan esto para iniciar el trabajo',
+    'wiz.f.jobTitle':'Título del Trabajo *','wiz.f.jobTitlePh':'Título corto descriptivo (p. ej. Lona 3×6 — Auto Smith)',
+    'wiz.f.material':'Material','wiz.f.finish':'Acabado / Laminado',
+    'wiz.f.width':'Ancho','wiz.f.widthPh':'p. ej. 3ft','wiz.f.height':'Alto','wiz.f.heightPh':'p. ej. 6ft',
+    'wiz.f.qty':'Cantidad','wiz.f.doubleSided':'¿Doble Cara?',
+    'wiz.f.needsInstall':'¿Necesita Instalación?','wiz.f.installNo':'No — recolección/entrega','wiz.f.installYes':'Sí — instalación en sitio',
+    'wiz.f.installAddr':'Dirección de Instalación','wiz.f.installAddrPh':'Dirección completa de instalación',
+    'wiz.f.signType':'Tipo de Señal','wiz.f.illuminated':'¿Iluminado?',
+    'wiz.f.approxWidth':'Ancho Aprox.','wiz.f.approxWidthPh':'p. ej. 10ft',
+    'wiz.f.approxHeight':'Alto Aprox.','wiz.f.approxHeightPh':'p. ej. 3ft',
+    'wiz.f.permit':'¿Permiso Requerido?','wiz.f.permitStatus':'Estado del Permiso',
+    'wiz.f.survey':'¿Visita al Sitio?','wiz.f.wrapType':'Tipo de Wrap',
+    'wiz.f.coverage':'Cobertura','wiz.f.vehYear':'Año','wiz.f.vehMake':'Marca','wiz.f.vehModel':'Modelo',
+    'wiz.f.panels':'# de Paneles / Ventanas',
+    'wiz.f.siteParkingAddr':'Dirección de Estacionamiento','wiz.f.siteParkingAddrPh':'¿Dónde se instalará el wrap?',
+    'wiz.f.surveyNo':'No','wiz.f.surveyYes':'Sí — necesita medidas',
+    'wiz.f.designType':'Tipo de Diseño','wiz.f.fileFormat':'Formato de Archivo Final',
+    'wiz.f.hasBrand':'¿Tiene Logo/Marca Existente?','wiz.f.usage':'¿Dónde Se Usará?',
+    'wiz.f.qtyVersions':'Cantidad / Versiones','wiz.f.colors':'Preferencias de Color',
+    'wiz.f.colorsPh':'p. ej. Azul marino, dorado — sin rojo','wiz.f.refs':'Ejemplos de Referencia',
+    'wiz.f.refsPh':'URLs o describe estilos que les gustan (p. ej. minimalista, moderno)',
+    'wiz.f.webType':'Tipo de Proyecto','wiz.f.platform':'Preferencia de Plataforma',
+    'wiz.f.estPages':'# Est. de Páginas / Pantallas','wiz.f.hasLogoAndBrand':'¿Tiene Logo y Marca?',
+    'wiz.f.hasDomainHosting':'¿Tiene Dominio y Hosting?','wiz.f.contentReady':'¿Contenido Listo?',
+    'wiz.f.webRefs':'Sitios Web / Apps de Referencia (hasta 3)',
+    'wiz.f.webRefsPh':'p. ej. apple.com, airbnb.com — sitios que les gusta el estilo',
+    'wiz.f.integrations':'Integraciones Especiales Necesarias',
+    'wiz.f.integrationsPh':'p. ej. sistema de reservas, pasarela de pago, inventario, CRM',
+    'wiz.f.installItem':'¿Qué Se Va a Instalar?','wiz.f.installItemPh':'p. ej. Letras de canal, wrap de vehículo, lona',
+    'wiz.f.lift':'¿Camión Canasta / Elevador?',
+    'wiz.f.installAddrFull':'Dirección de Instalación *','wiz.f.installAddrFullPh':'Dirección completa donde se realiza la instalación',
+    'wiz.f.access':'Acceso / Notas del Sitio','wiz.f.accessPh':'p. ej. Estacionar en calle lateral, contactar a Juan al (555)…',
+    'wiz.f.notes':'Notas Adicionales','wiz.f.notesPh':'Cualquier cosa que el equipo deba saber sobre este trabajo…',
+    'wiz.s3.err':'Ingresa un título para el trabajo',
+    'wiz.s4.title':'Brief de Diseño','wiz.s4.sub':'Esto es lo primero que leerá tu diseñador — más detalle, mejor resultado',
+    'wiz.f.brief':'Brief del Proyecto',
+    'wiz.f.urgency':'Urgencia / Tiempo de Entrega',
+    'wiz.urg.standard':'Estándar (5–7 días)','wiz.urg.expedited':'Expedited (2–3 días)',
+    'wiz.urg.rush':'Urgente (Al día siguiente)','wiz.urg.superRush':'Súper Urgente (Mismo día)',
+    'wiz.f.refUrls':'URLs de Referencia','wiz.f.refUrlAdd':'+ Agregar URL de Referencia',
+    'wiz.f.rushOrder':'¿Orden Urgente?','wiz.f.rushLabel':'Marcar como URGENTE — manejo prioritario, tarifas más altas pueden aplicar',
+    'wiz.s5.title':'Cotización y Fecha','wiz.s5.sub':'Establece el precio, fecha límite y asigna al equipo — todo opcional, se puede actualizar después',
+    'wiz.f.estPrice':'Precio Estimado','wiz.f.priceSub':'Deja en 0 para solo cotización (Por Definir) o ingresa el precio final',
+    'wiz.f.dueDate':'Fecha Límite',
+    'wiz.due.today':'Hoy','wiz.due.3days':'+3 Días','wiz.due.1week':'+1 Semana','wiz.due.2weeks':'+2 Semanas','wiz.due.1month':'+1 Mes',
+    'wiz.f.assignTo':'Asignar A (Opcional)','wiz.f.unassigned':'Sin Asignar',
+    'wiz.f.alsoCreate':'También Crear',
+    'wiz.out.job':'📋 Solo Trabajo','wiz.out.jobEst':'📋 Trabajo + Cotización','wiz.out.jobInv':'📋 Trabajo + Factura',
+    'wiz.s6.title':'Revisar y Confirmar','wiz.s6.sub':'¿Todo bien? Presiona Crear Orden para enviar al tablero',
+    'wiz.c.customer':'👤 Cliente','wiz.c.dueDate':'📅 Fecha Límite','wiz.c.price':'💵 Precio',
+    'wiz.c.urgency':'⚡ Urgencia','wiz.c.assignedTo':'👷 Asignado A','wiz.c.creates':'📄 Crea',
+    'wiz.c.unassigned':'Sin Asignar','wiz.c.standard':'Estándar','wiz.c.quoteTbd':'Precio Por Definir',
+    'wiz.c.jobOnly':'Solo Trabajo','wiz.c.jobEst':'Trabajo + Cotización','wiz.c.jobInv':'Trabajo + Factura',
+    'wiz.c.designBrief':'🎨 Brief de Diseño',
   }
 };
 
@@ -8455,12 +8621,12 @@ var _wiz = {
 };
 
 var WIZ_STEPS = [
-  {n:1, label:'Customer',  icon:'👤'},
-  {n:2, label:'Service',   icon:'🛠'},
-  {n:3, label:'Details',   icon:'📝'},
-  {n:4, label:'Brief',     icon:'🎨'},
-  {n:5, label:'Quote',     icon:'💵'},
-  {n:6, label:'Confirm',   icon:'✅'}
+  {n:1, key:'customer', icon:'👤'},
+  {n:2, key:'service',  icon:'🛠'},
+  {n:3, key:'details',  icon:'📝'},
+  {n:4, key:'brief',    icon:'🎨'},
+  {n:5, key:'quote',    icon:'💵'},
+  {n:6, key:'confirm',  icon:'✅'}
 ];
 
 var WIZ_SERVICES = [
@@ -8496,7 +8662,7 @@ function renderWizSteps() {
   var sub = document.getElementById('wiz-subtitle');
   var stepsEl = document.getElementById('wiz-steps');
   var dots = document.getElementById('wiz-progress-dots');
-  if (sub) sub.textContent = 'Step ' + _wiz.step + ' of 6 — ' + WIZ_STEPS[_wiz.step-1].label;
+  if (sub) sub.textContent = t('wiz.subtitle') + ' ' + _wiz.step + ' ' + t('wiz.subtitleOf') + ' 6 — ' + t('wiz.step.' + WIZ_STEPS[_wiz.step-1].key);
   var stH = WIZ_STEPS.map(function(s) {
     var active = s.n === _wiz.step;
     var done   = s.n < _wiz.step;
@@ -8508,7 +8674,7 @@ function renderWizSteps() {
                     'background:var(--bg3);color:var(--t3);') + '">' +
           (done ? '✓' : s.icon) +
         '</div>' +
-        '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:'+(active?'var(--acc)':done?'#4caf7d':'var(--t3)')+'">'+s.label+'</div>' +
+        '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:'+(active?'var(--acc)':done?'#4caf7d':'var(--t3)')+'">'+t('wiz.step.'+s.key)+'</div>' +
       '</div>' +
       (s.n < 6 ? '<div style="width:28px;height:2px;border-radius:1px;margin-bottom:14px;background:'+(done?'#4caf7d':'var(--bor)')+'"></div>' : '') +
     '</div>';
@@ -8525,12 +8691,12 @@ function renderWizNav() {
   if (back) { back.style.visibility = _wiz.step === 1 ? 'hidden' : 'visible'; }
   if (next) {
     if (_wiz.step === 6) {
-      next.textContent = '🚀 Create Order';
+      next.textContent = t('wiz.create');
       next.style.background = '#4caf7d';
       next.style.borderColor = '#4caf7d';
       next.style.minWidth = '180px';
     } else {
-      next.textContent = 'Next →';
+      next.textContent = t('wiz.next');
       next.style.background = '';
       next.style.borderColor = '';
       next.style.minWidth = '140px';
@@ -8556,20 +8722,20 @@ function wizValidate() {
       var c = ((document.getElementById('wiz-nc-company')||{}).value||'').trim();
       var p = ((document.getElementById('wiz-nc-phone')||{}).value||'').trim();
       var e = ((document.getElementById('wiz-nc-email')||{}).value||'').trim();
-      if (!n) { wizToast('Enter customer name'); return false; }
+      if (!n) { wizToast(t('wiz.s1.err.name')); return false; }
       _wiz.newClientData = {name:n, company:c, phone:p, email:e};
       return true;
     }
-    if (!_wiz.client) { wizToast('Please select or add a customer'); return false; }
+    if (!_wiz.client) { wizToast(t('wiz.s1.err.noClient')); return false; }
     return true;
   }
   if (_wiz.step === 2) {
-    if (!_wiz.service) { wizToast('Please select a service type'); return false; }
+    if (!_wiz.service) { wizToast(t('wiz.s2.err')); return false; }
     return true;
   }
   if (_wiz.step === 3) {
     var title = (document.getElementById('wiz-job-title')||{}).value||'';
-    if (!title) { wizToast('Enter a job title'); return false; }
+    if (!title) { wizToast(t('wiz.s3.err')); return false; }
     _wiz.details.title = title;
     wizSaveDetails();
     return true;
@@ -8592,20 +8758,20 @@ function renderWizSummary() {
   var el = document.getElementById('wiz-summary');
   if (!el) return;
   var svc = _wiz.service ? WIZ_SERVICES.find(function(s){ return s.id===_wiz.service; }) : null;
-  var clientName = _wiz.isNewClient ? (_wiz.newClientData.name||'New Customer') : (_wiz.client ? _wiz.client.name : '—');
-  var html = '<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:16px">Order Summary</div>';
+  var clientName = _wiz.isNewClient ? (_wiz.newClientData.name||t('wiz.sum.newCustomer')) : (_wiz.client ? _wiz.client.name : '—');
+  var html = '<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:16px">'+t('wiz.summary.title')+'</div>';
 
-  html += wizSumRow('👤 Customer', clientName, !!_wiz.client||_wiz.isNewClient);
-  html += wizSumRow('🛠 Service', svc ? svc.icon+' '+svc.label : '—', !!svc);
-  if (_wiz.details.title) html += wizSumRow('📌 Job', _wiz.details.title, true);
-  if (_wiz.details.size||_wiz.details.material) html += wizSumRow('📐 Specs', [_wiz.details.size,_wiz.details.material].filter(Boolean).join(' · '), true);
-  if (_wiz.details.qty) html += wizSumRow('🔢 Qty', _wiz.details.qty, true);
-  if (_wiz.details.address) html += wizSumRow('📍 Location', _wiz.details.address, true);
-  if (_wiz.brief.urgency) html += wizSumRow('⚡ Urgency', _wiz.brief.urgency, true);
-  if (_wiz.quote.price) html += wizSumRow('💵 Price', '$'+_wiz.quote.price, true);
-  if (_wiz.quote.dueDate) html += wizSumRow('📅 Due', _wiz.quote.dueDate, true);
-  if (_wiz.quote.rush) html += '<div style="margin-top:10px;background:#ef444415;border:1px solid #ef444430;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#ef4444">🔴 RUSH ORDER</div>';
-  if (_wiz.quote.output && _wiz.quote.output!=='job') html += wizSumRow('📄 Also create', _wiz.quote.output==='job+estimate'?'Estimate':'Invoice', true);
+  html += wizSumRow(t('wiz.sum.customer'), clientName, !!_wiz.client||_wiz.isNewClient);
+  html += wizSumRow(t('wiz.sum.service'), svc ? svc.icon+' '+t('wiz.svc.'+svc.id+'.label') : '—', !!svc);
+  if (_wiz.details.title) html += wizSumRow(t('wiz.sum.job'), _wiz.details.title, true);
+  if (_wiz.details.size||_wiz.details.material) html += wizSumRow(t('wiz.sum.specs'), [_wiz.details.size,_wiz.details.material].filter(Boolean).join(' · '), true);
+  if (_wiz.details.qty) html += wizSumRow(t('wiz.sum.qty'), _wiz.details.qty, true);
+  if (_wiz.details.address) html += wizSumRow(t('wiz.sum.location'), _wiz.details.address, true);
+  if (_wiz.brief.urgency) html += wizSumRow(t('wiz.sum.urgency'), _wiz.brief.urgency, true);
+  if (_wiz.quote.price) html += wizSumRow(t('wiz.sum.price'), '$'+_wiz.quote.price, true);
+  if (_wiz.quote.dueDate) html += wizSumRow(t('wiz.sum.due'), _wiz.quote.dueDate, true);
+  if (_wiz.quote.rush) html += '<div style="margin-top:10px;background:#ef444415;border:1px solid #ef444430;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:#ef4444">'+t('wiz.sum.rush')+'</div>';
+  if (_wiz.quote.output && _wiz.quote.output!=='job') html += wizSumRow(t('wiz.sum.creates'), _wiz.quote.output==='job+estimate'?t('wiz.sum.estimate'):t('wiz.sum.invoice'), true);
 
   el.innerHTML = html;
 }
@@ -8627,9 +8793,9 @@ function renderWizContent() {
 
 // ── STEP 1: Customer ──────────────────────────────────────────
 function wizStep1() {
-  var html = wizStepHeader('👤', 'Who is this order for?', 'Search an existing customer or add a new one right here');
+  var html = wizStepHeader('👤', t('wiz.s1.title'), t('wiz.s1.sub'));
   html += '<div style="position:relative;margin-bottom:16px">';
-  html += '<input class="fc" id="wiz-cli-search" placeholder="🔍  Search by name, company or phone…" autocomplete="off" oninput="wizSearchClient()" style="font-size:15px;padding:14px 16px" '+ (_wiz.client ? 'value="'+_wiz.client.name+((_wiz.client.company)?' — '+_wiz.client.company:'')+'"' : '') + '/>';
+  html += '<input class="fc" id="wiz-cli-search" placeholder="'+t('wiz.s1.search')+'" autocomplete="off" oninput="wizSearchClient()" style="font-size:15px;padding:14px 16px" '+ (_wiz.client ? 'value="'+_wiz.client.name+((_wiz.client.company)?' — '+_wiz.client.company:'')+'"' : '') + '/>';
   html += '<div id="wiz-cli-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--bor);border-radius:10px;z-index:100;max-height:260px;overflow-y:auto;margin-top:4px;box-shadow:0 8px 30px rgba(0,0,0,.2)"></div>';
   html += '</div>';
 
@@ -8645,18 +8811,18 @@ function wizStep1() {
   }
 
   if (!_wiz.client) {
-    html += '<div style="text-align:center;margin:16px 0;color:var(--t3);font-size:13px;display:flex;align-items:center;gap:10px"><div style="flex:1;height:1px;background:var(--bor)"></div>or<div style="flex:1;height:1px;background:var(--bor)"></div></div>';
-    html += '<button onclick="wizToggleNewClient()" class="btn btn-o" style="width:100%;padding:14px;font-size:14px;font-weight:600;justify-content:center;border-style:dashed">+ New Customer — Add Details</button>';
+    html += '<div style="text-align:center;margin:16px 0;color:var(--t3);font-size:13px;display:flex;align-items:center;gap:10px"><div style="flex:1;height:1px;background:var(--bor)"></div>'+t('wiz.s1.or')+'<div style="flex:1;height:1px;background:var(--bor)"></div></div>';
+    html += '<button onclick="wizToggleNewClient()" class="btn btn-o" style="width:100%;padding:14px;font-size:14px;font-weight:600;justify-content:center;border-style:dashed">'+t('wiz.s1.newBtn')+'</button>';
     if (_wiz.isNewClient) {
       html += '<form id="wiz-nc-form" autocomplete="on" onsubmit="return false" style="margin-top:16px;background:var(--bg3);border-radius:14px;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px">';
-      html += '<div style="grid-column:1/-1"><label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Full Name *</label>';
-      html += '<input class="fc" id="wiz-nc-name" name="name" autocomplete="name" placeholder="Customer full name" style="font-size:14px;padding:10px 14px" value="'+(_wiz.newClientData.name||'')+'"/></div>';
-      html += '<div style="grid-column:1/-1"><label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Company / Business</label>';
-      html += '<input class="fc" id="wiz-nc-company" name="organization" autocomplete="organization" placeholder="Business name (optional)" style="padding:10px 14px" value="'+(_wiz.newClientData.company||'')+'"/></div>';
-      html += '<div><label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Phone *</label>';
-      html += '<input class="fc" id="wiz-nc-phone" name="tel" type="tel" autocomplete="tel" placeholder="(555) 000-0000" style="padding:10px 14px" value="'+(_wiz.newClientData.phone||'')+'"/></div>';
-      html += '<div><label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Email</label>';
-      html += '<input class="fc" id="wiz-nc-email" name="email" type="email" autocomplete="email" placeholder="customer@email.com" style="padding:10px 14px" value="'+(_wiz.newClientData.email||'')+'"/></div>';
+      html += '<div style="grid-column:1/-1"><label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">'+t('wiz.s1.fullName')+'</label>';
+      html += '<input class="fc" id="wiz-nc-name" name="name" autocomplete="name" placeholder="'+t('wiz.s1.namePh')+'" style="font-size:14px;padding:10px 14px" value="'+(_wiz.newClientData.name||'')+'"/></div>';
+      html += '<div style="grid-column:1/-1"><label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">'+t('wiz.s1.company')+'</label>';
+      html += '<input class="fc" id="wiz-nc-company" name="organization" autocomplete="organization" placeholder="'+t('wiz.s1.companyPh')+'" style="padding:10px 14px" value="'+(_wiz.newClientData.company||'')+'"/></div>';
+      html += '<div><label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">'+t('wiz.s1.phone')+'</label>';
+      html += '<input class="fc" id="wiz-nc-phone" name="tel" type="tel" autocomplete="tel" placeholder="'+t('wiz.s1.phonePh')+'" style="padding:10px 14px" value="'+(_wiz.newClientData.phone||'')+'"/></div>';
+      html += '<div><label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">'+t('wiz.s1.email')+'</label>';
+      html += '<input class="fc" id="wiz-nc-email" name="email" type="email" autocomplete="email" placeholder="'+t('wiz.s1.emailPh')+'" style="padding:10px 14px" value="'+(_wiz.newClientData.email||'')+'"/></div>';
       html += '</form>';
     }
   }
@@ -8696,15 +8862,15 @@ function wizToggleNewClient() { _wiz.isNewClient = !_wiz.isNewClient; _wiz.clien
 
 // ── STEP 2: Service Selection ─────────────────────────────────
 function wizStep2() {
-  var html = wizStepHeader('🛠', 'What service does the customer need?', 'Select the primary service — this will tailor the details form to capture exactly what you need');
+  var html = wizStepHeader('🛠', t('wiz.s2.title'), t('wiz.s2.sub'));
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
   html += WIZ_SERVICES.map(function(s) {
     var sel = _wiz.service === s.id;
     return '<div onclick="wizSelectService(\''+s.id+'\')" style="cursor:pointer;border:2px solid '+(sel?'var(--acc)':'var(--bor)')+';border-radius:14px;padding:20px 18px;background:'+(sel?'rgba(108,99,255,.08)':'var(--bg2)')+';transition:.15s;position:relative">' +
       (sel ? '<div style="position:absolute;top:12px;right:12px;width:20px;height:20px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700">✓</div>' : '') +
       '<div style="font-size:36px;margin-bottom:10px">'+s.icon+'</div>' +
-      '<div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:6px">'+s.label+'</div>' +
-      '<div style="font-size:12px;color:var(--t3);line-height:1.5">'+s.desc+'</div>' +
+      '<div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:6px">'+t('wiz.svc.'+s.id+'.label')+'</div>' +
+      '<div style="font-size:12px;color:var(--t3);line-height:1.5">'+t('wiz.svc.'+s.id+'.desc')+'</div>' +
     '</div>';
   }).join('');
   html += '</div>';
@@ -8716,88 +8882,88 @@ function wizSelectService(id) { _wiz.service = id; _wiz.details = {}; renderWiza
 // ── STEP 3: Dynamic Details ───────────────────────────────────
 function wizStep3() {
   var svc = WIZ_SERVICES.find(function(s){ return s.id===_wiz.service; });
-  var html = wizStepHeader(svc?svc.icon:'📝', svc?svc.label+' Details':'Job Details', 'Fill in as much detail as possible — designers and installers use this to start the work');
+  var html = wizStepHeader(svc?svc.icon:'📝', svc?t('wiz.svc.'+svc.id+'.label')+' Details':'Job Details', t('wiz.s3.sub'));
   var d = _wiz.details;
 
   // Title always first
-  html += wizField('Job Title *', '<input class="fc" id="wiz-job-title" placeholder="Short descriptive title (e.g. 3×6 Vinyl Banner — Smith Auto)" style="font-size:14px;padding:11px 14px" value="'+(d.title||'')+'"/>', 'full');
+  html += wizField(t('wiz.f.jobTitle'), '<input class="fc" id="wiz-job-title" placeholder="'+t('wiz.f.jobTitlePh')+'" style="font-size:14px;padding:11px 14px" value="'+(d.title||'')+'"/>', 'full');
 
   if (_wiz.service === 'print') {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
-    html += wizField('Material', '<select class="fc" id="wiz-material" style="padding:10px 14px">'+['','13oz Vinyl','18oz Vinyl','Mesh Vinyl','Coroplast (4mm)','Coroplast (6mm)','Foam Board','Fabric','Canvas','Sticker/Label','Magnetic','Other'].map(function(o){return '<option'+(d.material===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
-    html += wizField('Finish / Laminate', '<select class="fc" id="wiz-finish" style="padding:10px 14px">'+['None','Matte Laminate','Gloss Laminate','Grommets','Hemmed Edges','Pole Pockets','Grommets + Hem','Custom'].map(function(o){return '<option'+(d.finish===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
-    html += wizField('Width', '<input class="fc" id="wiz-width" placeholder="e.g. 3ft" style="padding:10px 14px" value="'+(d.width||'')+'"/>');
-    html += wizField('Height', '<input class="fc" id="wiz-height" placeholder="e.g. 6ft" style="padding:10px 14px" value="'+(d.height||'')+'"/>');
-    html += wizField('Quantity', '<input class="fc" id="wiz-qty" type="number" min="1" placeholder="1" style="padding:10px 14px" value="'+(d.qty||'')+'"/>');
-    html += wizField('Double-Sided?', '<select class="fc" id="wiz-sided" style="padding:10px 14px"><option>Single-Sided</option><option'+(d.sided==='Double-Sided'?' selected':'')+'>Double-Sided</option></select>');
+    html += wizField(t('wiz.f.material'), '<select class="fc" id="wiz-material" style="padding:10px 14px">'+['','13oz Vinyl','18oz Vinyl','Mesh Vinyl','Coroplast (4mm)','Coroplast (6mm)','Foam Board','Fabric','Canvas','Sticker/Label','Magnetic','Other'].map(function(o){return '<option'+(d.material===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
+    html += wizField(t('wiz.f.finish'), '<select class="fc" id="wiz-finish" style="padding:10px 14px">'+['None','Matte Laminate','Gloss Laminate','Grommets','Hemmed Edges','Pole Pockets','Grommets + Hem','Custom'].map(function(o){return '<option'+(d.finish===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
+    html += wizField(t('wiz.f.width'), '<input class="fc" id="wiz-width" placeholder="'+t('wiz.f.widthPh')+'" style="padding:10px 14px" value="'+(d.width||'')+'"/>');
+    html += wizField(t('wiz.f.height'), '<input class="fc" id="wiz-height" placeholder="'+t('wiz.f.heightPh')+'" style="padding:10px 14px" value="'+(d.height||'')+'"/>');
+    html += wizField(t('wiz.f.qty'), '<input class="fc" id="wiz-qty" type="number" min="1" placeholder="1" style="padding:10px 14px" value="'+(d.qty||'')+'"/>');
+    html += wizField(t('wiz.f.doubleSided'), '<select class="fc" id="wiz-sided" style="padding:10px 14px"><option>Single-Sided</option><option'+(d.sided==='Double-Sided'?' selected':'')+'>Double-Sided</option></select>');
     html += '</div>';
-    html += wizField('Needs Installation?', '<div style="display:flex;gap:10px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="wiz-install" value="no" '+(d.needsInstall!=='yes'?'checked':'')+' onchange="wizToggleInstallAddr(this)"/> No — pickup/delivery</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="wiz-install" value="yes" '+(d.needsInstall==='yes'?'checked':'')+' onchange="wizToggleInstallAddr(this)"/> Yes — install on-site</label></div>', 'full');
-    if (d.needsInstall==='yes') html += wizField('Install Address', '<input class="fc" id="wiz-address" placeholder="Full installation address" style="padding:10px 14px" value="'+(d.address||'')+'"/>', 'full');
+    html += wizField(t('wiz.f.needsInstall'), '<div style="display:flex;gap:10px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="wiz-install" value="no" '+(d.needsInstall!=='yes'?'checked':'')+' onchange="wizToggleInstallAddr(this)"/> '+t('wiz.f.installNo')+'</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="wiz-install" value="yes" '+(d.needsInstall==='yes'?'checked':'')+' onchange="wizToggleInstallAddr(this)"/> '+t('wiz.f.installYes')+'</label></div>', 'full');
+    if (d.needsInstall==='yes') html += wizField(t('wiz.f.installAddr'), '<input class="fc" id="wiz-address" placeholder="'+t('wiz.f.installAddrPh')+'" style="padding:10px 14px" value="'+(d.address||'')+'"/>', 'full');
   }
 
   if (_wiz.service === 'signs') {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
-    html += wizField('Sign Type', '<select class="fc" id="wiz-sign-type" style="padding:10px 14px">'+['','Channel Letters','Monument Sign','Pylon / Pole Sign','Wall-Mounted Sign','Post & Panel','Awning','Cabinet Sign','LED Display','Directional Sign','ADA Sign','Other'].map(function(o){return '<option'+(d.signType===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
-    html += wizField('Illuminated?', '<select class="fc" id="wiz-illuminated" style="padding:10px 14px"><option>No</option><option'+(d.illuminated==='Front-Lit'?' selected':'')+'>Front-Lit</option><option'+(d.illuminated==='Back-Lit (Halo)'?' selected':'')+'>Back-Lit (Halo)</option><option'+(d.illuminated==='Both'?' selected':'')+'>Both</option></select>');
-    html += wizField('Approx Width', '<input class="fc" id="wiz-width" placeholder="e.g. 10ft" style="padding:10px 14px" value="'+(d.width||'')+'"/>');
-    html += wizField('Approx Height', '<input class="fc" id="wiz-height" placeholder="e.g. 3ft" style="padding:10px 14px" value="'+(d.height||'')+'"/>');
-    html += wizField('Permit Required?', '<select class="fc" id="wiz-permit" style="padding:10px 14px"><option>Unknown</option><option'+(d.permit==='Yes — we handle'?' selected':'')+'>Yes — we handle</option><option'+(d.permit==='Yes — client handles'?' selected':'')+'>Yes — client handles</option><option'+(d.permit==='No'?' selected':'')+'>No</option></select>');
-    html += wizField('Site Survey Needed?', '<select class="fc" id="wiz-survey" style="padding:10px 14px"><option>No</option><option'+(d.survey==='Yes'?' selected':'')+'>Yes</option></select>');
+    html += wizField(t('wiz.f.signType'), '<select class="fc" id="wiz-sign-type" style="padding:10px 14px">'+['','Channel Letters','Monument Sign','Pylon / Pole Sign','Wall-Mounted Sign','Post & Panel','Awning','Cabinet Sign','LED Display','Directional Sign','ADA Sign','Other'].map(function(o){return '<option'+(d.signType===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
+    html += wizField(t('wiz.f.illuminated'), '<select class="fc" id="wiz-illuminated" style="padding:10px 14px"><option>No</option><option'+(d.illuminated==='Front-Lit'?' selected':'')+'>Front-Lit</option><option'+(d.illuminated==='Back-Lit (Halo)'?' selected':'')+'>Back-Lit (Halo)</option><option'+(d.illuminated==='Both'?' selected':'')+'>Both</option></select>');
+    html += wizField(t('wiz.f.approxWidth'), '<input class="fc" id="wiz-width" placeholder="'+t('wiz.f.approxWidthPh')+'" style="padding:10px 14px" value="'+(d.width||'')+'"/>');
+    html += wizField(t('wiz.f.approxHeight'), '<input class="fc" id="wiz-height" placeholder="'+t('wiz.f.approxHeightPh')+'" style="padding:10px 14px" value="'+(d.height||'')+'"/>');
+    html += wizField(t('wiz.f.permit'), '<select class="fc" id="wiz-permit" style="padding:10px 14px"><option>Unknown</option><option'+(d.permit==='Yes — we handle'?' selected':'')+'>Yes — we handle</option><option'+(d.permit==='Yes — client handles'?' selected':'')+'>Yes — client handles</option><option'+(d.permit==='No'?' selected':'')+'>No</option></select>');
+    html += wizField(t('wiz.f.survey'), '<select class="fc" id="wiz-survey" style="padding:10px 14px"><option>No</option><option'+(d.survey==='Yes'?' selected':'')+'>Yes</option></select>');
     html += '</div>';
-    html += wizField('Install Address', '<input class="fc" id="wiz-address" placeholder="Full installation address" style="padding:10px 14px" value="'+(d.address||'')+'"/>', 'full');
+    html += wizField(t('wiz.f.installAddr'), '<input class="fc" id="wiz-address" placeholder="'+t('wiz.f.installAddrPh')+'" style="padding:10px 14px" value="'+(d.address||'')+'"/>', 'full');
   }
 
   if (_wiz.service === 'wraps') {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
-    html += wizField('Wrap Type', '<select class="fc" id="wiz-wrap-type" style="padding:10px 14px">'+['','Vehicle Wrap','Window Wrap','Perforated Vinyl','Frosted Vinyl','Floor Wrap','Wall Wrap','Other'].map(function(o){return '<option'+(d.wrapType===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
-    html += wizField('Coverage', '<select class="fc" id="wiz-coverage" style="padding:10px 14px">'+['Full Wrap','Partial Wrap','Hood Only','Doors Only','Rear Only','Custom Areas'].map(function(o){return '<option'+(d.coverage===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
-    html += wizField('Year', '<input class="fc" id="wiz-veh-year" placeholder="e.g. 2022" style="padding:10px 14px" value="'+(d.vehYear||'')+'"/>');
-    html += wizField('Make', '<input class="fc" id="wiz-veh-make" placeholder="e.g. Ford" style="padding:10px 14px" value="'+(d.vehMake||'')+'"/>');
-    html += wizField('Model', '<input class="fc" id="wiz-veh-model" placeholder="e.g. F-150" style="padding:10px 14px" value="'+(d.vehModel||'')+'"/>');
-    html += wizField('# of Panels / Windows', '<input class="fc" id="wiz-panels" type="number" min="1" placeholder="e.g. 4" style="padding:10px 14px" value="'+(d.panels||'')+'"/>');
+    html += wizField(t('wiz.f.wrapType'), '<select class="fc" id="wiz-wrap-type" style="padding:10px 14px">'+['','Vehicle Wrap','Window Wrap','Perforated Vinyl','Frosted Vinyl','Floor Wrap','Wall Wrap','Other'].map(function(o){return '<option'+(d.wrapType===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
+    html += wizField(t('wiz.f.coverage'), '<select class="fc" id="wiz-coverage" style="padding:10px 14px">'+['Full Wrap','Partial Wrap','Hood Only','Doors Only','Rear Only','Custom Areas'].map(function(o){return '<option'+(d.coverage===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
+    html += wizField(t('wiz.f.vehYear'), '<input class="fc" id="wiz-veh-year" placeholder="e.g. 2022" style="padding:10px 14px" value="'+(d.vehYear||'')+'"/>');
+    html += wizField(t('wiz.f.vehMake'), '<input class="fc" id="wiz-veh-make" placeholder="e.g. Ford" style="padding:10px 14px" value="'+(d.vehMake||'')+'"/>');
+    html += wizField(t('wiz.f.vehModel'), '<input class="fc" id="wiz-veh-model" placeholder="e.g. F-150" style="padding:10px 14px" value="'+(d.vehModel||'')+'"/>');
+    html += wizField(t('wiz.f.panels'), '<input class="fc" id="wiz-panels" type="number" min="1" placeholder="e.g. 4" style="padding:10px 14px" value="'+(d.panels||'')+'"/>');
     html += '</div>';
-    html += wizField('Site / Parking Address', '<input class="fc" id="wiz-address" placeholder="Where will the wrap be installed?" style="padding:10px 14px" value="'+(d.address||'')+'"/>', 'full');
-    html += wizField('Site Survey Needed?', '<div style="display:flex;gap:10px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="wiz-survey" value="No" '+(d.survey!=='Yes'?'checked':'')+'/> No</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="wiz-survey" value="Yes" '+(d.survey==='Yes'?'checked':'')+'/> Yes — need measurements</label></div>', 'full');
+    html += wizField(t('wiz.f.siteParkingAddr'), '<input class="fc" id="wiz-address" placeholder="'+t('wiz.f.siteParkingAddrPh')+'" style="padding:10px 14px" value="'+(d.address||'')+'"/>', 'full');
+    html += wizField(t('wiz.f.survey'), '<div style="display:flex;gap:10px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="wiz-survey" value="No" '+(d.survey!=='Yes'?'checked':'')+'/> '+t('wiz.f.surveyNo')+'</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="wiz-survey" value="Yes" '+(d.survey==='Yes'?'checked':'')+'/> '+t('wiz.f.surveyYes')+'</label></div>', 'full');
   }
 
   if (_wiz.service === 'design') {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
-    html += wizField('Design Type', '<select class="fc" id="wiz-design-type" style="padding:10px 14px">'+['','Logo Design','Brand Identity Package','Business Card','Letterhead / Stationery','Flyer / Poster','Brochure','Social Media Kit','Email Template','Banner Artwork','Signage Layout','Vehicle Wrap Design','T-Shirt / Apparel','Other'].map(function(o){return '<option'+(d.designType===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
-    html += wizField('Final File Format', '<select class="fc" id="wiz-file-format" style="padding:10px 14px">'+['Print-Ready PDF','AI / EPS (Vector)','PNG (Transparent)','JPG','SVG','All Formats'].map(function(o){return '<option'+(d.fileFormat===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
-    html += wizField('Has Existing Logo/Brand?', '<select class="fc" id="wiz-has-brand" style="padding:10px 14px"><option>No — starting fresh</option><option'+(d.hasBrand==='Yes — will provide'?' selected':'')+'>Yes — will provide</option><option'+(d.hasBrand==='Partial — needs refresh'?' selected':'')+'>Partial — needs refresh</option></select>');
-    html += wizField('Where Will It Be Used?', '<select class="fc" id="wiz-usage" style="padding:10px 14px">'+['Print','Digital / Web','Both Print & Digital','Large Format Print'].map(function(o){return '<option'+(d.usage===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
-    html += wizField('Quantity / Versions', '<input class="fc" id="wiz-qty" placeholder="e.g. 1 design, 3 variations" style="padding:10px 14px" value="'+(d.qty||'')+'"/>');
-    html += wizField('Color Preferences', '<input class="fc" id="wiz-colors" placeholder="e.g. Navy blue, gold — no red" style="padding:10px 14px" value="'+(d.colors||'')+'"/>');
+    html += wizField(t('wiz.f.designType'), '<select class="fc" id="wiz-design-type" style="padding:10px 14px">'+['','Logo Design','Brand Identity Package','Business Card','Letterhead / Stationery','Flyer / Poster','Brochure','Social Media Kit','Email Template','Banner Artwork','Signage Layout','Vehicle Wrap Design','T-Shirt / Apparel','Other'].map(function(o){return '<option'+(d.designType===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
+    html += wizField(t('wiz.f.fileFormat'), '<select class="fc" id="wiz-file-format" style="padding:10px 14px">'+['Print-Ready PDF','AI / EPS (Vector)','PNG (Transparent)','JPG','SVG','All Formats'].map(function(o){return '<option'+(d.fileFormat===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
+    html += wizField(t('wiz.f.hasBrand'), '<select class="fc" id="wiz-has-brand" style="padding:10px 14px"><option>No — starting fresh</option><option'+(d.hasBrand==='Yes — will provide'?' selected':'')+'>Yes — will provide</option><option'+(d.hasBrand==='Partial — needs refresh'?' selected':'')+'>Partial — needs refresh</option></select>');
+    html += wizField(t('wiz.f.usage'), '<select class="fc" id="wiz-usage" style="padding:10px 14px">'+['Print','Digital / Web','Both Print & Digital','Large Format Print'].map(function(o){return '<option'+(d.usage===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
+    html += wizField(t('wiz.f.qtyVersions'), '<input class="fc" id="wiz-qty" placeholder="e.g. 1 design, 3 variations" style="padding:10px 14px" value="'+(d.qty||'')+'"/>');
+    html += wizField(t('wiz.f.colors'), '<input class="fc" id="wiz-colors" placeholder="'+t('wiz.f.colorsPh')+'" style="padding:10px 14px" value="'+(d.colors||'')+'"/>');
     html += '</div>';
-    html += wizField('Reference Examples', '<input class="fc" id="wiz-refs" placeholder="URLs or describe styles they like (e.g. minimalist, bold, modern)" style="padding:10px 14px" value="'+(d.refs||'')+'"/>', 'full');
+    html += wizField(t('wiz.f.refs'), '<input class="fc" id="wiz-refs" placeholder="'+t('wiz.f.refsPh')+'" style="padding:10px 14px" value="'+(d.refs||'')+'"/>', 'full');
   }
 
   if (_wiz.service === 'web') {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
-    html += wizField('Project Type', '<select class="fc" id="wiz-web-type" style="padding:10px 14px">'+['','New Website','Website Redesign','Landing Page','E-Commerce Store','Web Application','iOS App','Android App','iOS + Android','UI/UX Design Only','Prototype / Mockup'].map(function(o){return '<option'+(d.webType===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
-    html += wizField('Platform Preference', '<select class="fc" id="wiz-platform" style="padding:10px 14px">'+['No Preference','WordPress','Shopify','Wix','Squarespace','Custom / React','Custom / HTML-CSS','Flutter (Mobile)','React Native','Other'].map(function(o){return '<option'+(d.platform===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
-    html += wizField('Est. # of Pages / Screens', '<input class="fc" id="wiz-pages" type="number" min="1" placeholder="e.g. 5" style="padding:10px 14px" value="'+(d.pages||'')+'"/>');
-    html += wizField('Has Logo & Branding?', '<select class="fc" id="wiz-has-brand" style="padding:10px 14px"><option>No — needs design</option><option'+(d.hasBrand==='Yes'?' selected':'')+'>Yes</option><option'+(d.hasBrand==='Partial'?' selected':'')+'>Partial</option></select>');
-    html += wizField('Has Domain & Hosting?', '<select class="fc" id="wiz-hosting" style="padding:10px 14px"><option>No</option><option'+(d.hosting==='Yes'?' selected':'')+'>Yes</option><option'+(d.hosting==='We handle it'?' selected':'')+'>We handle it</option></select>');
-    html += wizField('Content Ready?', '<select class="fc" id="wiz-content-ready" style="padding:10px 14px"><option>No — needs copywriting</option><option'+(d.contentReady==='Yes'?' selected':'')+'>Yes — client will provide</option><option'+(d.contentReady==='Partial'?' selected':'')+'>Partial</option></select>');
+    html += wizField(t('wiz.f.webType'), '<select class="fc" id="wiz-web-type" style="padding:10px 14px">'+['','New Website','Website Redesign','Landing Page','E-Commerce Store','Web Application','iOS App','Android App','iOS + Android','UI/UX Design Only','Prototype / Mockup'].map(function(o){return '<option'+(d.webType===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
+    html += wizField(t('wiz.f.platform'), '<select class="fc" id="wiz-platform" style="padding:10px 14px">'+['No Preference','WordPress','Shopify','Wix','Squarespace','Custom / React','Custom / HTML-CSS','Flutter (Mobile)','React Native','Other'].map(function(o){return '<option'+(d.platform===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>');
+    html += wizField(t('wiz.f.estPages'), '<input class="fc" id="wiz-pages" type="number" min="1" placeholder="e.g. 5" style="padding:10px 14px" value="'+(d.pages||'')+'"/>');
+    html += wizField(t('wiz.f.hasLogoAndBrand'), '<select class="fc" id="wiz-has-brand" style="padding:10px 14px"><option>No — needs design</option><option'+(d.hasBrand==='Yes'?' selected':'')+'>Yes</option><option'+(d.hasBrand==='Partial'?' selected':'')+'>Partial</option></select>');
+    html += wizField(t('wiz.f.hasDomainHosting'), '<select class="fc" id="wiz-hosting" style="padding:10px 14px"><option>No</option><option'+(d.hosting==='Yes'?' selected':'')+'>Yes</option><option'+(d.hosting==='We handle it'?' selected':'')+'>We handle it</option></select>');
+    html += wizField(t('wiz.f.contentReady'), '<select class="fc" id="wiz-content-ready" style="padding:10px 14px"><option>No — needs copywriting</option><option'+(d.contentReady==='Yes'?' selected':'')+'>Yes — client will provide</option><option'+(d.contentReady==='Partial'?' selected':'')+'>Partial</option></select>');
     html += '</div>';
-    html += wizField('Reference Websites / Apps (up to 3)', '<input class="fc" id="wiz-web-refs" placeholder="e.g. apple.com, airbnb.com — sites they like the style of" style="padding:10px 14px" value="'+(d.webRefs||'')+'"/>', 'full');
-    html += wizField('Special Integrations Needed', '<input class="fc" id="wiz-integrations" placeholder="e.g. booking system, payment gateway, inventory, CRM" style="padding:10px 14px" value="'+(d.integrations||'')+'"/>', 'full');
+    html += wizField(t('wiz.f.webRefs'), '<input class="fc" id="wiz-web-refs" placeholder="'+t('wiz.f.webRefsPh')+'" style="padding:10px 14px" value="'+(d.webRefs||'')+'"/>', 'full');
+    html += wizField(t('wiz.f.integrations'), '<input class="fc" id="wiz-integrations" placeholder="'+t('wiz.f.integrationsPh')+'" style="padding:10px 14px" value="'+(d.integrations||'')+'"/>', 'full');
   }
 
   if (_wiz.service === 'install') {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
-    html += wizField('What Is Being Installed?', '<input class="fc" id="wiz-install-item" placeholder="e.g. Channel letter sign, vehicle wrap, banner" style="padding:10px 14px" value="'+(d.installItem||'')+'"/>');
-    html += wizField('Lift / Bucket Truck?', '<select class="fc" id="wiz-lift" style="padding:10px 14px"><option>No</option><option'+(d.lift==='Yes'?' selected':'')+'>Yes</option><option'+(d.lift==='Unsure'?' selected':'')+'>Unsure</option></select>');
-    html += wizField('Permit Status', '<select class="fc" id="wiz-permit" style="padding:10px 14px"><option>Not Required</option><option'+(d.permit==='Pending'?' selected':'')+'>Pending</option><option'+(d.permit==='Approved'?' selected':'')+'>Approved</option><option'+(d.permit==='We Handle It'?' selected':'')+'>We Handle It</option></select>');
-    html += wizField('Site Survey Needed?', '<select class="fc" id="wiz-survey" style="padding:10px 14px"><option>No</option><option'+(d.survey==='Yes'?' selected':'')+'>Yes</option></select>');
+    html += wizField(t('wiz.f.installItem'), '<input class="fc" id="wiz-install-item" placeholder="'+t('wiz.f.installItemPh')+'" style="padding:10px 14px" value="'+(d.installItem||'')+'"/>');
+    html += wizField(t('wiz.f.lift'), '<select class="fc" id="wiz-lift" style="padding:10px 14px"><option>No</option><option'+(d.lift==='Yes'?' selected':'')+'>Yes</option><option'+(d.lift==='Unsure'?' selected':'')+'>Unsure</option></select>');
+    html += wizField(t('wiz.f.permitStatus'), '<select class="fc" id="wiz-permit" style="padding:10px 14px"><option>Not Required</option><option'+(d.permit==='Pending'?' selected':'')+'>Pending</option><option'+(d.permit==='Approved'?' selected':'')+'>Approved</option><option'+(d.permit==='We Handle It'?' selected':'')+'>We Handle It</option></select>');
+    html += wizField(t('wiz.f.survey'), '<select class="fc" id="wiz-survey" style="padding:10px 14px"><option>No</option><option'+(d.survey==='Yes'?' selected':'')+'>Yes</option></select>');
     html += '</div>';
-    html += wizField('Installation Address *', '<input class="fc" id="wiz-address" placeholder="Full address where installation takes place" style="padding:10px 14px" value="'+(d.address||'')+'"/>', 'full');
-    html += wizField('Access / Site Notes', '<input class="fc" id="wiz-access" placeholder="e.g. Park on side street, contact John at (555)…" style="padding:10px 14px" value="'+(d.access||'')+'"/>', 'full');
+    html += wizField(t('wiz.f.installAddrFull'), '<input class="fc" id="wiz-address" placeholder="'+t('wiz.f.installAddrFullPh')+'" style="padding:10px 14px" value="'+(d.address||'')+'"/>', 'full');
+    html += wizField(t('wiz.f.access'), '<input class="fc" id="wiz-access" placeholder="'+t('wiz.f.accessPh')+'" style="padding:10px 14px" value="'+(d.access||'')+'"/>', 'full');
   }
 
   // Notes always last
-  html += wizField('Additional Notes', '<textarea class="fc" id="wiz-notes" rows="3" placeholder="Anything else the team needs to know about this job…" style="padding:10px 14px;resize:vertical">'+(d.notes||'')+'</textarea>', 'full');
+  html += wizField(t('wiz.f.notes'), '<textarea class="fc" id="wiz-notes" rows="3" placeholder="'+t('wiz.f.notesPh')+'" style="padding:10px 14px;resize:vertical">'+(d.notes||'')+'</textarea>', 'full');
   return html;
 }
 
@@ -8853,12 +9019,13 @@ function wizSaveDetails() {
 // ── STEP 4: Design Brief ──────────────────────────────────────
 function wizStep4() {
   var b = _wiz.brief;
-  var html = wizStepHeader('🎨', 'Design Brief', 'This is what your designer will read first — the more detail, the better the result');
+  var html = wizStepHeader('🎨', t('wiz.s4.title'), t('wiz.s4.sub'));
 
-  html += wizField('Project Brief', '<textarea class="fc" id="wiz-brief-text" rows="6" placeholder="Describe the vision, mood, and goals for this project.\n\nExample: We need a bold, modern banner for our grand opening. Navy and gold colors. Should feel premium but approachable. Include our logo, address, and \'Grand Opening — 50% Off\' message." style="padding:12px 14px;resize:vertical;line-height:1.6">'+(b.text||'')+'</textarea>', 'full');
+  html += wizField(t('wiz.f.brief'), '<textarea class="fc" id="wiz-brief-text" rows="6" placeholder="Describe the vision, mood, and goals for this project.\n\nExample: We need a bold, modern banner for our grand opening. Navy and gold colors. Should feel premium but approachable. Include our logo, address, and \'Grand Opening — 50% Off\' message." style="padding:12px 14px;resize:vertical;line-height:1.6">'+(b.text||'')+'</textarea>', 'full');
 
-  html += wizField('Urgency / Turnaround', '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-    ['Standard (5–7 days)','Expedited (2–3 days)','Rush (Next Day)','Super Rush (Same Day)'].map(function(u){
+  var _urgOpts = [t('wiz.urg.standard'),t('wiz.urg.expedited'),t('wiz.urg.rush'),t('wiz.urg.superRush')];
+  html += wizField(t('wiz.f.urgency'), '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+    _urgOpts.map(function(u){
       var sel = b.urgency===u;
       return '<label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid '+(sel?'var(--acc)':'var(--bor)')+';border-radius:10px;cursor:pointer;background:'+(sel?'rgba(108,99,255,.08)':'transparent')+'">' +
         '<input type="radio" name="wiz-urgency" value="'+u+'" '+(sel?'checked':'')+' onchange="_wiz.brief.urgency=this.value;document.querySelectorAll(\'[name=wiz-urgency]\').forEach(function(r){r.closest(\'label\').style.borderColor=r.checked?\'var(--acc)\':\'var(--bor)\';r.closest(\'label\').style.background=r.checked?\'rgba(108,99,255,.08)\':\'\';});"/>' +
@@ -8866,10 +9033,10 @@ function wizStep4() {
     }).join('') +
   '</div>', 'full');
 
-  html += wizField('Reference URLs', '<div id="wiz-refs-list">' + (b.refs||[]).map(function(r,i){ return '<div style="display:flex;gap:6px;margin-bottom:6px"><input class="fc" value="'+r+'" placeholder="https://..." style="padding:8px 12px;flex:1" onchange="_wiz.brief.refs['+i+']=this.value"/><button onclick="_wiz.brief.refs.splice('+i+',1);renderWizard()" style="background:none;border:1px solid var(--bor);border-radius:6px;padding:0 10px;cursor:pointer;color:var(--t3)">✕</button></div>'; }).join('') +
-    '<button onclick="if(!_wiz.brief.refs)_wiz.brief.refs=[];_wiz.brief.refs.push(\'\');renderWizard()" class="btn btn-o btn-sm" style="width:100%;justify-content:center;margin-top:4px">+ Add Reference URL</button></div>', 'full');
+  html += wizField(t('wiz.f.refUrls'), '<div id="wiz-refs-list">' + (b.refs||[]).map(function(r,i){ return '<div style="display:flex;gap:6px;margin-bottom:6px"><input class="fc" value="'+r+'" placeholder="https://..." style="padding:8px 12px;flex:1" onchange="_wiz.brief.refs['+i+']=this.value"/><button onclick="_wiz.brief.refs.splice('+i+',1);renderWizard()" style="background:none;border:1px solid var(--bor);border-radius:6px;padding:0 10px;cursor:pointer;color:var(--t3)">✕</button></div>'; }).join('') +
+    '<button onclick="if(!_wiz.brief.refs)_wiz.brief.refs=[];_wiz.brief.refs.push(\'\');renderWizard()" class="btn btn-o btn-sm" style="width:100%;justify-content:center;margin-top:4px">'+t('wiz.f.refUrlAdd')+'</button></div>', 'full');
 
-  html += wizField('Rush Order?', '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px"><input type="checkbox" id="wiz-rush" '+((_wiz.brief.rush||_wiz.quote.rush)?'checked':'')+' style="width:18px;height:18px" onchange="_wiz.quote.rush=this.checked;_wiz.brief.rush=this.checked"/> <span style="font-weight:600">Mark as <b style="color:#ef4444">RUSH</b> — priority handling, higher rates may apply</span></label>', 'full');
+  html += wizField(t('wiz.f.rushOrder'), '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px"><input type="checkbox" id="wiz-rush" '+((_wiz.brief.rush||_wiz.quote.rush)?'checked':'')+' style="width:18px;height:18px" onchange="_wiz.quote.rush=this.checked;_wiz.brief.rush=this.checked"/> <span style="font-weight:600">'+t('wiz.f.rushLabel')+'</span></label>', 'full');
 
   return html;
 }
@@ -8895,27 +9062,28 @@ function wizStep5() {
     {l:'+1 Month',   v:(function(){var d=new Date();d.setDate(d.getDate()+30);return d.toISOString().slice(0,10);})()}
   ];
 
-  var html = wizStepHeader('💵', 'Quote & Timeline', 'Set the price, deadline, and assign the team — all optional, can be updated later');
+  var html = wizStepHeader('💵', t('wiz.s5.title'), t('wiz.s5.sub'));
 
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">';
 
   // Price
   html += '<div>';
-  html += '<label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:10px">Estimated Price</label>';
+  html += '<label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:10px">'+t('wiz.f.estPrice')+'</label>';
   html += '<div style="display:flex;align-items:center;gap:0;border:2px solid var(--bor);border-radius:10px;overflow:hidden;background:var(--bg2)">';
   html += '<span style="padding:12px 16px;font-size:18px;font-weight:800;color:var(--ok);background:var(--bg3);border-right:1px solid var(--bor)">$</span>';
   html += '<input id="wiz-price" type="number" min="0" step="0.01" placeholder="0.00" value="'+(q.price||'')+'" style="flex:1;border:none;background:transparent;padding:12px 16px;font-size:22px;font-weight:800;color:var(--t1);outline:none"/>';
   html += '</div>';
-  html += '<div style="font-size:11px;color:var(--t3);margin-top:8px">Leave at 0 for quote-only (TBD) or enter final price</div>';
+  html += '<div style="font-size:11px;color:var(--t3);margin-top:8px">'+t('wiz.f.priceSub')+'</div>';
   html += '</div>';
 
   // Due Date
+  var _presetLabels = [t('wiz.due.today'),t('wiz.due.3days'),t('wiz.due.1week'),t('wiz.due.2weeks'),t('wiz.due.1month')];
   html += '<div>';
-  html += '<label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:10px">Due Date</label>';
+  html += '<label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:10px">'+t('wiz.f.dueDate')+'</label>';
   html += '<input class="fc" type="date" id="wiz-due" value="'+(q.dueDate||'')+'" style="font-size:14px;padding:11px 14px;margin-bottom:10px"/>';
   html += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
-  html += presets.map(function(p){
-    return '<button onclick="document.getElementById(\'wiz-due\').value=\''+p.v+'\';_wiz.quote.dueDate=\''+p.v+'\';renderWizSummary()" class="btn btn-o btn-sm" style="font-size:11px;padding:4px 10px">'+p.l+'</button>';
+  html += presets.map(function(p,i){
+    return '<button onclick="document.getElementById(\'wiz-due\').value=\''+p.v+'\';_wiz.quote.dueDate=\''+p.v+'\';renderWizSummary()" class="btn btn-o btn-sm" style="font-size:11px;padding:4px 10px">'+_presetLabels[i]+'</button>';
   }).join('');
   html += '</div></div>';
 
@@ -8923,9 +9091,9 @@ function wizStep5() {
 
   // Assign team member
   html += '<div style="margin-top:20px">';
-  html += '<label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:10px">Assign To (Optional)</label>';
+  html += '<label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:10px">'+t('wiz.f.assignTo')+'</label>';
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">';
-  html += '<label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid '+(q.assignTo===''?'var(--acc)':'var(--bor)')+';border-radius:10px;cursor:pointer;background:'+(q.assignTo===''?'rgba(108,99,255,.06)':'transparent')+'"><input type="radio" name="wiz-assign" value="" '+(q.assignTo===''?'checked':'')+' onchange="wizAssignChange(this)"/> Unassigned</label>';
+  html += '<label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid '+(q.assignTo===''?'var(--acc)':'var(--bor)')+';border-radius:10px;cursor:pointer;background:'+(q.assignTo===''?'rgba(108,99,255,.06)':'transparent')+'"><input type="radio" name="wiz-assign" value="" '+(q.assignTo===''?'checked':'')+' onchange="wizAssignChange(this)"/> '+t('wiz.f.unassigned')+'</label>';
   teamMembers.forEach(function(m){
     var sel = q.assignTo==m.id;
     html += '<label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid '+(sel?'var(--acc)':'var(--bor)')+';border-radius:10px;cursor:pointer;background:'+(sel?'rgba(108,99,255,.06)':'transparent')+'"><input type="radio" name="wiz-assign" value="'+m.id+'" '+(sel?'checked':'')+' onchange="wizAssignChange(this)"/><div style="width:24px;height:24px;border-radius:50%;background:'+(m.color||'var(--acc)')+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">'+inits(m.name)+'</div><span style="font-size:12px;font-weight:600">'+m.name+'</span></label>';
@@ -8934,9 +9102,9 @@ function wizStep5() {
 
   // Output type
   html += '<div style="margin-top:20px">';
-  html += '<label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:10px">Also Create</label>';
+  html += '<label style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:10px">'+t('wiz.f.alsoCreate')+'</label>';
   html += '<div style="display:flex;gap:10px;flex-wrap:wrap">';
-  [['job','📋 Job Only'],['job+estimate','📋 Job + Estimate'],['job+invoice','📋 Job + Invoice']].forEach(function(o){
+  [['job',t('wiz.out.job')],['job+estimate',t('wiz.out.jobEst')],['job+invoice',t('wiz.out.jobInv')]].forEach(function(o){
     var sel=q.output===o[0];
     html += '<label style="display:flex;align-items:center;gap:8px;padding:12px 16px;border:2px solid '+(sel?'var(--acc)':'var(--bor)')+';border-radius:10px;cursor:pointer;background:'+(sel?'rgba(108,99,255,.06)':'transparent')+';font-size:13px;font-weight:600"><input type="radio" name="wiz-output" value="'+o[0]+'" '+(sel?'checked':'')+' onchange="wizOutputChange(this)"/> '+o[1]+'</label>';
   });
@@ -8966,7 +9134,7 @@ function wizStep6() {
   var cName2 = _wiz.isNewClient ? _wiz.newClientData.name : (_wiz.client?_wiz.client.name:'—');
   var member = q.assignTo ? teamMembers.find(function(m){ return m.id==q.assignTo; }) : null;
 
-  var html = wizStepHeader('✅', 'Review & Confirm', 'Everything looks good? Hit Create Order to send this to the board');
+  var html = wizStepHeader('✅', t('wiz.s6.title'), t('wiz.s6.sub'));
 
   // Main confirm card
   html += '<div style="background:var(--bg2);border:2px solid var(--bor);border-radius:16px;overflow:hidden;margin-bottom:16px">';
@@ -8980,12 +9148,12 @@ function wizStep6() {
   // Info grid
   html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0">';
   var cells = [
-    ['👤 Customer', cName2+(_wiz.client&&_wiz.client.company?'\n'+_wiz.client.company:_wiz.isNewClient&&_wiz.newClientData.company?'\n'+_wiz.newClientData.company:'')],
-    ['📅 Due Date', q.dueDate||'TBD'],
-    ['💵 Price', q.price?'$'+parseFloat(q.price).toFixed(2):'Quote TBD'],
-    ['⚡ Urgency', b.urgency||'Standard'],
-    ['👷 Assigned To', member?member.name:'Unassigned'],
-    ['📄 Creates', q.output==='job+estimate'?'Job + Estimate':q.output==='job+invoice'?'Job + Invoice':'Job Only']
+    [t('wiz.c.customer'), cName2+(_wiz.client&&_wiz.client.company?'\n'+_wiz.client.company:_wiz.isNewClient&&_wiz.newClientData.company?'\n'+_wiz.newClientData.company:'')],
+    [t('wiz.c.dueDate'), q.dueDate||'TBD'],
+    [t('wiz.c.price'), q.price?'$'+parseFloat(q.price).toFixed(2):t('wiz.c.quoteTbd')],
+    [t('wiz.c.urgency'), b.urgency||t('wiz.c.standard')],
+    [t('wiz.c.assignedTo'), member?member.name:t('wiz.c.unassigned')],
+    [t('wiz.c.creates'), q.output==='job+estimate'?t('wiz.c.jobEst'):q.output==='job+invoice'?t('wiz.c.jobInv'):t('wiz.c.jobOnly')]
   ];
   cells.forEach(function(c,i){
     html += '<div style="padding:14px 18px;border-right:'+(i%3<2?'1px solid var(--bor)':'none')+';border-bottom:'+(i<3?'1px solid var(--bor)':'none')+'">' +
@@ -9018,7 +9186,7 @@ function wizStep6() {
   // Brief preview
   if (b.text) {
     html += '<div style="padding:14px 18px;border-top:1px solid var(--bor);background:var(--bg3)">';
-    html += '<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🎨 Design Brief</div>';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+t('wiz.c.designBrief')+'</div>';
     html += '<div style="font-size:13px;color:var(--t2);line-height:1.5;max-height:80px;overflow:hidden;text-overflow:ellipsis">'+b.text+'</div>';
     html += '</div>';
   }
@@ -9041,7 +9209,7 @@ function wizStep6() {
 // ── Save / Create ─────────────────────────────────────────────
 function saveIntakeJob() {
   var btn = document.getElementById('wiz-next-btn');
-  if (btn) { btn.textContent = '⏳ Creating…'; btn.disabled = true; }
+  if (btn) { btn.textContent = t('wiz.creating'); btn.disabled = true; }
 
   var d = _wiz.details;
   var b = _wiz.brief;
