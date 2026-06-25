@@ -13,6 +13,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0f1117;--bg2:#1a1d2e;--bg3:#222539;--sur:#2a2d3e;--bor:#3a3d52;--t1:#e8eaf6;--t2:#9ea3c0;--t3:#6b7099;--acc:#6c63ff;--ok:#4caf7d;--warn:#f59e0b;--err:#ef4444;--inf:#38bdf8}
@@ -2307,6 +2308,13 @@ textarea.fc{resize:vertical;min-height:70px}
 <script>
 "use strict";
 
+// Sanitize user-controlled HTML before inserting into the DOM — prevents XSS
+function san(str) {
+  if (typeof DOMPurify !== 'undefined') return DOMPurify.sanitize(str || '');
+  // Fallback if DOMPurify hasn't loaded yet: strip tags entirely
+  return String(str || '').replace(/<[^>]*>/g, '');
+}
+
 var SUPABASE_URL = "https://mjqtnayqxllelmxveeto.supabase.co";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qcXRuYXlxeGxsZWxteHZlZXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NDI5MDUsImV4cCI6MjA5NzMxODkwNX0.u1H2ROuf2Xo4PF2_KhvgOwTXK7ufLcT2XQOFUdLMDTs";
 
@@ -3250,8 +3258,8 @@ function renderAdminDash() {
         var ago = a.timestamp ? (function(){ var ms = now - new Date(a.timestamp); var m = Math.floor(ms/60000); return m<1?'just now':m<60?m+'m ago':Math.floor(m/60)+'h ago'; })() : '';
         return '<div style="display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--bor)">' +
           '<div style="width:28px;height:28px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">'+icon+'</div>' +
-          '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+a.action+'</div>' +
-          '<div style="font-size:10px;color:var(--t3)">'+a.username+' · '+a.module+(ago?' · '+ago:'')+'</div></div>' +
+          '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+san(a.action)+'</div>' +
+          '<div style="font-size:10px;color:var(--t3)">'+san(a.username)+' · '+san(a.module)+(ago?' · '+ago:'')+'</div></div>' +
         '</div>';
       }).join('');
     } else { al.innerHTML = '<div class="empty" style="padding:20px">No activity yet</div>'; }
@@ -4645,7 +4653,9 @@ function quickConv(id) {
 // ── Estimate Approval Workflow ───────────────────────────────────
 
 function genApprovalToken() {
-  return Math.random().toString(36).substr(2,9) + Date.now().toString(36);
+  var arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
 }
 
 function getApprovalBaseURL() {
@@ -5025,6 +5035,15 @@ function submitApproval(eid, response, token) {
     var est = rows && rows[0];
     var meta = {};
     try { var m = JSON.parse(est.description); if (m && m._v) meta = m; } catch(e){}
+    // Re-verify token server-side before writing — prevents console bypass
+    if (!meta.approvalToken || meta.approvalToken !== token) {
+      alert('This approval link is invalid or has expired. Please contact the shop for a new link.');
+      return Promise.reject('invalid_token');
+    }
+    if (est.status !== 'sent') {
+      alert('This estimate has already been responded to.');
+      return Promise.reject('already_done');
+    }
     meta.approvalResponse    = response;
     meta.approvalMessage     = (name ? name + ': ' : '') + note;
     meta.approvalRespondedAt = new Date().toISOString();
@@ -6839,7 +6858,7 @@ function renderMsgConvList() {
     var ts = lastMsg.created_at ? new Date(lastMsg.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
     var unread = convHasUnread(otherId);
     var isActive = String(_activeMsgUserId) === String(otherId);
-    var preview = (lastMsg.from_user_id == currentUser.id ? 'You: ' : '') + lastMsg.body;
+    var preview = san((lastMsg.from_user_id == currentUser.id ? 'You: ' : '') + lastMsg.body);
     html += '<div onclick="openMsgConv(\'' + otherId + '\')" style="padding:14px 16px;border-bottom:1px solid var(--bor);cursor:pointer;background:' + (isActive ? 'var(--acc)' : (unread ? 'rgba(108,99,255,.07)' : 'transparent')) + ';transition:background .12s"' +
       ' onmouseover="if(String(\'' + otherId + '\')!==String(_activeMsgUserId))this.style.background=\'var(--bg3)\'"' +
       ' onmouseout="if(String(\'' + otherId + '\')!==String(_activeMsgUserId))this.style.background=\'' + (unread ? 'rgba(108,99,255,.07)' : 'transparent') + '\'">' +
@@ -6898,7 +6917,7 @@ function openMsgConv(otherId) {
     var attachHtml = renderMsgAttachments(m.attachments);
     var hasBody = m.body && m.body.trim();
     html += '<div style="display:flex;flex-direction:column;align-items:' + (isMe ? 'flex-end' : 'flex-start') + ';gap:2px">' +
-      (hasBody || !attachHtml ? '<div style="max-width:72%;background:' + (isMe ? 'var(--acc)' : 'var(--bg3)') + ';color:' + (isMe ? '#fff' : 'var(--t1)') + ';border-radius:' + (isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px') + ';padding:9px 14px;font-size:13px;line-height:1.55;word-break:break-word">' + (m.body || '') + (attachHtml && hasBody ? attachHtml : '') + '</div>' : '') +
+      (hasBody || !attachHtml ? '<div style="max-width:72%;background:' + (isMe ? 'var(--acc)' : 'var(--bg3)') + ';color:' + (isMe ? '#fff' : 'var(--t1)') + ';border-radius:' + (isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px') + ';padding:9px 14px;font-size:13px;line-height:1.55;word-break:break-word">' + san(m.body || '') + (attachHtml && hasBody ? attachHtml : '') + '</div>' : '') +
       (!hasBody && attachHtml ? '<div style="max-width:72%;color:' + (isMe ? '#fff' : 'var(--t1)') + '">' + attachHtml + '</div>' : '') +
       '<div style="font-size:10px;color:var(--t3);padding:0 4px">' + ts + '</div>' +
       '</div>';
@@ -8978,7 +8997,7 @@ function renderDSFiles() {
         (files.length ? files.map(function(f,i){
           return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:7px;margin-bottom:6px">' +
             '<span style="font-size:13px">📎</span>' +
-            '<a href="'+f.url+'" target="_blank" style="flex:1;font-size:12px;color:var(--acc);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.label+'</a>' +
+            '<a href="'+f.url+'" target="_blank" style="flex:1;font-size:12px;color:var(--acc);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+san(f.label)+'</a>' +
             '<span style="font-size:10px;color:var(--t3)">'+f.version+'</span>' +
             '<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:'+(f.approved?'#4caf7d20':'#f59e0b20')+';color:'+(f.approved?'#4caf7d':'#f59e0b')+'">'+(f.approved?'✓ Approved':'Pending')+'</span>' +
           '</div>';
@@ -10174,7 +10193,7 @@ function renderDesignerAvailableJobs() {
           (j.priority==='high'?'<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:#ef444420;color:#ef4444;font-weight:600">🔴 High Priority</span>':'')+
           (daysLeft!==null?'<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:'+urgColor+'20;color:'+urgColor+';font-weight:600">📅 '+(daysLeft<0?Math.abs(daysLeft)+'d overdue':daysLeft===0?'Due today':'Due in '+daysLeft+'d')+'</span>':'')+
         '</div>' +
-        (j.description?'<div style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.4;max-height:48px;overflow:hidden">'+j.description+'</div>':'')+
+        (j.description?'<div style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.4;max-height:48px;overflow:hidden">'+san(j.description)+'</div>':'')+
         '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
           '<button class="btn btn-p btn-sm" style="font-size:12px;font-weight:700" onclick="claimDesignJob('+j.id+')">⚡ Claim This Job</button>' +
           (coSlotOpen?'<button class="btn btn-sm" style="font-size:11px;background:#a78bfa20;color:#a78bfa;border:1px solid #a78bfa30" onclick="joinAsCoDesigner('+j.id+')">🤝 Join as Co-Designer</button>':
@@ -11139,7 +11158,7 @@ function openDesignerJobCard(id) {
   // ── Scope of Work ──
   if (j.description) {
     html += '<div style="margin-bottom:16px"><div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">📋 Scope of Work</div>';
-    html += '<div style="font-size:13px;color:var(--t2);line-height:1.6;background:var(--bg3);border-radius:8px;padding:12px 14px">'+j.description+'</div></div>';
+    html += '<div style="font-size:13px;color:var(--t2);line-height:1.6;background:var(--bg3);border-radius:8px;padding:12px 14px">'+san(j.description)+'</div></div>';
   }
 
   // ── Print / Production Specs ──
@@ -11152,7 +11171,7 @@ function openDesignerJobCard(id) {
     if (ps.qty)      html += '<span style="font-size:12px;background:var(--bg3);border-radius:6px;padding:4px 10px">Qty: <b>'+ps.qty+'</b></span>';
     if (ps.finish)   html += '<span style="font-size:12px;background:var(--bg3);border-radius:6px;padding:4px 10px">Finish: <b>'+ps.finish+'</b></span>';
     html += '</div>';
-    if (ps.notes) html += '<div style="font-size:12px;color:var(--t2);margin-top:8px;background:var(--bg3);border-radius:8px;padding:8px 12px">'+ps.notes+'</div>';
+    if (ps.notes) html += '<div style="font-size:12px;color:var(--t2);margin-top:8px;background:var(--bg3);border-radius:8px;padding:8px 12px">'+san(ps.notes)+'</div>';
     html += '</div>';
   }
 
@@ -11167,7 +11186,7 @@ function openDesignerJobCard(id) {
     checklist.forEach(function(it, ti) {
       html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bor)">' +
         '<input type="checkbox"'+(it.done?' checked':'')+' onchange="djcToggleCheck('+id+','+ti+',this.checked)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0"/>' +
-        '<span style="font-size:13px;'+(it.done?'text-decoration:line-through;color:var(--t3)':'')+'">'+ it.text+'</span>' +
+        '<span style="font-size:13px;'+(it.done?'text-decoration:line-through;color:var(--t3)':'')+'">'+ san(it.text)+'</span>' +
       '</div>';
     });
     html += '</div>';
@@ -11198,7 +11217,7 @@ function openDesignerJobCard(id) {
     files.forEach(function(f) {
       html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg3);border-radius:8px;margin-bottom:6px">' +
         '<span>📎</span>' +
-        '<a href="'+f.url+'" target="_blank" style="flex:1;font-size:12px;color:var(--acc);text-decoration:none">'+f.label+'</a>' +
+        '<a href="'+f.url+'" target="_blank" style="flex:1;font-size:12px;color:var(--acc);text-decoration:none">'+san(f.label)+'</a>' +
         '<span style="font-size:10px;color:var(--t3)">'+f.version+'</span>' +
         '<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:5px;background:'+(f.approved?'#4caf7d20':'#f59e0b20')+';color:'+(f.approved?'#4caf7d':'#f59e0b')+'">'+(f.approved?'✓ Approved':'Pending')+'</span>' +
       '</div>';
@@ -11358,14 +11377,14 @@ function openInstallerJobCard(id) {
       html += '<a href="https://maps.google.com/?q='+encodeURIComponent(ps.address)+'" target="_blank" class="btn btn-sm" style="font-size:11px;background:#4285F420;color:#4285F4;border:1px solid #4285F430;text-decoration:none;flex-shrink:0">🗺 Navigate</a>';
       html += '</div>';
     }
-    if (ps.notes) html += '<div style="font-size:12px;color:var(--t2);margin-top:8px;background:var(--bg3);border-radius:8px;padding:8px 12px">'+ps.notes+'</div>';
+    if (ps.notes) html += '<div style="font-size:12px;color:var(--t2);margin-top:8px;background:var(--bg3);border-radius:8px;padding:8px 12px">'+san(ps.notes)+'</div>';
     html += '</div>';
   }
 
   // ── Description ──
   if (j.description) {
     html += '<div style="margin-bottom:16px"><div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">📋 Scope of Work</div>';
-    html += '<div style="font-size:13px;color:var(--t2);line-height:1.6;background:var(--bg3);border-radius:8px;padding:12px 14px">'+j.description+'</div></div>';
+    html += '<div style="font-size:13px;color:var(--t2);line-height:1.6;background:var(--bg3);border-radius:8px;padding:12px 14px">'+san(j.description)+'</div></div>';
   }
 
   // ── Clock In/Out widget ──
@@ -11399,7 +11418,7 @@ function openInstallerJobCard(id) {
     checklist.forEach(function(it, ti) {
       html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bor)">' +
         '<input type="checkbox"'+(it.done?' checked':'')+' onchange="ijcToggleCheck('+id+','+ti+',this.checked)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0"/>' +
-        '<span style="font-size:13px;'+(it.done?'text-decoration:line-through;color:var(--t3)':'')+'">'+ it.text+'</span>' +
+        '<span style="font-size:13px;'+(it.done?'text-decoration:line-through;color:var(--t3)':'')+'">'+ san(it.text)+'</span>' +
       '</div>';
     });
     html += '</div>';
@@ -11523,10 +11542,10 @@ function openJobDetail(id) {
     if (ps.finish)   html += '<span>Finish: <b>'+ps.finish+'</b></span>';
     if (ps.address)  html += '<span>📍 <b>'+ps.address+'</b></span>';
     html += '</div>';
-    if (ps.notes) html += '<div style="font-size:12px;color:var(--t2);margin-top:8px;border-top:1px solid var(--bor);padding-top:6px">'+ps.notes+'</div>';
+    if (ps.notes) html += '<div style="font-size:12px;color:var(--t2);margin-top:8px;border-top:1px solid var(--bor);padding-top:6px">'+san(ps.notes)+'</div>';
     html += '</div>';
   }
-  if (j.description) html += '<div style="font-size:13px;color:var(--t2);margin-bottom:14px;background:var(--bg3);padding:10px 12px;border-radius:8px">' + j.description + "</div>";
+  if (j.description) html += '<div style="font-size:13px;color:var(--t2);margin-bottom:14px;background:var(--bg3);padding:10px 12px;border-radius:8px">' + san(j.description) + "</div>";
 
   if ((j.members || []).length) {
     html += '<div style="margin-bottom:14px"><div class="fl" style="margin-bottom:6px">Team</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
@@ -11542,7 +11561,7 @@ function openJobDetail(id) {
     html += '<div style="margin-bottom:14px"><div class="fl" style="margin-bottom:6px">Checklist (' + done + "/" + total + ')</div><div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:8px"><div style="height:100%;background:var(--ok);width:' + Math.round(done / total * 100) + '%"></div></div>';
     for (var ti = 0; ti < j.checklist.length; ti++) {
       var it = j.checklist[ti];
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bor)"><input type="checkbox"' + (it.done ? " checked" : "") + ' onchange="toggleCheck(' + id + "," + ti + ',this.checked)" style="width:15px;height:15px;cursor:pointer"/><span style="font-size:13px;' + (it.done ? "text-decoration:line-through;color:var(--t3)" : "") + '">' + it.text + "</span></div>";
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bor)"><input type="checkbox"' + (it.done ? " checked" : "") + ' onchange="toggleCheck(' + id + "," + ti + ',this.checked)" style="width:15px;height:15px;cursor:pointer"/><span style="font-size:13px;' + (it.done ? "text-decoration:line-through;color:var(--t3)" : "") + '">' + san(it.text) + "</span></div>";
     }
     html += "</div>";
   }
@@ -12797,7 +12816,7 @@ function renderInventory() {
     var alerts = invItems.filter(function(i){ return i.track_inventory && i.min_stock_level > 0 && i.qty_on_hand <= i.min_stock_level; });
     if (alerts.length) {
       banner.style.display = '';
-      banner.innerHTML = '⚠ '+alerts.length+' item'+(alerts.length>1?'s':'')+' need reordering: '+alerts.map(function(i){ return '<b>'+i.name+'</b> ('+i.qty_on_hand+' '+i.unit+' left)'; }).join(' · ');
+      banner.innerHTML = '⚠ '+alerts.length+' item'+(alerts.length>1?'s':'')+' need reordering: '+alerts.map(function(i){ return '<b>'+san(i.name)+'</b> ('+san(String(i.qty_on_hand))+' '+san(i.unit)+' left)'; }).join(' · ');
     } else { banner.style.display = 'none'; }
   }
 
@@ -15080,8 +15099,8 @@ function renderActivityTable() {
     var a = rows[i];
     var timeStr = a.time ? new Date(a.time).toLocaleString() : "";
     html += '<tr><td style="font-size:12px;color:var(--t3);white-space:nowrap">' + timeStr + "</td>" +
-      '<td><span style="font-weight:500;color:var(--acc)">' + a.username + "</span></td>" +
-      '<td style="font-weight:500">' + a.action + "</td>" +
+      '<td><span style="font-weight:500;color:var(--acc)">' + san(a.username) + "</span></td>" +
+      '<td style="font-weight:500">' + san(a.action) + "</td>" +
       '<td><span class="badge b-gray">' + a.module + "</span></td>" +
       '<td style="font-size:12px;color:var(--t2)">' + a.details + "</td></tr>";
   }
