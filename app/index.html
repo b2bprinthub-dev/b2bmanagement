@@ -449,10 +449,10 @@ textarea.fc{resize:vertical;min-height:72px}
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <div id="dash-alert-bar"></div>
           <select id="dash-period" onchange="renderDash()" class="fc" style="padding:6px 10px;font-size:12px">
-            <option value="month" selected>This Month</option>
-            <option value="quarter">This Quarter</option>
-            <option value="year">This Year</option>
-            <option value="all">All Time</option>
+            <option value="month" selected data-i18n="dash.period.month">This Month</option>
+            <option value="quarter" data-i18n="dash.period.quarter">This Quarter</option>
+            <option value="year" data-i18n="dash.period.year">This Year</option>
+            <option value="all" data-i18n="dash.period.all">All Time</option>
           </select>
           <button onclick="toggleRev()" id="revEye" class="btn btn-o btn-sm">👁 Revenue</button>
           <button onclick="renderDash()" class="btn btn-o btn-sm" title="Refresh">↺ Refresh</button>
@@ -695,24 +695,24 @@ textarea.fc{resize:vertical;min-height:72px}
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <div style="position:relative">
             <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--t3);pointer-events:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input id="job-search" class="fc" placeholder="Search jobs…" style="width:200px;padding:7px 11px 7px 32px" oninput="renderJobs()"/>
+            <input id="job-search" class="fc" data-i18n-placeholder="jobs.toolbar.search" placeholder="Search jobs…" style="width:200px;padding:7px 11px 7px 32px" oninput="renderJobs()"/>
           </div>
           <select class="fc" id="job-filter-type" style="width:148px;padding:7px 10px" onchange="renderJobs()">
-            <option value="">All Services</option>
+            <option value="" data-i18n="jobs.toolbar.allServices">All Services</option>
             <option>Web Design</option><option>Print / Banners</option><option>Large Format Signs</option>
             <option>Window Wraps</option><option>Signs &amp; Awnings</option><option>Install</option><option>Other</option>
           </select>
           <select class="fc" id="job-filter-member" style="width:148px;padding:7px 10px" onchange="renderJobs()">
-            <option value="">All Staff</option>
+            <option value="" data-i18n="jobs.toolbar.allStaff">All Staff</option>
           </select>
           <select class="fc" id="job-filter-priority" style="width:130px;padding:7px 10px" onchange="renderJobs()">
-            <option value="">All Priorities</option>
-            <option value="high">High Priority</option>
-            <option value="medium">Medium Priority</option>
-            <option value="low">Low Priority</option>
+            <option value="" data-i18n="jobs.toolbar.allPriorities">All Priorities</option>
+            <option value="high" data-i18n="jobs.toolbar.highPriority">High Priority</option>
+            <option value="medium" data-i18n="jobs.toolbar.medPriority">Medium Priority</option>
+            <option value="low" data-i18n="jobs.toolbar.lowPriority">Low Priority</option>
           </select>
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);cursor:pointer;white-space:nowrap;padding:7px 12px;border:1px solid var(--bor);border-radius:8px;background:var(--bg2)">
-            <input type="checkbox" id="job-filter-overdue" onchange="renderJobs()"/> Overdue
+            <input type="checkbox" id="job-filter-overdue" onchange="renderJobs()"/> <span data-i18n="jobs.toolbar.overdue">Overdue</span>
           </label>
         </div>
 
@@ -720,19 +720,19 @@ textarea.fc{resize:vertical;min-height:72px}
         <div style="display:flex;gap:8px;align-items:center">
           <!-- View switcher -->
           <div style="display:flex;background:var(--bg3);border:1px solid var(--bor);border-radius:8px;padding:3px;gap:2px">
-            <button id="view-btn-kanban" onclick="setJobView('kanban',this)" class="jv-btn jv-active">Board</button>
-            <button id="view-btn-list" onclick="setJobView('list',this)" class="jv-btn">List</button>
-            <button id="view-btn-calendar" onclick="setJobView('calendar',this)" class="jv-btn">Calendar</button>
-            <button id="view-btn-staff" onclick="setJobView('staff',this)" class="jv-btn">Staff</button>
+            <button id="view-btn-kanban" onclick="setJobView('kanban',this)" class="jv-btn jv-active" data-i18n="jobs.toolbar.board">Board</button>
+            <button id="view-btn-list" onclick="setJobView('list',this)" class="jv-btn" data-i18n="jobs.toolbar.list">List</button>
+            <button id="view-btn-calendar" onclick="setJobView('calendar',this)" class="jv-btn" data-i18n="jobs.toolbar.calendar">Calendar</button>
+            <button id="view-btn-staff" onclick="setJobView('staff',this)" class="jv-btn" data-i18n="jobs.toolbar.staff">Staff</button>
           </div>
           <!-- Secondary actions -->
           <div style="display:flex;gap:6px;align-items:center">
-            <button class="btn btn-o btn-sm" onclick="openMembersModal()" id="jobs-team-btn" style="font-size:12px">Team</button>
-            <button class="btn btn-o btn-sm" onclick="exportJobsCSV()" id="jobs-export-btn" style="font-size:12px">Export</button>
-            <button class="btn btn-o btn-sm" onclick="bulkArchiveDone()" id="jobs-archive-btn" style="font-size:12px;color:var(--warn)">Archive Done</button>
-            <button class="btn btn-o btn-sm" onclick="toggleArchivedView()" id="jobs-archived-toggle" style="font-size:12px;color:var(--t3)">Archived</button>
+            <button class="btn btn-o btn-sm" onclick="openMembersModal()" id="jobs-team-btn" style="font-size:12px" data-i18n="jobs.toolbar.team">Team</button>
+            <button class="btn btn-o btn-sm" onclick="exportJobsCSV()" id="jobs-export-btn" style="font-size:12px" data-i18n="jobs.toolbar.export">Export</button>
+            <button class="btn btn-o btn-sm" onclick="bulkArchiveDone()" id="jobs-archive-btn" style="font-size:12px;color:var(--warn)" data-i18n="jobs.toolbar.archiveDone">Archive Done</button>
+            <button class="btn btn-o btn-sm" onclick="toggleArchivedView()" id="jobs-archived-toggle" style="font-size:12px;color:var(--t3)" data-i18n="jobs.toolbar.archived">Archived</button>
           </div>
-          <button class="btn btn-p btn-sm" onclick="canEditPayment()?openIntakeWizard():openJobModal(null)" id="jobs-new-btn" style="font-size:13px;padding:7px 16px">+ New Job</button>
+          <button class="btn btn-p btn-sm" onclick="canEditPayment()?openIntakeWizard():openJobModal(null)" id="jobs-new-btn" style="font-size:13px;padding:7px 16px" data-i18n="jobs.toolbar.newJob">+ New Job</button>
         </div>
       </div>
 
@@ -1014,12 +1014,12 @@ textarea.fc{resize:vertical;min-height:72px}
 
     <div class="page" id="page-crm">
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <button class="chip active" onclick="filterCli('active',this)">Active</button>
-        <button class="chip" onclick="filterCli('archived',this)">Archived</button>
-        <button class="chip" onclick="filterCli('all',this)">All</button>
+        <button class="chip active" onclick="filterCli('active',this)" data-i18n="crm.active">Active</button>
+        <button class="chip" onclick="filterCli('archived',this)" data-i18n="crm.archived">Archived</button>
+        <button class="chip" onclick="filterCli('all',this)" data-i18n="status.all">All</button>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
-        <table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Jobs</th><th>Total Spent</th><th>Status</th><th>Actions</th></tr></thead>
+        <table><thead><tr><th data-i18n="inv.col.client">Client</th><th data-i18n="field.email">Email</th><th data-i18n="field.phone">Phone</th><th data-i18n="crm.col.jobs">Jobs</th><th data-i18n="crm.col.spent">Total Spent</th><th data-i18n="inv.col.status">Status</th><th data-i18n="inv.col.actions">Actions</th></tr></thead>
         <tbody id="crm-tbody"></tbody></table>
       </div>
     </div>
@@ -1537,38 +1537,38 @@ textarea.fc{resize:vertical;min-height:72px}
 
       <!-- KPI Bar -->
       <div class="g4" style="margin-bottom:18px" id="fin-kpi-bar">
-        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Today Revenue</div><div style="font-size:22px;font-weight:700;color:var(--ok);margin-top:4px" id="fin-today-rev">$0.00</div></div>
-        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Today Transactions</div><div style="font-size:22px;font-weight:700;color:var(--acc);margin-top:4px" id="fin-today-count">0</div></div>
-        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Pending / Failed</div><div style="font-size:22px;font-weight:700;color:var(--warn);margin-top:4px" id="fin-pending-count">0</div></div>
-        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Refunds Today</div><div style="font-size:22px;font-weight:700;color:var(--err);margin-top:4px" id="fin-refunds-today">$0.00</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px" data-i18n="fin.kpi.todayRev">Today Revenue</div><div style="font-size:22px;font-weight:700;color:var(--ok);margin-top:4px" id="fin-today-rev">$0.00</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px" data-i18n="fin.kpi.todayTxns">Today Transactions</div><div style="font-size:22px;font-weight:700;color:var(--acc);margin-top:4px" id="fin-today-count">0</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px" data-i18n="fin.kpi.pending">Pending / Failed</div><div style="font-size:22px;font-weight:700;color:var(--warn);margin-top:4px" id="fin-pending-count">0</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px" data-i18n="fin.kpi.refunds">Refunds Today</div><div style="font-size:22px;font-weight:700;color:var(--err);margin-top:4px" id="fin-refunds-today">$0.00</div></div>
       </div>
 
       <!-- Filter + Search bar -->
       <div class="card" style="padding:14px;margin-bottom:16px">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <input class="fc" id="fin-search" placeholder="Search customer, invoice, type, amount…" oninput="renderFinancePage()" style="flex:1;min-width:200px"/>
+          <input class="fc" id="fin-search" data-i18n-placeholder="fin.search" placeholder="Search customer, invoice, type, amount…" oninput="renderFinancePage()" style="flex:1;min-width:200px"/>
           <select class="fc" id="fin-type" onchange="renderFinancePage()" style="width:160px">
-            <option value="">All Types</option>
-            <option value="sale">POS Sale</option>
-            <option value="invoice_payment">Invoice Payment</option>
-            <option value="deposit">Deposit</option>
-            <option value="expense">Expense</option>
-            <option value="refund">Refund</option>
-            <option value="void">Void</option>
+            <option value="" data-i18n="fin.allTypes">All Types</option>
+            <option value="sale" data-i18n="fin.type.sale">POS Sale</option>
+            <option value="invoice_payment" data-i18n="fin.type.invoicePayment">Invoice Payment</option>
+            <option value="deposit" data-i18n="fin.type.deposit">Deposit</option>
+            <option value="expense" data-i18n="fin.type.expense">Expense</option>
+            <option value="refund" data-i18n="fin.type.refund">Refund</option>
+            <option value="void" data-i18n="fin.type.void">Void</option>
           </select>
           <select class="fc" id="fin-status" onchange="renderFinancePage()" style="width:140px">
-            <option value="">All Status</option>
-            <option value="completed">Completed</option>
-            <option value="pending">Pending</option>
-            <option value="failed">Failed</option>
-            <option value="voided">Voided</option>
-            <option value="refunded">Refunded</option>
+            <option value="" data-i18n="fin.allStatus">All Status</option>
+            <option value="completed" data-i18n="fin.status.completed">Completed</option>
+            <option value="pending" data-i18n="fin.status.pending">Pending</option>
+            <option value="failed" data-i18n="fin.status.failed">Failed</option>
+            <option value="voided" data-i18n="fin.status.voided">Voided</option>
+            <option value="refunded" data-i18n="fin.status.refunded">Refunded</option>
           </select>
           <select class="fc" id="fin-period" onchange="renderFinancePage()" style="width:130px">
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="all">All Time</option>
+            <option value="today" data-i18n="fin.period.today">Today</option>
+            <option value="week" data-i18n="fin.period.week">This Week</option>
+            <option value="month" data-i18n="fin.period.month">This Month</option>
+            <option value="all" data-i18n="dash.period.all">All Time</option>
           </select>
           <button class="btn btn-o btn-sm" onclick="openReconcileModal()">🧮 Reconcile</button>
           <button class="btn btn-o btn-sm" onclick="exportFinanceCSV()">⬇ CSV</button>
@@ -1579,8 +1579,8 @@ textarea.fc{resize:vertical;min-height:72px}
       <div class="card" style="padding:0;overflow:hidden">
         <table>
           <thead><tr>
-            <th>TXN ID</th><th>Date/Time</th><th>Type</th><th>Customer</th>
-            <th>Reference</th><th>Method</th><th>Amount</th><th>Status</th><th>By</th><th>Actions</th>
+            <th data-i18n="fin.col.txnId">TXN ID</th><th data-i18n="fin.col.dateTime">Date/Time</th><th data-i18n="field.type">Type</th><th data-i18n="fin.col.customer">Customer</th>
+            <th data-i18n="fin.col.reference">Reference</th><th data-i18n="fin.col.method">Method</th><th data-i18n="inv.col.amount">Amount</th><th data-i18n="inv.col.status">Status</th><th data-i18n="fin.col.by">By</th><th data-i18n="inv.col.actions">Actions</th>
           </tr></thead>
           <tbody id="fin-tbody"><tr><td colspan="10"><div class="empty">Loading…</div></td></tr></tbody>
         </table>
@@ -2781,6 +2781,38 @@ var STRINGS = {
     // ── Common actions
     'btn.save':'Save','btn.cancel':'Cancel','btn.edit':'Edit','btn.delete':'Delete',
     'btn.add':'Add','btn.new':'New','btn.back':'Back','btn.close':'Close',
+    'btn.pdf':'PDF','btn.pay':'Pay','btn.void':'Void','btn.send':'Send','btn.convert':'Convert',
+    'inv.paidFull':'Paid in full','inv.paidAmt':'Paid','inv.due':'Due',
+    'inv.noFound':'No invoices found','inv.newTitle':'New Invoice','inv.editTitle':'Edit Invoice',
+    'est.noFound':'No estimates found','est.newTitle':'New Estimate','est.editTitle':'Edit Estimate',
+    'est.approval':'Approval','est.toInvoice':'Invoice','est.toInvoiceShort':'To Inv',
+    'inv.status.invoiced':'Invoiced',
+    'crm.noClients':'No clients yet','crm.noActive':'No active clients','crm.noArchived':'No archived clients',
+    'crm.active':'Active','crm.archived':'Archived','crm.restore':'Restore','crm.archive':'Archive',
+    'crm.col.jobs':'Jobs','crm.col.spent':'Total Spent',
+    'inv.kpi.totalItems':'Total Items','inv.kpi.stockValue':'Stock Value (Cost)',
+    'inv.kpi.lowStock':'Low Stock','inv.kpi.outOfStock':'Out of Stock',
+    'inv.kpi.openPOs':'Open POs','inv.kpi.retailValue':'Retail Value',
+    'inv.allCategories':'All Categories',
+    'fin.noTxns':'No transactions found','fin.walkIn':'Walk-in','fin.refund':'Refund',
+    'fin.kpi.todayRev':'Today Revenue','fin.kpi.todayTxns':'Today Transactions',
+    'fin.kpi.pending':'Pending / Failed','fin.kpi.refunds':'Refunds Today',
+    'fin.col.txnId':'TXN ID','fin.col.dateTime':'Date/Time','fin.col.customer':'Customer',
+    'fin.col.reference':'Reference','fin.col.method':'Method','fin.col.by':'By',
+    'fin.search':'Search customer, invoice, type, amount…',
+    'fin.allTypes':'All Types','fin.allStatus':'All Status',
+    'fin.type.sale':'POS Sale','fin.type.invoicePayment':'Invoice Payment',
+    'fin.type.deposit':'Deposit','fin.type.expense':'Expense','fin.type.refund':'Refund','fin.type.void':'Void',
+    'fin.status.completed':'Completed','fin.status.pending':'Pending','fin.status.failed':'Failed',
+    'fin.status.voided':'Voided','fin.status.refunded':'Refunded',
+    'fin.period.today':'Today','fin.period.week':'This Week','fin.period.month':'This Month',
+    'job.newTitle':'New Job','job.editTitle':'Edit Job',
+    'crm.newTitle':'New Client','crm.editTitle':'Edit Client',
+    'btn.view':'View','btn.archive':'Archive','btn.restore':'Restore',
+    'inv.col.num':'#','inv.col.client':'Client','inv.col.services':'Services',
+    'inv.col.date':'Date','inv.col.amount':'Amount','inv.col.status':'Status','inv.col.actions':'Actions',
+    'field.description':'Description','field.name':'Name','field.email':'Email','field.phone':'Phone',
+    'field.address':'Address','field.notes':'Notes','field.type':'Type','field.role':'Role',
     'btn.export':'Export','btn.print':'Print','btn.search':'Search','btn.filter':'Filter',
     'btn.archive':'Archive','btn.approve':'Approve','btn.reject':'Reject','btn.submit':'Submit',
     'btn.send':'Send','btn.view':'View','btn.download':'Download','btn.upload':'Upload',
@@ -2872,6 +2904,93 @@ var STRINGS = {
     'fin.title':'Transaction Ledger',
     // ── Knowledge Base
     'kb.title':'Knowledge Base',
+    // ── Page titles (gotoPage)
+    'page.dashboard':'Dashboard','page.invoices':'Invoices','page.estimates':'Estimates',
+    'page.pos':'Point of Sale','page.jobs':'Jobs Board','page.crm':'CRM / Clients',
+    'page.analytics':'Analytics','page.settings':'Settings','page.messages':'Messages',
+    'page.myportal':'My Work','page.designer':'My Studio','page.knowledgebase':'Knowledge Base',
+    'page.myreports':'My Reports','page.inventory':'Inventory','page.finance':'Transaction Ledger',
+    // ── Top button labels
+    'topbtn.newInvoice':'New Invoice','topbtn.newEstimate':'New Estimate',
+    'topbtn.newJob':'New Job','topbtn.newClient':'New Client',
+    // ── Dashboard KPIs
+    'dash.kpi.revenue':'Revenue','dash.kpi.arOutstanding':'AR Outstanding',
+    'dash.kpi.todayRevenue':"Today's Revenue",'dash.kpi.pipeline':'Pipeline Value',
+    'dash.kpi.jobsDone':'Jobs Done','dash.kpi.activeJobs':'Active Jobs',
+    'dash.kpi.overdueJobs':'Overdue Jobs','dash.kpi.convRate':'Conversion Rate',
+    'dash.kpi.stockValue':'Stock Value','dash.kpi.lowStock':'Low Stock Items',
+    'dash.kpi.outOfStock':'Out of Stock','dash.kpi.openPOs':'Open POs',
+    'dash.kpi.newClients':'New Clients','dash.kpi.avgInvoice':'Avg Invoice',
+    'dash.kpi.clv':'Avg CLV',
+    // ── Dashboard sub-text
+    'dash.allClear':'✓ All clear','dash.noPriorData':'No prior data',
+    'dash.vsPrior':'vs last period','dash.livePosSales':'Live · POS + Invoices',
+    'dash.overdueInvoices':'overdue invoice','dash.overdueInvoicesP':'overdue invoices',
+    'dash.overdueJob':'overdue job','dash.overdueJobP':'overdue jobs',
+    'dash.arOutstandingAlert':'AR outstanding',
+    'dash.outOfStockAlert':'item out of stock','dash.outOfStockAlertP':'items out of stock',
+    'dash.lowStockAlert':'item low on stock','dash.lowStockAlertP':'items low on stock',
+    'dash.completionRate':'completion rate','dash.pending':'pending',
+    'dash.needsAttention':'Needs attention','dash.onSchedule':'All on schedule',
+    'dash.estimatesWon':'estimates won','dash.skusTracked':'SKUs tracked',
+    'dash.allStocked':'All stocked','dash.actionRequired':'Action required',
+    'dash.allInStock':'✓ All in stock','dash.pendingDeliveries':'Pending deliveries',
+    'dash.openInvoice':'open invoice','dash.openInvoiceP':'open invoices',
+    'dash.openEstimate':'open estimate','dash.openEstimateP':'open estimates',
+    // ── Dashboard period labels
+    'dash.period.month':'This Month','dash.period.quarter':'This Quarter',
+    'dash.period.year':'This Year','dash.period.all':'All Time',
+    'dash.cashflow.paid':'Paid','dash.cashflow.outstanding':'Outstanding',
+    'dash.cashflow.overdue':'Overdue (30d+)','dash.cashflow.avgInv':'Avg Invoice',
+    'dash.cashflow.clv':'Avg CLV',
+    // ── Dashboard pipeline stages
+    'dash.pipeline.pending':'Pending','dash.pipeline.inProgress':'In Progress',
+    'dash.pipeline.needsReview':'Needs Review','dash.pipeline.done':'Done','dash.pipeline.overdue':'Overdue',
+    'dash.ar.current':'Current (0–30d)','dash.ar.30to60':'30–60 days','dash.ar.60to90':'60–90 days','dash.ar.90plus':'90+ days',
+    'dash.totalJobs':'Total jobs','dash.completionLbl':'Completion',
+    'dash.totalClients':'Total clients','dash.newThisPeriod':'New this period',
+    'dash.totalAR':'Total AR','dash.invAbbr':'inv',
+    'dash.jobsDueIn7':'jobs due in 7 days','dash.noDeadlines':'🎉 No deadlines in the next 7 days',
+    'dash.noRevData':'No revenue data for this period','dash.noTeamMembers':'No team members yet',
+    'dash.assignTeamMembers':'Assign team members to jobs to see stats',
+    'dash.noOutstanding':'✅ No outstanding invoices','dash.noInvoices':'No invoices yet',
+    'dash.noActivity':'No activity yet','dash.justNow':'just now','dash.mAgo':'m ago','dash.hAgo':'h ago',
+    'dash.dueToday':'Due Today','dash.tomorrow':'Tomorrow','dash.overdueBy':'Overdue','dash.inDays':'In',
+    'dash.jobsCount':'jobs','dash.overdueCount':'overdue','dash.activeCount':'active',
+    // ── Jobs toolbar
+    'jobs.toolbar.search':'Search jobs…','jobs.toolbar.allServices':'All Services',
+    'jobs.toolbar.allStaff':'All Staff','jobs.toolbar.allPriorities':'All Priorities',
+    'jobs.toolbar.highPriority':'High Priority','jobs.toolbar.medPriority':'Medium Priority',
+    'jobs.toolbar.lowPriority':'Low Priority','jobs.toolbar.overdue':'Overdue',
+    'jobs.toolbar.board':'Board','jobs.toolbar.list':'List',
+    'jobs.toolbar.calendar':'Calendar','jobs.toolbar.staff':'Staff',
+    'jobs.toolbar.team':'Team','jobs.toolbar.export':'Export',
+    'jobs.toolbar.archiveDone':'Archive Done','jobs.toolbar.archived':'Archived',
+    'jobs.toolbar.newJob':'+ New Job',
+    // ── Invoice/estimate status
+    'inv.status.draft':'Draft','inv.status.sent':'Sent','inv.status.paid':'Paid',
+    'inv.status.voided':'Voided','inv.status.partial':'Partial',
+    'inv.status.accepted':'Accepted','inv.status.rejected':'Rejected',
+    'inv.status.pending':'Pending',
+    // ── Common modal / form buttons
+    'modal.save':'Save','modal.cancel':'Cancel','modal.close':'Close',
+    'modal.delete':'Delete','modal.confirm':'Confirm','modal.add':'Add',
+    'modal.update':'Update','modal.create':'Create','modal.send':'Send',
+    'modal.approve':'Approve','modal.reject':'Reject',
+    // ── Settings sections
+    'set.users.title':'User Management','set.users.sub':'Manage who has access',
+    'set.users.newUser':'+ New User',
+    'set.roles.title':'Roles & Permissions','set.roles.newRole':'+ New Role',
+    'set.activity.title':'Activity Log',
+    // ── CRM
+    'crm.col.name':'Name','crm.col.email':'Email','crm.col.phone':'Phone',
+    'crm.col.city':'City','crm.col.jobs':'Jobs','crm.col.revenue':'Revenue',
+    'crm.col.lastJob':'Last Job','crm.col.actions':'Actions',
+    // ── Finance
+    'fin.col.date':'Date','fin.col.description':'Description','fin.col.category':'Category',
+    'fin.col.amount':'Amount','fin.col.type':'Type','fin.col.status':'Status',
+    // ── Last updated
+    'dash.lastUpdated':'Last updated','dash.autoRefresh':'Auto-refreshes every 60s',
   },
   es: {
     // ── Nav groups
@@ -2889,6 +3008,38 @@ var STRINGS = {
     // ── Common actions
     'btn.save':'Guardar','btn.cancel':'Cancelar','btn.edit':'Editar','btn.delete':'Eliminar',
     'btn.add':'Agregar','btn.new':'Nuevo','btn.back':'Atrás','btn.close':'Cerrar',
+    'btn.pdf':'PDF','btn.pay':'Pagar','btn.void':'Anular','btn.send':'Enviar','btn.convert':'Convertir',
+    'inv.paidFull':'Pagado completo','inv.paidAmt':'Pagado','inv.due':'Saldo',
+    'inv.noFound':'No se encontraron facturas','inv.newTitle':'Nueva Factura','inv.editTitle':'Editar Factura',
+    'est.noFound':'No se encontraron cotizaciones','est.newTitle':'Nueva Cotización','est.editTitle':'Editar Cotización',
+    'est.approval':'Aprobación','est.toInvoice':'Factura','est.toInvoiceShort':'A Fact.',
+    'inv.status.invoiced':'Facturado',
+    'crm.noClients':'Sin clientes aún','crm.noActive':'Sin clientes activos','crm.noArchived':'Sin clientes archivados',
+    'crm.active':'Activo','crm.archived':'Archivado','crm.restore':'Restaurar','crm.archive':'Archivar',
+    'crm.col.jobs':'Trabajos','crm.col.spent':'Total Gastado',
+    'inv.kpi.totalItems':'Total Artículos','inv.kpi.stockValue':'Valor de Stock (Costo)',
+    'inv.kpi.lowStock':'Stock Bajo','inv.kpi.outOfStock':'Sin Stock',
+    'inv.kpi.openPOs':'OC Abiertas','inv.kpi.retailValue':'Valor de Venta',
+    'inv.allCategories':'Todas las Categorías',
+    'fin.noTxns':'No se encontraron transacciones','fin.walkIn':'Mostrador','fin.refund':'Reembolso',
+    'fin.kpi.todayRev':'Ingresos Hoy','fin.kpi.todayTxns':'Transacciones Hoy',
+    'fin.kpi.pending':'Pendiente / Fallido','fin.kpi.refunds':'Reembolsos Hoy',
+    'fin.col.txnId':'ID Txn','fin.col.dateTime':'Fecha/Hora','fin.col.customer':'Cliente',
+    'fin.col.reference':'Referencia','fin.col.method':'Método','fin.col.by':'Por',
+    'fin.search':'Buscar cliente, factura, tipo, monto…',
+    'fin.allTypes':'Todos los Tipos','fin.allStatus':'Todos los Estados',
+    'fin.type.sale':'Venta POS','fin.type.invoicePayment':'Pago de Factura',
+    'fin.type.deposit':'Depósito','fin.type.expense':'Gasto','fin.type.refund':'Reembolso','fin.type.void':'Anulación',
+    'fin.status.completed':'Completado','fin.status.pending':'Pendiente','fin.status.failed':'Fallido',
+    'fin.status.voided':'Anulado','fin.status.refunded':'Reembolsado',
+    'fin.period.today':'Hoy','fin.period.week':'Esta Semana','fin.period.month':'Este Mes',
+    'job.newTitle':'Nuevo Trabajo','job.editTitle':'Editar Trabajo',
+    'crm.newTitle':'Nuevo Cliente','crm.editTitle':'Editar Cliente',
+    'btn.view':'Ver','btn.archive':'Archivar','btn.restore':'Restaurar',
+    'inv.col.num':'#','inv.col.client':'Cliente','inv.col.services':'Servicios',
+    'inv.col.date':'Fecha','inv.col.amount':'Monto','inv.col.status':'Estado','inv.col.actions':'Acciones',
+    'field.description':'Descripción','field.name':'Nombre','field.email':'Correo','field.phone':'Teléfono',
+    'field.address':'Dirección','field.notes':'Notas','field.type':'Tipo','field.role':'Rol',
     'btn.export':'Exportar','btn.print':'Imprimir','btn.search':'Buscar','btn.filter':'Filtrar',
     'btn.archive':'Archivar','btn.approve':'Aprobar','btn.reject':'Rechazar','btn.submit':'Enviar',
     'btn.send':'Enviar','btn.view':'Ver','btn.download':'Descargar','btn.upload':'Subir',
@@ -2984,6 +3135,93 @@ var STRINGS = {
     'fin.title':'Libro de Transacciones',
     // ── Knowledge Base
     'kb.title':'Base de Conocimiento',
+    // ── Page titles (gotoPage)
+    'page.dashboard':'Panel','page.invoices':'Facturas','page.estimates':'Cotizaciones',
+    'page.pos':'Punto de Venta','page.jobs':'Tablero de Trabajos','page.crm':'CRM / Clientes',
+    'page.analytics':'Analítica','page.settings':'Configuración','page.messages':'Mensajes',
+    'page.myportal':'Mi Trabajo','page.designer':'Mi Estudio','page.knowledgebase':'Base de Conocimiento',
+    'page.myreports':'Mis Reportes','page.inventory':'Inventario','page.finance':'Libro de Transacciones',
+    // ── Top button labels
+    'topbtn.newInvoice':'Nueva Factura','topbtn.newEstimate':'Nueva Cotización',
+    'topbtn.newJob':'Nuevo Trabajo','topbtn.newClient':'Nuevo Cliente',
+    // ── Dashboard KPIs
+    'dash.kpi.revenue':'Ingresos','dash.kpi.arOutstanding':'Cuentas por Cobrar',
+    'dash.kpi.todayRevenue':'Ingresos de Hoy','dash.kpi.pipeline':'Valor en Proceso',
+    'dash.kpi.jobsDone':'Trabajos Terminados','dash.kpi.activeJobs':'Trabajos Activos',
+    'dash.kpi.overdueJobs':'Trabajos Vencidos','dash.kpi.convRate':'Tasa de Conversión',
+    'dash.kpi.stockValue':'Valor de Inventario','dash.kpi.lowStock':'Artículos Bajo Stock',
+    'dash.kpi.outOfStock':'Sin Existencias','dash.kpi.openPOs':'Órdenes Abiertas',
+    'dash.kpi.newClients':'Nuevos Clientes','dash.kpi.avgInvoice':'Factura Promedio',
+    'dash.kpi.clv':'CLV Promedio',
+    // ── Dashboard sub-text
+    'dash.allClear':'✓ Todo en orden','dash.noPriorData':'Sin datos previos',
+    'dash.vsPrior':'vs período anterior','dash.livePosSales':'En vivo · POS + Facturas',
+    'dash.overdueInvoices':'factura vencida','dash.overdueInvoicesP':'facturas vencidas',
+    'dash.overdueJob':'trabajo vencido','dash.overdueJobP':'trabajos vencidos',
+    'dash.arOutstandingAlert':'CxC pendiente',
+    'dash.outOfStockAlert':'artículo sin existencias','dash.outOfStockAlertP':'artículos sin existencias',
+    'dash.lowStockAlert':'artículo bajo en stock','dash.lowStockAlertP':'artículos bajos en stock',
+    'dash.completionRate':'tasa de finalización','dash.pending':'pendiente',
+    'dash.needsAttention':'Requiere atención','dash.onSchedule':'Todo al día',
+    'dash.estimatesWon':'cotizaciones ganadas','dash.skusTracked':'SKUs registrados',
+    'dash.allStocked':'Todo abastecido','dash.actionRequired':'Acción requerida',
+    'dash.allInStock':'✓ Todo en existencia','dash.pendingDeliveries':'Entregas pendientes',
+    'dash.openInvoice':'factura abierta','dash.openInvoiceP':'facturas abiertas',
+    'dash.openEstimate':'cotización abierta','dash.openEstimateP':'cotizaciones abiertas',
+    // ── Dashboard period labels
+    'dash.period.month':'Este Mes','dash.period.quarter':'Este Trimestre',
+    'dash.period.year':'Este Año','dash.period.all':'Todo el Tiempo',
+    'dash.cashflow.paid':'Pagado','dash.cashflow.outstanding':'Pendiente',
+    'dash.cashflow.overdue':'Vencido (30d+)','dash.cashflow.avgInv':'Factura Promedio',
+    'dash.cashflow.clv':'CLV Promedio',
+    // ── Dashboard pipeline stages
+    'dash.pipeline.pending':'Pendiente','dash.pipeline.inProgress':'En Progreso',
+    'dash.pipeline.needsReview':'En Revisión','dash.pipeline.done':'Terminado','dash.pipeline.overdue':'Vencido',
+    'dash.ar.current':'Corriente (0–30d)','dash.ar.30to60':'30–60 días','dash.ar.60to90':'60–90 días','dash.ar.90plus':'90+ días',
+    'dash.totalJobs':'Total trabajos','dash.completionLbl':'Completado',
+    'dash.totalClients':'Total clientes','dash.newThisPeriod':'Nuevos en el período',
+    'dash.totalAR':'Total CxC','dash.invAbbr':'fact',
+    'dash.jobsDueIn7':'trabajos con vencimiento en 7 días','dash.noDeadlines':'🎉 Sin vencimientos en los próximos 7 días',
+    'dash.noRevData':'Sin datos de ingresos para este período','dash.noTeamMembers':'Sin miembros del equipo aún',
+    'dash.assignTeamMembers':'Asigna miembros del equipo a trabajos para ver estadísticas',
+    'dash.noOutstanding':'✅ Sin facturas pendientes','dash.noInvoices':'Sin facturas aún',
+    'dash.noActivity':'Sin actividad aún','dash.justNow':'ahora mismo','dash.mAgo':'min','dash.hAgo':'h',
+    'dash.dueToday':'Vence Hoy','dash.tomorrow':'Mañana','dash.overdueBy':'Vencido','dash.inDays':'En',
+    'dash.jobsCount':'trabajos','dash.overdueCount':'vencidos','dash.activeCount':'activos',
+    // ── Jobs toolbar
+    'jobs.toolbar.search':'Buscar trabajos…','jobs.toolbar.allServices':'Todos los Servicios',
+    'jobs.toolbar.allStaff':'Todo el Personal','jobs.toolbar.allPriorities':'Todas las Prioridades',
+    'jobs.toolbar.highPriority':'Prioridad Alta','jobs.toolbar.medPriority':'Prioridad Media',
+    'jobs.toolbar.lowPriority':'Prioridad Baja','jobs.toolbar.overdue':'Vencidos',
+    'jobs.toolbar.board':'Tablero','jobs.toolbar.list':'Lista',
+    'jobs.toolbar.calendar':'Calendario','jobs.toolbar.staff':'Personal',
+    'jobs.toolbar.team':'Equipo','jobs.toolbar.export':'Exportar',
+    'jobs.toolbar.archiveDone':'Archivar Terminados','jobs.toolbar.archived':'Archivados',
+    'jobs.toolbar.newJob':'+ Nuevo Trabajo',
+    // ── Invoice/estimate status
+    'inv.status.draft':'Borrador','inv.status.sent':'Enviado','inv.status.paid':'Pagado',
+    'inv.status.voided':'Anulado','inv.status.partial':'Parcial',
+    'inv.status.accepted':'Aceptado','inv.status.rejected':'Rechazado',
+    'inv.status.pending':'Pendiente',
+    // ── Common modal / form buttons
+    'modal.save':'Guardar','modal.cancel':'Cancelar','modal.close':'Cerrar',
+    'modal.delete':'Eliminar','modal.confirm':'Confirmar','modal.add':'Agregar',
+    'modal.update':'Actualizar','modal.create':'Crear','modal.send':'Enviar',
+    'modal.approve':'Aprobar','modal.reject':'Rechazar',
+    // ── Settings sections
+    'set.users.title':'Gestión de Usuarios','set.users.sub':'Administra quién tiene acceso',
+    'set.users.newUser':'+ Nuevo Usuario',
+    'set.roles.title':'Roles y Permisos','set.roles.newRole':'+ Nuevo Rol',
+    'set.activity.title':'Registro de Actividad',
+    // ── CRM
+    'crm.col.name':'Nombre','crm.col.email':'Correo','crm.col.phone':'Teléfono',
+    'crm.col.city':'Ciudad','crm.col.jobs':'Trabajos','crm.col.revenue':'Ingresos',
+    'crm.col.lastJob':'Último Trabajo','crm.col.actions':'Acciones',
+    // ── Finance
+    'fin.col.date':'Fecha','fin.col.description':'Descripción','fin.col.category':'Categoría',
+    'fin.col.amount':'Monto','fin.col.type':'Tipo','fin.col.status':'Estado',
+    // ── Last updated
+    'dash.lastUpdated':'Última actualización','dash.autoRefresh':'Se actualiza cada 60s',
   }
 };
 
@@ -2996,6 +3234,10 @@ function applyLang() {
   document.querySelectorAll('[data-i18n]').forEach(function(el) {
     var key = el.getAttribute('data-i18n');
     el.textContent = t(key);
+  });
+  // Update placeholder attributes
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
   });
   // Update language toggle button
   var ll = document.getElementById('lang-label');
@@ -3485,8 +3727,8 @@ function gotoPage(p, el) {
   document.getElementById("page-" + p).classList.add("active");
   if (el) el.classList.add("active");
   curPage = p;
-  var titles = {dashboard:"Dashboard",invoices:"Invoices",estimates:"Estimates",pos:"Point of Sale",jobs:"Jobs Board",crm:"CRM / Clients",analytics:"Analytics",settings:"Settings",messages:"Messages",myportal:"My Work",designer:"My Studio",knowledgebase:"Knowledge Base"};
-  var btns = {invoices:"New Invoice",estimates:"New Estimate",jobs: canEditPayment() ? "New Job" : null,crm:"New Client"};
+  var titles = {dashboard:t('page.dashboard'),invoices:t('page.invoices'),estimates:t('page.estimates'),pos:t('page.pos'),jobs:t('page.jobs'),crm:t('page.crm'),analytics:t('page.analytics'),settings:t('page.settings'),messages:t('page.messages'),myportal:t('page.myportal'),designer:t('page.designer'),knowledgebase:t('page.knowledgebase'),myreports:t('page.myreports'),inventory:t('page.inventory'),finance:t('page.finance')};
+  var btns = {invoices:t('topbtn.newInvoice'),estimates:t('topbtn.newEstimate'),jobs: canEditPayment() ? t('topbtn.newJob') : null,crm:t('topbtn.newClient')};
   if (!btns.jobs) delete btns.jobs;
   document.getElementById("pageTitle").textContent = titles[p] || p;
   var tw = document.getElementById("topBtnWrap");
@@ -3662,25 +3904,25 @@ function renderAdminDash() {
 
   // ── Last updated ───────────────────────────────────────────────
   var lu = document.getElementById('dash-last-updated');
-  if (lu) lu.textContent = 'Last updated: ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' · Auto-refreshes every 60s';
+  if (lu) lu.textContent = t('dash.lastUpdated') + ': ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' · ' + t('dash.autoRefresh');
 
   // ── Alert bar ─────────────────────────────────────────────────
   var alerts = [];
-  if (jobsOver > 0)        alerts.push({txt: jobsOver + ' overdue job'+(jobsOver>1?'s':''), color:'var(--err)'});
-  if (overdueInv.length>0) alerts.push({txt: overdueInv.length + ' overdue invoice'+(overdueInv.length>1?'s':'') + ' (30d+)', color:'#f59e0b'});
-  if (arTotal > 0)         alerts.push({txt: 'AR outstanding: '+fmt(arTotal), color:'var(--inf)'});
+  if (jobsOver > 0)        alerts.push({txt: jobsOver + ' ' + (jobsOver>1?t('dash.overdueJobP'):t('dash.overdueJob')), color:'var(--err)'});
+  if (overdueInv.length>0) alerts.push({txt: overdueInv.length + ' ' + (overdueInv.length>1?t('dash.overdueInvoicesP'):t('dash.overdueInvoices')) + ' (30d+)', color:'#f59e0b'});
+  if (arTotal > 0)         alerts.push({txt: t('dash.arOutstandingAlert')+': '+fmt(arTotal), color:'var(--inf)'});
   var invLow = invItems.filter(function(i){return i.track_inventory&&i.min_stock_level>0&&i.qty_on_hand<=i.min_stock_level;});
   var invOut  = invItems.filter(function(i){return i.track_inventory&&i.qty_on_hand<=0;});
-  if (invOut.length>0)  alerts.push({txt: invOut.length+' item'+(invOut.length>1?'s':'')+' out of stock', color:'#ef4444'});
-  if (invLow.length>0)  alerts.push({txt: invLow.length+' item'+(invLow.length>1?'s':'')+' low on stock', color:'#f59e0b'});
+  if (invOut.length>0)  alerts.push({txt: invOut.length+' '+(invOut.length>1?t('dash.outOfStockAlertP'):t('dash.outOfStockAlert')), color:'#ef4444'});
+  if (invLow.length>0)  alerts.push({txt: invLow.length+' '+(invLow.length>1?t('dash.lowStockAlertP'):t('dash.lowStockAlert')), color:'#f59e0b'});
   var ab = document.getElementById('dash-alert-bar');
   if (ab) {
     if (alerts.length) {
       ab.innerHTML = alerts.map(function(a){
-        return '<span style="display:inline-flex;align-items:center;gap:5px;background:'+a.color+'18;color:'+a.color+';border:1px solid '+a.color+'44;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600">⚠ '+a.txt+'</span>';
+        return '<span style="display:inline-flex;align-items:center;gap:5px;background:'+a.color+'18;color:'+a.color+';border:1px solid '+a.color+'44;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600">⚠ '+a.txt+'</span>';  // alert text already uses t()
       }).join('');
     } else {
-      ab.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(74,207,129,.1);color:var(--ok);border:1px solid rgba(74,207,129,.3);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600">✓ All clear</span>';
+      ab.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(74,207,129,.1);color:var(--ok);border:1px solid rgba(74,207,129,.3);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600">'+t('dash.allClear')+'</span>';
     }
   }
 
@@ -3696,49 +3938,49 @@ function renderAdminDash() {
       '</div>';
   }
   function growthBadge(g) {
-    if (g === null) return 'No prior data';
+    if (g === null) return t('dash.noPriorData');
     var up = g >= 0;
-    return (up ? '▲' : '▼') + ' ' + Math.abs(g).toFixed(1) + '% vs last period';
+    return (up ? '▲' : '▼') + ' ' + Math.abs(g).toFixed(1) + '% ' + t('dash.vsPrior');
   }
   function growthColor(g) { return g === null ? 'var(--t3)' : g >= 0 ? 'var(--ok)' : 'var(--err)'; }
 
-  var periodLabel = {month:'This Month', quarter:'This Quarter', year:'This Year', all:'All Time'}[period] || 'Period';
+  var periodLabel = {month:t('dash.period.month'), quarter:t('dash.period.quarter'), year:t('dash.period.year'), all:t('dash.period.all')}[period] || t('dash.period.month');
 
   // ── Row 1 KPIs ─────────────────────────────────────────────────
   var r1 = document.getElementById('dash-kpi-row1');
   if (r1) r1.innerHTML =
-    kpi(periodLabel+' Revenue', fmt(revCur), growthBadge(revGrowth), growthColor(revGrowth), '#6c63ff', '💰') +
-    kpi('AR Outstanding', fmt(arTotal), outstanding.length+' open invoice'+(outstanding.length!==1?'s':''), arTotal>0?'#f59e0b':'var(--t3)', arTotal>0?'#f59e0b':'#4caf7d', '📋') +
-    kpi("Today's Revenue", fmt(revToday), 'Live · POS + Invoices', 'var(--t3)', '#38bdf8', '📅') +
-    kpi('Pipeline Value', fmt(pipelineVal), openEst.length+' open estimate'+(openEst.length!==1?'s':''), 'var(--inf)', '#a78bfa', '🔭');
+    kpi(periodLabel+' '+t('dash.kpi.revenue'), fmt(revCur), growthBadge(revGrowth), growthColor(revGrowth), '#6c63ff', '💰') +
+    kpi(t('dash.kpi.arOutstanding'), fmt(arTotal), outstanding.length+' '+(outstanding.length!==1?t('dash.openInvoiceP'):t('dash.openInvoice')), arTotal>0?'#f59e0b':'var(--t3)', arTotal>0?'#f59e0b':'#4caf7d', '📋') +
+    kpi(t('dash.kpi.todayRevenue'), fmt(revToday), t('dash.livePosSales'), 'var(--t3)', '#38bdf8', '📅') +
+    kpi(t('dash.kpi.pipeline'), fmt(pipelineVal), openEst.length+' '+(openEst.length!==1?t('dash.openEstimateP'):t('dash.openEstimate')), 'var(--inf)', '#a78bfa', '🔭');
 
   // ── Row 2 KPIs ─────────────────────────────────────────────────
   var r2 = document.getElementById('dash-kpi-row2');
   var invLowDash = invItems.filter(function(i){return i.track_inventory&&i.min_stock_level>0&&i.qty_on_hand<=i.min_stock_level;});
   var invOutDash  = invItems.filter(function(i){return i.track_inventory&&i.qty_on_hand<=0;});
   if (r2) r2.innerHTML =
-    kpi('Jobs Done', jobsDone+'', jobCompRate+'% completion rate', jobCompRate>=70?'var(--ok)':'#f59e0b', '#4caf7d', '✅') +
-    kpi('Active Jobs', jobsActive+'', jobsPend+' pending', 'var(--t3)', '#38bdf8', '⚙️') +
-    kpi('Overdue Jobs', jobsOver+'', jobsOver>0?'Needs attention':'All on schedule', jobsOver>0?'var(--err)':'var(--ok)', jobsOver>0?'#ef4444':'#4caf7d', jobsOver>0?'🚨':'🎯') +
-    kpi('Conversion Rate', convRate+'%', acceptedEst+' of '+totalEst+' estimates won', convRate>=50?'var(--ok)':'#f59e0b', '#f59e0b', '🎯');
+    kpi(t('dash.kpi.jobsDone'), jobsDone+'', jobCompRate+'% '+t('dash.completionRate'), jobCompRate>=70?'var(--ok)':'#f59e0b', '#4caf7d', '✅') +
+    kpi(t('dash.kpi.activeJobs'), jobsActive+'', jobsPend+' '+t('dash.pending'), 'var(--t3)', '#38bdf8', '⚙️') +
+    kpi(t('dash.kpi.overdueJobs'), jobsOver+'', jobsOver>0?t('dash.needsAttention'):t('dash.onSchedule'), jobsOver>0?'var(--err)':'var(--ok)', jobsOver>0?'#ef4444':'#4caf7d', jobsOver>0?'🚨':'🎯') +
+    kpi(t('dash.kpi.convRate'), convRate+'%', acceptedEst+' of '+totalEst+' '+t('dash.estimatesWon'), convRate>=50?'var(--ok)':'#f59e0b', '#f59e0b', '🎯');
 
   // ── Inventory KPI row ──────────────────────────────────────────
   var r3inv = document.getElementById('dash-kpi-row-inv');
   if (r3inv) r3inv.innerHTML =
-    kpi('Stock Value', fmt(invStockValue()), invItems.length+' SKUs tracked', 'var(--t3)', '#6c63ff', '📦') +
-    kpi('Low Stock Items', invLowDash.length+'', invLowDash.length>0?invLowDash.slice(0,2).map(function(i){return i.name;}).join(', '):'All stocked','var(--t3)', invLowDash.length>0?'#f59e0b':'#4caf7d', '⚠️') +
-    kpi('Out of Stock', invOutDash.length+'', invOutDash.length>0?'Action required':'✓ All in stock', invOutDash.length>0?'var(--err)':'var(--ok)', invOutDash.length>0?'#ef4444':'#4caf7d', '⛔') +
-    kpi('Open POs', purchaseOrders.filter(function(p){return p.status==='ordered'||p.status==='partial';}).length+'', 'Pending deliveries', 'var(--t3)', '#38bdf8', '🚚');
+    kpi(t('dash.kpi.stockValue'), fmt(invStockValue()), invItems.length+' '+t('dash.skusTracked'), 'var(--t3)', '#6c63ff', '📦') +
+    kpi(t('dash.kpi.lowStock'), invLowDash.length+'', invLowDash.length>0?invLowDash.slice(0,2).map(function(i){return i.name;}).join(', '):t('dash.allStocked'),'var(--t3)', invLowDash.length>0?'#f59e0b':'#4caf7d', '⚠️') +
+    kpi(t('dash.kpi.outOfStock'), invOutDash.length+'', invOutDash.length>0?t('dash.actionRequired'):t('dash.allInStock'), invOutDash.length>0?'var(--err)':'var(--ok)', invOutDash.length>0?'#ef4444':'#4caf7d', '⛔') +
+    kpi(t('dash.kpi.openPOs'), purchaseOrders.filter(function(p){return p.status==='ordered'||p.status==='partial';}).length+'', t('dash.pendingDeliveries'), 'var(--t3)', '#38bdf8', '🚚');
 
   // ── Cash flow / Revenue mix ────────────────────────────────────
   var cf = document.getElementById('dash-cashflow');
   if (cf) {
     var cfRows = [
-      {label:'Paid ('+periodLabel+')', val:revCur, color:'#4caf7d'},
-      {label:'Outstanding', val:arTotal, color:'#f59e0b'},
-      {label:'Overdue (30d+)', val:sum(overdueInv), color:'#ef4444'},
-      {label:'Avg Invoice', val:avgInv, color:'#6c63ff'},
-      {label:'Avg CLV', val:clv, color:'#38bdf8'},
+      {label:t('dash.cashflow.paid')+' ('+periodLabel+')', val:revCur, color:'#4caf7d'},
+      {label:t('dash.cashflow.outstanding'), val:arTotal, color:'#f59e0b'},
+      {label:t('dash.cashflow.overdue'), val:sum(overdueInv), color:'#ef4444'},
+      {label:t('dash.cashflow.avgInv'), val:avgInv, color:'#6c63ff'},
+      {label:t('dash.cashflow.clv'), val:clv, color:'#38bdf8'},
     ];
     var maxVal = Math.max.apply(null, cfRows.map(function(r){return r.val;})) || 1;
     cf.innerHTML = cfRows.map(function(r){
@@ -3757,10 +3999,10 @@ function renderAdminDash() {
   var pip = document.getElementById('dash-pipeline');
   if (pip) {
     var stages = [
-      {label:'Pending',     count:jobsPend,   color:'#38bdf8', icon:'⏳'},
-      {label:'In Progress', count:jobsActive, color:'#f59e0b', icon:'⚙️'},
-      {label:'Done',        count:jobsDone,   color:'#4caf7d', icon:'✅'},
-      {label:'Overdue',     count:jobsOver,   color:'#ef4444', icon:'🚨'},
+      {label:t('dash.pipeline.pending'),    count:jobsPend,   color:'#38bdf8', icon:'⏳'},
+      {label:t('dash.pipeline.inProgress'), count:jobsActive, color:'#f59e0b', icon:'⚙️'},
+      {label:t('dash.pipeline.done'),       count:jobsDone,   color:'#4caf7d', icon:'✅'},
+      {label:t('dash.pipeline.overdue'),    count:jobsOver,   color:'#ef4444', icon:'🚨'},
     ];
     var maxJ = Math.max.apply(null, stages.map(function(s){return s.count;})) || 1;
     pip.innerHTML = stages.map(function(s){
@@ -3775,8 +4017,8 @@ function renderAdminDash() {
         '</div></div>';
     }).join('') +
     '<div style="border-top:1px solid var(--bor);padding-top:10px;margin-top:6px;display:flex;justify-content:space-between;font-size:11px;color:var(--t3)">' +
-    '<span>Total jobs: <b style="color:var(--t1)">' + jobsTotal + '</b></span>' +
-    '<span>Completion: <b style="color:'+(jobCompRate>=70?'var(--ok)':'#f59e0b')+'">' + jobCompRate + '%</b></span></div>';
+    '<span>'+t('dash.totalJobs')+': <b style="color:var(--t1)">' + jobsTotal + '</b></span>' +
+    '<span>'+t('dash.completionLbl')+': <b style="color:'+(jobCompRate>=70?'var(--ok)':'#f59e0b')+'">' + jobCompRate + '%</b></span></div>';
   }
 
   // ── Top Clients by Revenue ─────────────────────────────────────
@@ -3799,9 +4041,9 @@ function renderAdminDash() {
           '<div style="height:100%;width:'+pct+'%;background:'+colors[i]+';border-radius:3px;transition:width .5s ease"></div></div></div>';
       }).join('') +
       '<div style="border-top:1px solid var(--bor);padding-top:8px;margin-top:4px;font-size:11px;color:var(--t3)">' +
-      'Total clients: <b style="color:var(--t1)">'+clients.length+'</b> · New this period: <b style="color:var(--ok)">+'+newCliCur+'</b></div>';
+      t('dash.totalClients')+': <b style="color:var(--t1)">'+clients.length+'</b> · '+t('dash.newThisPeriod')+': <b style="color:var(--ok)">+'+newCliCur+'</b></div>';
     } else {
-      tc.innerHTML = '<div class="empty">No revenue data for this period</div>';
+      tc.innerHTML = '<div class="empty">'+t('dash.noRevData')+'</div>';
     }
   }
 
@@ -3825,26 +4067,26 @@ function renderAdminDash() {
             '<div class="avatar" style="width:30px;height:30px;font-size:11px;flex-shrink:0">' + inits(m.name) + '</div>' +
             '<div style="flex:1;min-width:0">' +
               '<div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + m.name + '</div>' +
-              '<div style="font-size:10px;color:var(--t3)">' + m.role + ' · ' + m.total + ' jobs</div>' +
+              '<div style="font-size:10px;color:var(--t3)">' + m.role + ' · ' + m.total + ' ' + t('dash.jobsCount') + '</div>' +
             '</div>' +
             '<div style="text-align:right;flex-shrink:0">' +
               '<div style="font-size:13px;font-weight:700;color:'+(rate>=70?'var(--ok)':'#f59e0b')+'">' + rate + '%</div>' +
-              (m.overdue>0?'<div style="font-size:10px;color:var(--err)">'+m.overdue+' overdue</div>':'<div style="font-size:10px;color:var(--t3)">'+m.active+' active</div>') +
+              (m.overdue>0?'<div style="font-size:10px;color:var(--err)">'+m.overdue+' '+t('dash.overdueCount')+'</div>':'<div style="font-size:10px;color:var(--t3)">'+m.active+' '+t('dash.activeCount')+'</div>') +
             '</div>' +
           '</div>';
         }).join('');
       } else {
-        tp.innerHTML = '<div class="empty">Assign team members to jobs to see stats</div>';
+        tp.innerHTML = '<div class="empty">'+t('dash.assignTeamMembers')+'</div>';
       }
     } else {
-      tp.innerHTML = '<div class="empty">No team members yet</div>';
+      tp.innerHTML = '<div class="empty">'+t('dash.noTeamMembers')+'</div>';
     }
   }
 
   // ── AR Aging ───────────────────────────────────────────────────
   var ar = document.getElementById('dash-ar-aging');
   if (ar) {
-    var buckets = [{label:'Current (0–30d)', min:0, max:30, color:'#4caf7d'}, {label:'30–60 days', min:30, max:60, color:'#f59e0b'}, {label:'60–90 days', min:60, max:90, color:'#ef4444'}, {label:'90+ days', min:90, max:99999, color:'#7f1d1d'}];
+    var buckets = [{label:t('dash.ar.current'), min:0, max:30, color:'#4caf7d'}, {label:t('dash.ar.30to60'), min:30, max:60, color:'#f59e0b'}, {label:t('dash.ar.60to90'), min:60, max:90, color:'#ef4444'}, {label:t('dash.ar.90plus'), min:90, max:99999, color:'#7f1d1d'}];
     var agingData = buckets.map(function(b) {
       var inv = outstanding.filter(function(i) {
         if (!i.date) return false;
@@ -3864,13 +4106,13 @@ function renderAdminDash() {
           '<div style="height:100%;width:'+pct+'%;background:'+b.color+';border-radius:2px;transition:width .5s"></div></div></div>' +
           '<div style="text-align:right;flex-shrink:0">' +
           '<div style="font-size:13px;font-weight:700;color:'+b.color+'">'+(revHidden?'••••':fmt(b.total))+'</div>' +
-          '<div style="font-size:10px;color:var(--t3)">'+b.count+' inv</div></div></div>';
+          '<div style="font-size:10px;color:var(--t3)">'+b.count+' '+t('dash.invAbbr')+'</div></div></div>';
       }).join('') +
       '<div style="border-top:2px solid var(--bor);padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;font-size:12px">' +
-      '<span style="color:var(--t3);font-weight:600">Total AR</span>' +
+      '<span style="color:var(--t3);font-weight:600">'+t('dash.totalAR')+'</span>' +
       '<span style="font-weight:800;color:var(--t1)">'+(revHidden?'••••••':fmt(arTotal))+'</span></div>';
     } else {
-      ar.innerHTML = '<div class="empty" style="padding:20px;text-align:center">✅ No outstanding invoices</div>';
+      ar.innerHTML = '<div class="empty" style="padding:20px;text-align:center">'+t('dash.noOutstanding')+'</div>';
     }
   }
 
@@ -3882,13 +4124,13 @@ function renderAdminDash() {
     var upcoming = jobs.filter(function(j){
       return j.due_date && j.status!=='done' && j.status!=='voided' && new Date(j.due_date) <= in7;
     }).sort(function(a,b){ return a.due_date<b.due_date?-1:1; }).slice(0,8);
-    if (db) db.textContent = upcoming.length + ' jobs due in 7 days';
+    if (db) db.textContent = upcoming.length + ' ' + t('dash.jobsDueIn7');
     if (upcoming.length) {
       dl.innerHTML = upcoming.map(function(j) {
         var daysLeft = Math.ceil((new Date(j.due_date) - now) / 86400000);
         var over = daysLeft < 0;
         var urgColor = over?'#ef4444':daysLeft<=2?'#f59e0b':'var(--t3)';
-        var dueLabel = over ? 'Overdue '+Math.abs(daysLeft)+'d' : daysLeft===0?'Due Today':daysLeft===1?'Tomorrow':'In '+daysLeft+'d';
+        var dueLabel = over ? t('dash.overdueBy')+' '+Math.abs(daysLeft)+'d' : daysLeft===0?t('dash.dueToday'):daysLeft===1?t('dash.tomorrow'):t('dash.inDays')+' '+daysLeft+'d';
         var stColors = {pending:'#38bdf8','in-progress':'#f59e0b'};
         return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bor)">' +
           '<div style="min-width:60px;text-align:center;background:'+(over?'rgba(239,68,68,.1)':daysLeft<=2?'rgba(245,158,11,.1)':'var(--bg3)')+';border-radius:6px;padding:4px;flex-shrink:0">' +
@@ -3900,7 +4142,7 @@ function renderAdminDash() {
         '</div>';
       }).join('');
     } else {
-      dl.innerHTML = '<div class="empty" style="padding:20px;text-align:center">🎉 No deadlines in the next 7 days</div>';
+      dl.innerHTML = '<div class="empty" style="padding:20px;text-align:center">'+t('dash.noDeadlines')+'</div>';
     }
   }
 
@@ -3919,7 +4161,7 @@ function renderAdminDash() {
           '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+bc+'20;color:'+bc+'">'+iv.status+'</span>' +
         '</div>';
       }).join('');
-    } else { il.innerHTML = '<div class="empty">No invoices yet</div>'; }
+    } else { il.innerHTML = '<div class="empty">'+t('dash.noInvoices')+'</div>'; }
   }
 
   // ── Live Activity Feed ─────────────────────────────────────────
@@ -3929,14 +4171,14 @@ function renderAdminDash() {
     if (activityLog.length) {
       al.innerHTML = activityLog.slice(0,10).map(function(a) {
         var icon = modIcons[a.module] || '📌';
-        var ago = a.timestamp ? (function(){ var ms = now - new Date(a.timestamp); var m = Math.floor(ms/60000); return m<1?'just now':m<60?m+'m ago':Math.floor(m/60)+'h ago'; })() : '';
+        var ago = a.timestamp ? (function(){ var ms = now - new Date(a.timestamp); var m = Math.floor(ms/60000); return m<1?t('dash.justNow'):m<60?m+t('dash.mAgo'):Math.floor(m/60)+t('dash.hAgo'); })() : '';
         return '<div style="display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--bor)">' +
           '<div style="width:28px;height:28px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">'+icon+'</div>' +
           '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+san(a.action)+'</div>' +
           '<div style="font-size:10px;color:var(--t3)">'+san(a.username)+' · '+san(a.module)+(ago?' · '+ago:'')+'</div></div>' +
         '</div>';
       }).join('');
-    } else { al.innerHTML = '<div class="empty" style="padding:20px">No activity yet</div>'; }
+    } else { al.innerHTML = '<div class="empty" style="padding:20px">'+t('dash.noActivity')+'</div>'; }
   }
 
   buildRevChart();
@@ -4165,7 +4407,7 @@ function filterInv(f, el) {
 function renderInvoices() {
   var list = invFilter === "all" ? invoices : invoices.filter(function (i) { return i.status === invFilter; });
   var tb = document.getElementById("inv-tbody");
-  if (!list.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty">No invoices found</div></td></tr>'; return; }
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty">'+t('inv.noFound')+'</div></td></tr>'; return; }
   var rows = list.slice().reverse();
   var html = "";
   for (var i = 0; i < rows.length; i++) {
@@ -4180,19 +4422,19 @@ function renderInvoices() {
     var amtPaid   = getInvAmountPaid(iv.id);
     var balance   = Math.max(0, parseFloat(iv.grand||0) - amtPaid);
     var balHtml   = (iv.status === 'partial' && balance > 0)
-      ? '<div style="font-size:11px;color:var(--warn);margin-top:2px">Paid: ' + fmt(amtPaid) + ' · Due: <strong>' + fmt(balance) + '</strong></div>'
-      : (iv.status === 'paid' ? '<div style="font-size:11px;color:var(--ok);margin-top:2px">Paid in full</div>' : '');
+      ? '<div style="font-size:11px;color:var(--warn);margin-top:2px">'+t('inv.paidAmt')+': ' + fmt(amtPaid) + ' · '+t('inv.due')+': <strong>' + fmt(balance) + '</strong></div>'
+      : (iv.status === 'paid' ? '<div style="font-size:11px;color:var(--ok);margin-top:2px">'+t('inv.paidFull')+'</div>' : '');
     html += '<tr><td style="font-weight:600;color:var(--acc)">#INV-' + String(iv.id).padStart(4, "0") + "</td>" +
       '<td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:28px;height:28px;font-size:10px">' + inits(cName(iv.cid)) + "</div><div>" + cName(iv.cid) + balHtml + "</div></div></td>" +
       '<td style="font-size:12px;color:var(--t3)">' + svcList.join(", ") + "</td>" +
       '<td style="color:var(--t3)">' + iv.date + "</td>" +
       '<td style="font-weight:600">' + fmt(iv.grand) + "</td>" +
-      '<td><span class="badge ' + bc + '">' + iv.status + "</span></td>" +
+      '<td><span class="badge ' + bc + '">' + t('inv.status.'+(iv.status||'draft')) + "</span></td>" +
       '<td><div style="display:flex;gap:5px;flex-wrap:wrap">' +
-      '<button class="btn btn-o btn-sm" onclick="editInv(' + iv.id + ')">Edit</button>' +
-      '<button class="btn btn-p btn-sm" onclick="exportPDF(' + iv.id + ')">PDF</button>' +
-      (iv.status !== 'paid' && iv.status !== 'voided' ? '<button class="btn btn-ok btn-sm" onclick="quickCollectPayment(' + iv.id + ')">💰 Pay</button>' : '') +
-      (iv.status !== "voided" ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="voidInv(' + iv.id + ')">Void</button>' : "") +
+      '<button class="btn btn-o btn-sm" onclick="editInv(' + iv.id + ')">' + t('btn.edit') + '</button>' +
+      '<button class="btn btn-p btn-sm" onclick="exportPDF(' + iv.id + ')">' + t('btn.pdf') + '</button>' +
+      (iv.status !== 'paid' && iv.status !== 'voided' ? '<button class="btn btn-ok btn-sm" onclick="quickCollectPayment(' + iv.id + ')">💰 ' + t('btn.pay') + '</button>' : '') +
+      (iv.status !== "voided" ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="voidInv(' + iv.id + ')">' + t('btn.void') + '</button>' : "") +
       "</div></td></tr>";
   }
   tb.innerHTML = html;
@@ -4201,7 +4443,7 @@ function renderInvoices() {
 function openInvModal(inv) {
   _editInv = inv || null;
   fillCli();
-  document.getElementById("invModalT").textContent = inv ? "Edit Invoice" : "New Invoice";
+  document.getElementById("invModalT").textContent = inv ? t('inv.editTitle') : t('inv.newTitle');
   document.getElementById("inv-cli").value = inv ? inv.cid : "";
   document.getElementById("inv-date").value = inv ? inv.date : today();
   document.getElementById("inv-notes").value = inv ? inv.notes : "";
@@ -4955,7 +5197,7 @@ function openEstModal(est) {
   _estSpecs   = meta.specs || {};
 
   fillCli();
-  document.getElementById('estModalT').textContent = est ? 'Edit Estimate' : 'New Estimate';
+  document.getElementById('estModalT').textContent = est ? t('est.editTitle') : t('est.newTitle');
   // Reset client lookup
   estCustClear();
   if (est && est.cid) {
@@ -5157,7 +5399,7 @@ function convEst() {
 
 function renderEstimates() {
   var tb = document.getElementById("est-tbody");
-  if (!estimates.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty">No estimates yet</div></td></tr>'; return; }
+  if (!estimates.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty">'+t('est.noFound')+'</div></td></tr>'; return; }
   var rows = estimates.slice().reverse();
   var html = "";
   var svcColors = {'print':'#6c63ff','vehicle-wrap':'#38bdf8','large-format':'#f59e0b','window-wrap':'#a78bfa','signs':'#f59e0b','web':'#4caf7d','install':'#ef4444','design-only':'#ec4899','other':'#9ea3c0'};
@@ -5172,14 +5414,14 @@ function renderEstimates() {
 
     var statusMap = {draft:'b-warn',sent:'b-inf',approved:'b-ok',rejected:'b-err',declined:'b-err',invoiced:'b-inf',pending:'b-warn'};
     var bc = statusMap[e.status] || 'b-warn';
-    var statusLabel = e.status==='invoiced'?'Invoiced':e.status;
+    var statusLabel = t('inv.status.'+(e.status||'draft'));
 
     var actions = '<div style="display:flex;gap:5px;flex-wrap:wrap">' +
-      '<button class="btn btn-o btn-sm" onclick="openEstModal(findEst('+e.id+'))">Edit</button>' +
-      '<button class="btn btn-o btn-sm" style="color:var(--inf)" onclick="exportEstPDF('+e.id+')">PDF</button>';
-    if (e.status !== 'invoiced') actions += '<button class="btn btn-o btn-sm" style="color:var(--acc)" onclick="openEstApproval('+e.id+')">Approval</button>';
-    if (e.status === 'approved') actions += '<button class="btn btn-p btn-sm" onclick="quickConv('+e.id+')">→ Invoice</button>';
-    else if (e.status !== 'invoiced') actions += '<button class="btn btn-ok btn-sm" onclick="quickConv('+e.id+')">To Inv</button>';
+      '<button class="btn btn-o btn-sm" onclick="openEstModal(findEst('+e.id+'))">'+t('btn.edit')+'</button>' +
+      '<button class="btn btn-o btn-sm" style="color:var(--inf)" onclick="exportEstPDF('+e.id+')">'+t('btn.pdf')+'</button>';
+    if (e.status !== 'invoiced') actions += '<button class="btn btn-o btn-sm" style="color:var(--acc)" onclick="openEstApproval('+e.id+')">'+t('est.approval')+'</button>';
+    if (e.status === 'approved') actions += '<button class="btn btn-p btn-sm" onclick="quickConv('+e.id+')">→ '+t('est.toInvoice')+'</button>';
+    else if (e.status !== 'invoiced') actions += '<button class="btn btn-ok btn-sm" onclick="quickConv('+e.id+')">'+t('est.toInvoiceShort')+'</button>';
     else actions += '<span style="font-size:11px;color:var(--inf);font-weight:600">#INV-'+String(e.invoice_id||0).padStart(4,'0')+'</span>';
     actions += '</div>';
 
@@ -5893,10 +6135,10 @@ function renderFinancePage() {
 
   var tb = document.getElementById('fin-tbody');
   if (!tb) return;
-  if (!rows.length) { tb.innerHTML = '<tr><td colspan="10"><div class="empty">No transactions found</div></td></tr>'; return; }
+  if (!rows.length) { tb.innerHTML = '<tr><td colspan="10"><div class="empty">'+t('fin.noTxns')+'</div></td></tr>'; return; }
 
   tb.innerHTML = rows.map(function(t) {
-    var clientLabel = t.client_id ? cName(t.client_id) : 'Walk-in';
+    var clientLabel = t.client_id ? cName(t.client_id) : t('fin.walkIn');
     var icon  = typeIcons[t.type]  || '💳';
     var color = typeColors[t.type] || 'var(--t2)';
     var bc    = statusColors[t.status] || 'b-gray';
@@ -5914,8 +6156,8 @@ function renderFinancePage() {
       '<td><span class="badge ' + bc + '">' + (t.status||'—') + '</span></td>' +
       '<td style="font-size:11px;color:var(--t3)">' + (t.created_by_name||'—') + '</td>' +
       '<td><div style="display:flex;gap:4px">' +
-        '<button class="btn btn-o btn-sm" onclick="openTxnDetail(' + t.id + ')">View</button>' +
-        (canRefund ? '<button class="btn btn-o btn-sm" style="color:var(--err);border-color:rgba(239,68,68,.4)" onclick="openRefundModal(' + t.id + ')">↩ Refund</button>' : '') +
+        '<button class="btn btn-o btn-sm" onclick="openTxnDetail(' + t.id + ')">' + t('btn.view') + '</button>' +
+        (canRefund ? '<button class="btn btn-o btn-sm" style="color:var(--err);border-color:rgba(239,68,68,.4)" onclick="openRefundModal(' + t.id + ')">↩ ' + t('fin.refund') + '</button>' : '') +
       '</div></td>' +
       '</tr>';
   }).join('');
@@ -6302,7 +6544,7 @@ function estCustAddNew() {
 
   // Open the new client modal, pre-fill name if typed
   _editCli = null;
-  document.getElementById('cliModalT').textContent = 'New Client';
+  document.getElementById('cliModalT').textContent = t('crm.newTitle');
   document.getElementById('cli-name').value  = typed;
   document.getElementById('cli-email').value = '';
   document.getElementById('cli-phone').value = '';
@@ -12372,7 +12614,7 @@ function openJobModal(job) {
   jobPhotos = job ? (job.photos || []).slice() : [];
   checklistItems = job ? (job.checklist || []).map(function (x) { return {text: x.text, done: x.done}; }) : [];
   fillCli();
-  document.getElementById("jobModalT").textContent = job ? "Edit Job" : "New Job";
+  document.getElementById("jobModalT").textContent = job ? t('job.editTitle') : t('job.newTitle');
   document.getElementById("job-title").value = job ? job.title : "";
   document.getElementById("job-cli").value = job ? job.cid : "";
   document.getElementById("job-type").value = job ? job.type : "Web Design";
@@ -12628,7 +12870,7 @@ function renderCRM() {
     return true;
   });
   if (!list.length) {
-    var msg = cliFilter === "archived" ? "No archived clients" : cliFilter === "active" ? "No active clients" : "No clients yet";
+    var msg = cliFilter === "archived" ? t('crm.noArchived') : cliFilter === "active" ? t('crm.noActive') : t('crm.noClients');
     tb.innerHTML = '<tr><td colspan="7"><div class="empty">' + msg + "</div></td></tr>";
     return;
   }
@@ -12647,13 +12889,13 @@ function renderCRM() {
       '<td style="color:var(--t2)">' + (c.phone || "-") + "</td>" +
       "<td>" + cJobs + "</td>" +
       '<td style="font-weight:600;color:var(--ok)">' + fmt(spent) + "</td>" +
-      "<td>" + (c.archived ? '<span class="badge b-gray">Archived</span>' : '<span class="badge b-ok">Active</span>') + "</td>" +
+      "<td>" + (c.archived ? '<span class="badge b-gray">'+t('crm.archived')+'</span>' : '<span class="badge b-ok">'+t('crm.active')+'</span>') + "</td>" +
       '<td><div style="display:flex;gap:5px;flex-wrap:wrap">' +
-      '<button class="btn btn-o btn-sm" onclick="editCliById(' + c.id + ')">Edit</button>' +
+      '<button class="btn btn-o btn-sm" onclick="editCliById(' + c.id + ')">' + t('btn.edit') + '</button>' +
       (c.archived
-        ? '<button class="btn btn-o btn-sm" style="color:var(--ok)" onclick="unarchiveClient(' + c.id + ')">Restore</button>'
-        : '<button class="btn btn-o btn-sm" style="color:var(--warn)" onclick="archiveClient(' + c.id + ')">Archive</button>') +
-      '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="deleteClient(' + c.id + ',' + cJobs + ',' + (spent > 0 ? "1" : "0") + ')">Delete</button>' +
+        ? '<button class="btn btn-o btn-sm" style="color:var(--ok)" onclick="unarchiveClient(' + c.id + ')">' + t('crm.restore') + '</button>'
+        : '<button class="btn btn-o btn-sm" style="color:var(--warn)" onclick="archiveClient(' + c.id + ')">' + t('crm.archive') + '</button>') +
+      '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="deleteClient(' + c.id + ',' + cJobs + ',' + (spent > 0 ? "1" : "0") + ')">' + t('btn.delete') + '</button>' +
       "</div></td></tr>";
   }
   tb.innerHTML = html;
@@ -12708,7 +12950,7 @@ function editCliById(id) { openCliModal(findClient(id)); }
 
 function openCliModal(cli) {
   _editCli = cli || null;
-  document.getElementById("cliModalT").textContent = cli ? "Edit Client" : "New Client";
+  document.getElementById("cliModalT").textContent = cli ? t('crm.editTitle') : t('crm.newTitle');
   document.getElementById("cli-name").value = cli ? cli.name : "";
   document.getElementById("cli-email").value = cli ? cli.email : "";
   document.getElementById("cli-phone").value = cli ? cli.phone : "";
@@ -13550,9 +13792,9 @@ function renderInventory() {
 
   var kpis = document.getElementById('inv-kpis');
   if (kpis) kpis.innerHTML = [
-    {l:'Total Items',v:total,c:'#6c63ff'},{l:'Stock Value (Cost)',v:fmt(stockVal),c:'#4caf7d'},
-    {l:'Low Stock',v:lowStock,c:lowStock>0?'#f59e0b':'#4caf7d'},{l:'Out of Stock',v:outOf,c:outOf>0?'#ef4444':'#4caf7d'},
-    {l:'Open POs',v:pendPO,c:pendPO>0?'#38bdf8':'#9ea3c0'},{l:'Retail Value',v:fmt(invRetailValue()),c:'#a78bfa'},
+    {l:t('inv.kpi.totalItems'),v:total,c:'#6c63ff'},{l:t('inv.kpi.stockValue'),v:fmt(stockVal),c:'#4caf7d'},
+    {l:t('inv.kpi.lowStock'),v:lowStock,c:lowStock>0?'#f59e0b':'#4caf7d'},{l:t('inv.kpi.outOfStock'),v:outOf,c:outOf>0?'#ef4444':'#4caf7d'},
+    {l:t('inv.kpi.openPOs'),v:pendPO,c:pendPO>0?'#38bdf8':'#9ea3c0'},{l:t('inv.kpi.retailValue'),v:fmt(invRetailValue()),c:'#a78bfa'},
   ].map(function(k){ return '<div class="card" style="padding:14px;border-top:3px solid '+k.c+'"><div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">'+k.l+'</div><div style="font-size:20px;font-weight:800;color:var(--t1)">'+k.v+'</div></div>'; }).join('');
 
   // Low stock banner
@@ -13569,7 +13811,7 @@ function renderInventory() {
   var catSel = document.getElementById('inv-cat-filter');
   if (catSel) {
     var cur = catSel.value;
-    catSel.innerHTML = '<option value="">All Categories</option>' + invCats().map(function(c){ return '<option'+(c===cur?' selected':'')+'>'+c+'</option>'; }).join('');
+    catSel.innerHTML = '<option value="">'+t('inv.allCategories')+'</option>' + invCats().map(function(c){ return '<option'+(c===cur?' selected':'')+'>'+c+'</option>'; }).join('');
   }
 
   // Datalist for item modal
