@@ -2477,9 +2477,17 @@ function getUserRole(u) {
   }
   return {name:'Unknown',color:'#9ea3c0',perms:[]};
 }
+// Modules containing real customer data — developer needs Sandbox ON to access
+var DEV_RESTRICTED_MODS = ['invoices','estimates','pos','jobs','crm','finance','messages','installer_portal','designer_portal','inventory','analytics'];
+
 function hasPermission(mod) {
   if (!currentUser) return false;
-  if (isDeveloper()) return true;
+  if (isDeveloper()) {
+    // Always allow admin/tool modules
+    if (DEV_RESTRICTED_MODS.indexOf(mod) === -1) return true;
+    // Customer data modules: only if sandbox is active
+    return _sandboxMode;
+  }
   if (mod === 'messages') return true;
   if (canEditPayment()) return true;
   var r = getUserRole(currentUser);
@@ -2487,7 +2495,7 @@ function hasPermission(mod) {
 }
 function canEditPayment() {
   if (!currentUser) return false;
-  if (isDeveloper()) return true;
+  if (isDeveloper()) return _sandboxMode; // payment/finance editing only in sandbox
   var roleName = getUserRole(currentUser).name.toLowerCase();
   return roleName.indexOf('admin') > -1 || roleName.indexOf('manager') > -1;
 }
@@ -2525,7 +2533,13 @@ function toggleSandbox() {
   _sandboxStore = {};
   var bar = document.getElementById('sandbox-bar');
   if (bar) bar.style.display = _sandboxMode ? 'flex' : 'none';
-  toast(_sandboxMode ? '🧪 Sandbox ON — using mock data, writes intercepted' : '✅ Sandbox OFF — live data restored');
+  toast(_sandboxMode ? '🧪 Sandbox ON — customer data modules unlocked with mock data' : '✅ Sandbox OFF — customer data modules hidden');
+  // Refresh nav so restricted modules appear/disappear
+  applyUserUI();
+  // If sandbox turned off and current page is restricted, go to dashboard
+  if (!_sandboxMode && isDeveloper() && DEV_RESTRICTED_MODS.indexOf(curPage) > -1) {
+    gotoPage('dashboard', document.querySelector('.nav-i[onclick*="dashboard"]'));
+  }
   devPanelRefresh();
 }
 
