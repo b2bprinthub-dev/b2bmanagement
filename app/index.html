@@ -15113,6 +15113,20 @@ var _secScanRunning = false;
 var _secEventLog    = [];
 var _secAlerts      = [];
 
+// ── INFRASTRUCTURE MONITOR ────────────────────────────────────
+var _infraStatus      = null;   // Supabase status API result
+var _infraLatency     = [];     // rolling window of API latency measurements
+var _infraCallCount   = 0;      // total API calls this session
+var _infraErrorCount  = 0;      // total API errors this session
+var _infraSessionStart= Date.now();
+var _infraPollTimer   = null;
+
+// ── DATABASE BACKUP ────────────────────────────────────────────
+var _backupHistory    = JSON.parse(localStorage.getItem('b2b_backup_history')||'[]');
+var _gdriveToken      = null;
+var _backupRunning    = false;
+var BACKUP_TABLES     = ['clients','invoices','transactions','expenses','messages','activity_log','jobs','price_list','estimates','suppliers','purchase_orders','app_users','settings'];
+
 function secLog(category, severity, msg, detail) {
   if (!currentUser) return;
   var entry = { ts: new Date().toISOString(), category: category, severity: severity,
@@ -15225,7 +15239,18 @@ function renderSecurityTab() {
         secInfoRow('Session Events',_secEventLog.filter(function(e){return e.uid===(currentUser?currentUser.id:0);}).length+' logged')+
         secInfoRow('Google Account','<a href="https://myaccount.google.com/security" target="_blank" style="color:var(--acc)">Open Security Settings →</a>')+
       '</div>'+
-    '</div>';
+    '</div>'+
+    '<div id="infra-panel">'+renderInfraPanel()+'</div>'+
+    '<div id="backup-panel">'+renderBackupPanel()+'</div>';
+
+  // Start live monitoring after render
+  setTimeout(function(){
+    infraFetchStatus().then(function(){
+      var ip=document.getElementById('infra-panel');
+      if(ip) ip.outerHTML='<div id="infra-panel">'+renderInfraPanel()+'</div>';
+    });
+    infraStartMonitor();
+  }, 500);
 }
 
 function secKpi(label,val,color,icon){
@@ -15392,6 +15417,317 @@ function secExportSecurityReport(){
   a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));
   a.download='security_report_'+new Date().toISOString().substring(0,10)+'.txt';
   a.click();
+}
+
+// ── INFRASTRUCTURE MONITOR FUNCTIONS ─────────────────────────
+
+function infraKpi(label, val, sub, color, icon) {
+  return '<div class="card" style="padding:14px;border-top:3px solid '+(color||'var(--acc)')+'">'+
+    '<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">'+icon+' '+label+'</div>'+
+    '<div style="font-size:22px;font-weight:800;color:'+(color||'var(--acc)')+'">'+val+'</div>'+
+    (sub?'<div style="font-size:11px;color:var(--t3);margin-top:2px">'+sub+'</div>':'')+
+  '</div>';
+}
+
+function infraFmtUptime(ms) {
+  var s=Math.floor(ms/1000); var m=Math.floor(s/60); var h=Math.floor(m/60); var d=Math.floor(h/24);
+  if(d>0) return d+'d '+( h%24)+'h';
+  if(h>0) return h+'h '+(m%60)+'m';
+  return m+'m '+(s%60)+'s';
+}
+
+function infraAvgLatency() {
+  if(!_infraLatency.length) return '—';
+  var avg=_infraLatency.reduce(function(a,b){return a+b;},0)/_infraLatency.length;
+  return Math.round(avg)+'ms';
+}
+
+function infraPingLatency() {
+  var start=Date.now();
+  return fetch(SUPABASE_URL+'/rest/v1/settings?select=key&limit=1',{
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+  }).then(function(){
+    var ms=Date.now()-start;
+    _infraLatency.push(ms);
+    if(_infraLatency.length>20) _infraLatency.shift();
+    _infraCallCount++;
+    return ms;
+  }).catch(function(){_infraErrorCount++;return null;});
+}
+
+function infraFetchStatus() {
+  return fetch('https://status.supabase.com/api/v2/summary.json')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      _infraStatus=d;
+      return d;
+    }).catch(function(){_infraStatus=null;return null;});
+}
+
+function infraStartMonitor() {
+  if(_infraPollTimer) clearInterval(_infraPollTimer);
+  infraFetchStatus();
+  infraPingLatency();
+  _infraPollTimer=setInterval(function(){
+    infraPingLatency().then(function(){
+      var el=document.getElementById('infra-latency-live');
+      if(el) el.textContent=infraAvgLatency();
+      var cl=document.getElementById('infra-call-live');
+      if(cl) cl.textContent=_infraCallCount;
+    });
+  }, 15000);
+}
+
+function renderInfraPanel() {
+  var uptime=infraFmtUptime(Date.now()-_infraSessionStart);
+  var avgLat=infraAvgLatency();
+  var statusLabel='Loading…'; var statusColor='#f59e0b'; var components='';
+  if(_infraStatus) {
+    var ind=_infraStatus.status&&_infraStatus.status.indicator;
+    statusLabel=ind==='none'?'All Systems Operational':ind==='minor'?'Minor Issues':ind==='major'?'Major Outage':'Degraded';
+    statusColor=ind==='none'?'#4caf7d':ind==='minor'?'#f59e0b':'#ef4444';
+    if(_infraStatus.components) {
+      var relevant=_infraStatus.components.filter(function(c){return !c.group_id;}).slice(0,6);
+      components='<div style="margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+
+        relevant.map(function(c){
+          var ok=c.status==='operational'; var col=ok?'#4caf7d':'#f59e0b';
+          return '<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;font-size:11px">'+
+            '<div style="font-weight:600;color:var(--t1)">'+c.name+'</div>'+
+            '<div style="color:'+col+';font-size:10px;margin-top:2px;font-weight:700">'+(ok?'✅ Operational':'⚠️ '+c.status)+'</div>'+
+          '</div>';
+        }).join('')+
+      '</div>';
+    }
+  }
+  var latColor=_infraLatency.length===0?'var(--t3)':_infraLatency[_infraLatency.length-1]<300?'#4caf7d':_infraLatency[_infraLatency.length-1]<800?'#f59e0b':'#ef4444';
+  var errRate=_infraCallCount>0?Math.round(_infraErrorCount/_infraCallCount*100):0;
+
+  return '<div class="card" style="margin-bottom:14px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+      '<div><b>📡 Infrastructure Monitor</b><div style="font-size:11px;color:var(--t3);margin-top:2px">Live Supabase status · API latency · Session metrics</div></div>'+
+      '<button class="btn btn-o btn-sm" onclick="infraFetchStatus().then(function(){renderSecurityConsole();})">↻ Refresh</button>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">'+
+      infraKpi('Supabase',statusLabel,'',statusColor,'🌐')+
+      infraKpi('API Latency','<span id="infra-latency-live">'+avgLat+'</span>','avg last 20 calls',latColor,'⚡')+
+      infraKpi('API Calls','<span id="infra-call-live">'+_infraCallCount+'</span>','this session','var(--acc)','📊')+
+      infraKpi('Errors',_infraErrorCount,(errRate>0?errRate+'% error rate':'All OK'),_infraErrorCount>0?'#ef4444':'#4caf7d','⚠️')+
+      infraKpi('Uptime',uptime,'session duration','#4caf7d','⏱️')+
+    '</div>'+
+    '<div style="background:var(--bg2);border-radius:10px;padding:14px">'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--t2)">Supabase Cloud Components</div>'+
+      (components||'<div style="color:var(--t3);font-size:12px">Loading status…</div>')+
+    '</div>'+
+    (_infraLatency.length>1?
+      '<div style="margin-top:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:6px">API Latency History (last '+_infraLatency.length+' calls)</div>'+
+      '<div style="display:flex;align-items:flex-end;gap:3px;height:40px">'+
+      _infraLatency.map(function(ms){
+        var h=Math.min(40,Math.max(4,Math.round(ms/20))); var c=ms<300?'#4caf7d':ms<800?'#f59e0b':'#ef4444';
+        return '<div title="'+ms+'ms" style="flex:1;height:'+h+'px;background:'+c+';border-radius:2px 2px 0 0;min-width:6px"></div>';
+      }).join('')+
+      '</div></div>':'')+
+    '<div style="margin-top:10px;display:flex;gap:16px;font-size:11px;color:var(--t3)">'+
+      '<span>🟢 &lt;300ms good</span><span>🟡 300–800ms fair</span><span>🔴 &gt;800ms slow</span>'+
+      '<a href="https://status.supabase.com" target="_blank" style="color:var(--acc);margin-left:auto">status.supabase.com →</a>'+
+    '</div>'+
+  '</div>';
+}
+
+function renderSecurityConsole() {
+  var el=document.getElementById('security-console');
+  if(!el) return;
+  // Re-render just infra + backup panels inline without full tab re-render
+  var infraEl=document.getElementById('infra-panel');
+  if(infraEl) infraEl.outerHTML='<div id="infra-panel">'+renderInfraPanel()+'</div>';
+  var bkEl=document.getElementById('backup-panel');
+  if(bkEl) bkEl.outerHTML='<div id="backup-panel">'+renderBackupPanel()+'</div>';
+}
+
+// ── DATABASE BACKUP FUNCTIONS ─────────────────────────────────
+
+function renderBackupPanel() {
+  var last=_backupHistory.length?_backupHistory[0]:null;
+  var histRows=_backupHistory.slice(0,5).map(function(b){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bor);font-size:12px">'+
+      '<div><span class="badge '+(b.dest==='local'?'b-inf':'b-ok')+'" style="margin-right:6px">'+(b.dest==='local'?'💾 Local':'☁️ Drive')+'</span>'+b.label+'</div>'+
+      '<div style="color:var(--t3)">'+new Date(b.ts).toLocaleString()+'</div>'+
+    '</div>';
+  }).join('');
+  return '<div class="card" style="margin-bottom:14px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+      '<div><b>💾 Database Backup</b><div style="font-size:11px;color:var(--t3);margin-top:2px">'+BACKUP_TABLES.length+' tables · JSON snapshot · '+(_backupRunning?'⏳ Backup in progress…':'Ready')+'</div></div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button class="btn btn-p btn-sm" onclick="dbBackupLocal()" '+ (_backupRunning?'disabled':'')+'>💾 Download Local</button>'+
+        '<button class="btn btn-o btn-sm" onclick="dbBackupGDrive()" '+(_backupRunning?'disabled':'')+'>☁️ Save to Google Drive</button>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+      '<div style="background:var(--bg2);border-radius:8px;padding:12px">'+
+        '<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:4px">Last Backup</div>'+
+        '<div style="font-size:13px;font-weight:600">'+(last?new Date(last.ts).toLocaleString():'Never')+'</div>'+
+        (last?'<div style="font-size:11px;color:var(--t3);margin-top:2px">'+last.label+' via '+(last.dest==='local'?'Local Download':'Google Drive')+'</div>':'')+
+      '</div>'+
+      '<div style="background:var(--bg2);border-radius:8px;padding:12px">'+
+        '<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:4px">Tables Covered</div>'+
+        '<div style="font-size:11px;color:var(--t2);line-height:1.8">'+BACKUP_TABLES.join(' · ')+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div id="backup-progress" style="display:none;margin-bottom:12px">'+
+      '<div style="font-size:12px;color:var(--t3);margin-bottom:6px" id="backup-progress-label">Preparing…</div>'+
+      '<div style="background:var(--bg2);border-radius:4px;height:8px;overflow:hidden">'+
+        '<div id="backup-progress-bar" style="height:100%;background:var(--acc);border-radius:4px;transition:width .3s;width:0%"></div>'+
+      '</div>'+
+    '</div>'+
+    (histRows?'<div><div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px">Backup History</div>'+histRows+'</div>':
+      '<div style="text-align:center;padding:16px;color:var(--t3);font-size:12px">No backups yet. Run your first backup above.</div>')+
+  '</div>';
+}
+
+function dbBackupLocal() {
+  if(_backupRunning) return;
+  _backupRunning=true;
+  var prog=document.getElementById('backup-progress');
+  var progBar=document.getElementById('backup-progress-bar');
+  var progLabel=document.getElementById('backup-progress-label');
+  if(prog) prog.style.display='block';
+  secLog('Export','MED','Database backup initiated','Destination: local download');
+
+  var snapshot={meta:{generated:new Date().toISOString(),by:currentUser.name,tables:BACKUP_TABLES.length},tables:{}};
+  var done=0;
+
+  function next(i) {
+    if(i>=BACKUP_TABLES.length) {
+      if(progLabel) progLabel.textContent='Packaging…';
+      var json=JSON.stringify(snapshot,null,2);
+      var blob=new Blob([json],{type:'application/json'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='b2bprinthub_backup_'+new Date().toISOString().substring(0,10)+'_'+Date.now()+'.json';
+      a.click();
+      var entry={ts:Date.now(),dest:'local',label:BACKUP_TABLES.length+' tables, '+Math.round(json.length/1024)+'KB'};
+      _backupHistory.unshift(entry); if(_backupHistory.length>20) _backupHistory.pop();
+      localStorage.setItem('b2b_backup_history',JSON.stringify(_backupHistory));
+      _backupRunning=false;
+      if(prog) prog.style.display='none';
+      secLog('Export','LOW','Database backup complete','Local: '+Math.round(json.length/1024)+'KB');
+      toast('✅ Backup downloaded — '+Math.round(json.length/1024)+'KB, '+BACKUP_TABLES.length+' tables');
+      var bp=document.getElementById('backup-panel');
+      if(bp) bp.outerHTML='<div id="backup-panel">'+renderBackupPanel()+'</div>';
+      return;
+    }
+    var t=BACKUP_TABLES[i];
+    if(progLabel) progLabel.textContent='Exporting '+t+'… ('+(i+1)+'/'+BACKUP_TABLES.length+')';
+    if(progBar) progBar.style.width=Math.round((i+1)/BACKUP_TABLES.length*100)+'%';
+    fetch(SUPABASE_URL+'/rest/v1/'+t+'?select=*',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Range':'0-9999'}
+    }).then(function(r){return r.json();}).then(function(rows){
+      snapshot.tables[t]=Array.isArray(rows)?rows:[];
+      snapshot.meta[t+'_count']=snapshot.tables[t].length;
+      next(i+1);
+    }).catch(function(){snapshot.tables[t]=[];next(i+1);});
+  }
+  next(0);
+}
+
+function dbBackupGDrive() {
+  if(_backupRunning) return;
+  // Request Google Drive token via OAuth2 popup
+  if(typeof google==='undefined'||!google.accounts) {
+    // Load GIS library on demand
+    var s=document.createElement('script');
+    s.src='https://accounts.google.com/gsi/client';
+    s.onload=function(){dbBackupGDriveAuth();};
+    document.head.appendChild(s);
+  } else {
+    dbBackupGDriveAuth();
+  }
+}
+
+function dbBackupGDriveAuth() {
+  var clientId='';
+  // Try to extract Google client ID from Supabase session
+  try {
+    var session=sb.auth.session&&sb.auth.session()||null;
+    // We don't have the client_id directly — use a prompt fallback
+  } catch(e){}
+
+  // Prompt for client ID if not configured
+  if(!clientId) {
+    clientId=localStorage.getItem('b2b_google_client_id')||'';
+    if(!clientId) {
+      clientId=prompt('Enter your Google OAuth Client ID to enable Drive backup.\n(Settings → Google Cloud → Credentials → Web app Client ID)');
+      if(!clientId) return;
+      localStorage.setItem('b2b_google_client_id',clientId);
+    }
+  }
+
+  var tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: function(resp) {
+      if(resp.error) { toast('Google Drive auth failed: '+resp.error); return; }
+      _gdriveToken=resp.access_token;
+      dbBackupGDriveUpload();
+    }
+  });
+  tokenClient.requestAccessToken();
+}
+
+function dbBackupGDriveUpload() {
+  if(!_gdriveToken) { toast('No Google Drive token. Please try again.'); return; }
+  _backupRunning=true;
+  var prog=document.getElementById('backup-progress');
+  var progBar=document.getElementById('backup-progress-bar');
+  var progLabel=document.getElementById('backup-progress-label');
+  if(prog) prog.style.display='block';
+  secLog('Export','MED','Database backup to Google Drive initiated','');
+
+  var snapshot={meta:{generated:new Date().toISOString(),by:currentUser.name,tables:BACKUP_TABLES.length},tables:{}};
+
+  function next(i) {
+    if(i>=BACKUP_TABLES.length) {
+      if(progLabel) progLabel.textContent='Uploading to Google Drive…';
+      var json=JSON.stringify(snapshot,null,2);
+      var filename='b2bprinthub_backup_'+new Date().toISOString().substring(0,10)+'.json';
+      var meta={name:filename,mimeType:'application/json',parents:['root']};
+      var form=new FormData();
+      form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+      form.append('file',new Blob([json],{type:'application/json'}));
+      fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+_gdriveToken},
+        body:form
+      }).then(function(r){return r.json();}).then(function(d){
+        _backupRunning=false;
+        if(prog) prog.style.display='none';
+        if(d.id) {
+          var entry={ts:Date.now(),dest:'gdrive',label:BACKUP_TABLES.length+' tables, '+Math.round(json.length/1024)+'KB — "'+filename+'"'};
+          _backupHistory.unshift(entry); if(_backupHistory.length>20) _backupHistory.pop();
+          localStorage.setItem('b2b_backup_history',JSON.stringify(_backupHistory));
+          secLog('Export','LOW','Database backup to Google Drive complete',filename+' ('+Math.round(json.length/1024)+'KB)');
+          toast('✅ Backup saved to Google Drive — '+filename);
+        } else {
+          toast('⚠️ Drive upload may have failed: '+(d.error&&d.error.message||JSON.stringify(d)));
+        }
+        var bp=document.getElementById('backup-panel');
+        if(bp) bp.outerHTML='<div id="backup-panel">'+renderBackupPanel()+'</div>';
+      }).catch(function(e){
+        _backupRunning=false; if(prog) prog.style.display='none';
+        toast('Drive upload error: '+e.message);
+      });
+      return;
+    }
+    var t=BACKUP_TABLES[i];
+    if(progLabel) progLabel.textContent='Exporting '+t+'… ('+(i+1)+'/'+BACKUP_TABLES.length+')';
+    if(progBar) progBar.style.width=Math.round((i+1)/BACKUP_TABLES.length*100)+'%';
+    fetch(SUPABASE_URL+'/rest/v1/'+t+'?select=*',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Range':'0-9999'}
+    }).then(function(r){return r.json();}).then(function(rows){
+      snapshot.tables[t]=Array.isArray(rows)?rows:[];
+      next(i+1);
+    }).catch(function(){snapshot.tables[t]=[];next(i+1);});
+  }
+  next(0);
 }
 
 function changePassword() {
