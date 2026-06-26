@@ -257,6 +257,21 @@ textarea.fc{resize:vertical;min-height:72px}
   <div style="text-align:center;margin-top:20px;font-size:12px;color:#6b7099">© B2B Print Hub — Powered by your local print team</div>
 </div>
 
+<!-- ── Public Invoice View Screen ── -->
+<div id="invoiceViewScreen" style="display:none;position:fixed;inset:0;background:#0d0f18;z-index:9999;overflow-y:auto;padding:24px 16px">
+  <div class="apv-card">
+    <div class="apv-header">
+      <div style="font-size:36px;margin-bottom:8px">🧾</div>
+      <div style="font-size:20px;font-weight:700">B2B Print Hub</div>
+      <div style="font-size:13px;opacity:.8;margin-top:4px">Invoice</div>
+    </div>
+    <div class="apv-body" id="inv-view-body">
+      <div style="text-align:center;padding:40px;color:#9ea3c0">Loading invoice...</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:20px;font-size:12px;color:#6b7099">© B2B Print Hub — Powered by your local print team</div>
+</div>
+
 <!-- ── Send for Approval Dialog ── -->
 <div class="overlay" id="sendApprovalModal">
 <div class="modal" style="max-width:520px">
@@ -3178,7 +3193,7 @@ var STRINGS = {
     // ── WhatsApp
     'wa.send':'WhatsApp',
     'wa.noPhone':'No phone number on file for this client',
-    'wa.inv.msg':'Hi {name}, your invoice {num} for {amt} is ready. Please review and let us know if you have any questions. — {biz}',
+    'wa.inv.msg':'Hi {name}, your invoice {num} for {amt} is ready.\n\n📄 View & download your invoice here:\n{link}\n\nPlease let us know if you have any questions. — {biz}',
     'wa.est.msg':'Hi {name}, your estimate {num} for {amt} is ready for your review. Click the link below to approve or request changes:\n{link}\n\nFeel free to reach out with any questions. — {biz}',
     'wa.job.msg':'Hi {name}, your job "{title}" has been updated to: {status}. Thank you for your business! — {biz}',
     // ── Intake Wizard
@@ -3634,7 +3649,7 @@ var STRINGS = {
     // ── WhatsApp
     'wa.send':'WhatsApp',
     'wa.noPhone':'Este cliente no tiene número de teléfono registrado',
-    'wa.inv.msg':'Hola {name}, su factura {num} por {amt} está lista. Por favor revísela y contáctenos si tiene preguntas. — {biz}',
+    'wa.inv.msg':'Hola {name}, su factura {num} por {amt} está lista.\n\n📄 Ver y descargar su factura aquí:\n{link}\n\nCualquier pregunta, con gusto le ayudamos. — {biz}',
     'wa.est.msg':'Hola {name}, su estimado {num} por {amt} está listo para su revisión. Haga clic en el enlace para aprobar o solicitar cambios:\n{link}\n\nNo dude en contactarnos. — {biz}',
     'wa.job.msg':'Hola {name}, su trabajo "{title}" ha sido actualizado a: {status}. ¡Gracias por su preferencia! — {biz}',
     // ── Intake Wizard
@@ -5326,12 +5341,17 @@ function waInvoice(id) {
   var name = cli ? cli.name : cName(inv.cid);
   var phone = cli ? cli.phone : '';
   var biz = pdfSettings.bizName || 'us';
-  var msg = t('wa.inv.msg')
-    .replace('{name}', name)
-    .replace('{num}', num)
-    .replace('{amt}', fmt(inv.grand))
-    .replace('{biz}', biz);
-  sendWhatsApp(phone, msg);
+  var longUrl = getApprovalBaseURL() + '?inv=' + inv.id;
+  toast('Generating link…');
+  shortenURL(longUrl).then(function(shortUrl) {
+    var msg = t('wa.inv.msg')
+      .replace('{name}', name)
+      .replace('{num}', num)
+      .replace('{amt}', fmt(inv.grand))
+      .replace('{link}', shortUrl)
+      .replace('{biz}', biz);
+    sendWhatsApp(phone, msg);
+  });
 }
 
 function waEstimate(id) {
@@ -6659,6 +6679,117 @@ function apvBellClick(id) {
 }
 
 // ── Public Approval Page (URL-based, no login needed) ────────────
+// ── Public Invoice View (URL: ?inv=ID) ──────────────────────────
+function checkInvoiceViewURL() {
+  var params = new URLSearchParams(window.location.search);
+  var iid = parseInt(params.get('inv') || '0');
+  if (!iid) return false;
+
+  document.getElementById('invoiceViewScreen').style.display = 'block';
+  document.getElementById('loadingScreen').style.display = 'none';
+
+  var SUPA_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
+  var SUPA_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '';
+
+  // Fetch invoice + client + biz settings in parallel
+  Promise.all([
+    fetch(SUPA_URL + '/rest/v1/invoices?id=eq.' + iid + '&select=*', {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(function(r){return r.json();}),
+    fetch(SUPA_URL + '/rest/v1/settings?select=key,value', {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).then(function(r){return r.json();})
+  ]).then(function(results) {
+    var invRows = results[0]; var settRows = results[1];
+    var inv = invRows && invRows[0];
+    if (!inv) { document.getElementById('inv-view-body').innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444">Invoice not found.</div>'; return; }
+
+    // Parse settings
+    var cfg = {};
+    if (Array.isArray(settRows)) settRows.forEach(function(s){ cfg[s.key] = s.value; });
+    var bizName = cfg['biz_name'] || cfg['bizName'] || 'B2B Print Hub';
+    var bizAddr = cfg['biz_address'] || cfg['bizAddress'] || '';
+    var bizPhone = cfg['biz_phone'] || cfg['bizPhone'] || '';
+    var bizEmail = cfg['biz_email'] || cfg['bizEmail'] || '';
+
+    // Fetch client
+    fetch(SUPA_URL + '/rest/v1/clients?id=eq.' + inv.cid + '&select=*', {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+    .then(function(r){return r.json();})
+    .then(function(cliRows) {
+      var cli = (cliRows && cliRows[0]) || {name:'Valued Customer',address:'',phone:'',email:''};
+      renderPublicInvoiceView(inv, cli, bizName, bizAddr, bizPhone, bizEmail);
+    }).catch(function(){ renderPublicInvoiceView(inv, {name:'Valued Customer',address:'',phone:'',email:''}, bizName, bizAddr, bizPhone, bizEmail); });
+  }).catch(function() {
+    document.getElementById('inv-view-body').innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444">Unable to load invoice. Check your connection.</div>';
+  });
+  return true;
+}
+
+function renderPublicInvoiceView(inv, cli, bizName, bizAddr, bizPhone, bizEmail) {
+  var invNum = '#INV-' + String(inv.id).padStart(4,'0');
+  var items = inv.items || [];
+  var rowsHtml = items.map(function(it) {
+    var qty = parseFloat(it.qty||1), price = parseFloat(it.price||0);
+    return '<tr style="border-bottom:1px solid #eee">' +
+      '<td style="padding:8px 4px">' + (it.desc||it.name||'') + '</td>' +
+      '<td style="padding:8px 4px;text-align:center">' + qty + '</td>' +
+      '<td style="padding:8px 4px;text-align:right">$' + price.toFixed(2) + '</td>' +
+      '<td style="padding:8px 4px;text-align:right">$' + (qty*price).toFixed(2) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  var fmtMoney = function(v){ return '$' + parseFloat(v||0).toFixed(2); };
+
+  document.getElementById('inv-view-body').innerHTML =
+    '<div style="font-family:sans-serif;color:#1a1a2e;font-size:14px">' +
+    // Biz header
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">' +
+      '<div><div style="font-size:20px;font-weight:700;color:#6c63ff">' + bizName + '</div>' +
+      '<div style="font-size:12px;color:#555;margin-top:4px">' + bizAddr + '</div>' +
+      '<div style="font-size:12px;color:#555">' + bizPhone + (bizPhone&&bizEmail?' · ':'') + bizEmail + '</div></div>' +
+      '<div style="text-align:right"><div style="font-size:22px;font-weight:800;color:#1a1a2e">INVOICE</div>' +
+      '<div style="font-size:13px;color:#6c63ff;font-weight:600">' + invNum + '</div>' +
+      '<div style="font-size:12px;color:#555;margin-top:4px">Date: ' + (inv.date||'') + '</div></div>' +
+    '</div>' +
+    // Bill to
+    '<div style="background:#f5f5fa;border-radius:8px;padding:12px 16px;margin-bottom:20px">' +
+      '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px">Bill To</div>' +
+      '<div style="font-weight:600">' + cli.name + '</div>' +
+      '<div style="font-size:12px;color:#555">' + (cli.address||'') + '</div>' +
+      '<div style="font-size:12px;color:#555">' + (cli.phone||'') + (cli.phone&&cli.email?' · ':'') + (cli.email||'') + '</div>' +
+    '</div>' +
+    // Items table
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">' +
+      '<thead><tr style="background:#6c63ff;color:#fff">' +
+        '<th style="padding:10px 4px;text-align:left">Description</th>' +
+        '<th style="padding:10px 4px;text-align:center">Qty</th>' +
+        '<th style="padding:10px 4px;text-align:right">Unit Price</th>' +
+        '<th style="padding:10px 4px;text-align:right">Total</th>' +
+      '</tr></thead><tbody>' + rowsHtml + '</tbody>' +
+    '</table>' +
+    // Totals
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:20px">' +
+      '<div style="min-width:200px">' +
+        '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px"><span>Subtotal</span><span>' + fmtMoney(inv.sub) + '</span></div>' +
+        (parseFloat(inv.disc||0)>0 ? '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:#ef4444"><span>Discount</span><span>-' + fmtMoney(inv.disc) + '</span></div>' : '') +
+        (parseFloat(inv.tax||0)>0 ? '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px"><span>Tax</span><span>' + fmtMoney(inv.tax) + '</span></div>' : '') +
+        '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:16px;font-weight:700;border-top:2px solid #6c63ff;margin-top:4px"><span>Total Due</span><span style="color:#6c63ff">' + fmtMoney(inv.grand) + '</span></div>' +
+      '</div>' +
+    '</div>' +
+    (inv.notes ? '<div style="font-size:12px;color:#555;border-top:1px solid #eee;padding-top:12px;margin-top:4px"><b>Notes:</b> ' + inv.notes + '</div>' : '') +
+    // Print button
+    '<div style="text-align:center;margin-top:24px">' +
+      '<button onclick="window.print()" style="background:#6c63ff;color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:14px;font-weight:600;cursor:pointer">🖨️ Print / Save as PDF</button>' +
+    '</div>' +
+    '</div>';
+}
+
+function shortenURL(longUrl) {
+  return fetch('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(longUrl))
+    .then(function(r){ return r.text(); })
+    .then(function(short){
+      if (short && short.startsWith('https://is.gd/')) return short.trim();
+      return longUrl; // fallback to original if shortener fails
+    })
+    .catch(function(){ return longUrl; });
+}
+
 function checkApprovalURL() {
   var params = new URLSearchParams(window.location.search);
   var token  = params.get('approve');
@@ -18925,6 +19056,7 @@ function bootApp() {
 
 window.addEventListener("DOMContentLoaded", function () {
   // Check if this is a customer approval link before starting the normal app
+  if (checkInvoiceViewURL()) return;
   if (checkApprovalURL()) return;
   bootApp();
 });
