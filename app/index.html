@@ -1052,6 +1052,7 @@ textarea.fc{resize:vertical;min-height:72px}
         <button class="an-tab" onclick="setAnTab('clients',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.clients">Clients</button>
         <button class="an-tab" onclick="setAnTab('ops',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.ops">Operations</button>
         <button class="an-tab" onclick="setAnTab('forecast',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.forecast">Forecast</button>
+        <button class="an-tab" onclick="setAnTab('rejections',this)" style="padding:9px 16px;border:none;background:none;font-size:13px;font-weight:600;color:#ef4444;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap" data-i18n="an.tab.rejections">⚠ Rejections</button>
       </div>
       <!-- Tab panels -->
       <div id="an-tab-overview"></div>
@@ -1061,6 +1062,7 @@ textarea.fc{resize:vertical;min-height:72px}
       <div id="an-tab-clients" style="display:none"></div>
       <div id="an-tab-ops" style="display:none"></div>
       <div id="an-tab-forecast" style="display:none"></div>
+      <div id="an-tab-rejections" style="display:none"></div>
     </div>
 
     <!-- ══ KNOWLEDGE BASE PAGE ══════════════════════════════════ -->
@@ -3018,7 +3020,7 @@ var STRINGS = {
     // ── Analytics page
     'an.title':'📊 Financial Reports','an.subtitle':'CFO-grade reporting suite',
     'an.tab.overview':'Overview','an.tab.pl':'P&L','an.tab.ar':'AR & Cash',
-    'an.tab.sales':'Sales','an.tab.clients':'Clients','an.tab.ops':'Operations','an.tab.forecast':'Forecast',
+    'an.tab.sales':'Sales','an.tab.clients':'Clients','an.tab.ops':'Operations','an.tab.forecast':'Forecast','an.tab.rejections':'⚠ Rejections',
     'an.period.week':'This Week','an.period.month':'This Month','an.period.quarter':'This Quarter',
     'an.period.year':'This Year','an.period.all':'All Time',
     'an.months':'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec',
@@ -3116,6 +3118,17 @@ var STRINGS = {
     'an.noOutstanding':'✅ No outstanding invoices',
     'an.noTeamData':'Add team members and assign them to jobs to see performance data',
     'an.noPaidInv':'No paid invoices in period',
+    // ── Rejections tab
+    'an.rej.title':'Rejection & Loss Analysis','an.rej.subtitle':'Track why customers decline, void, or walk away',
+    'an.rej.kpi.total':'Total Rejections','an.rej.kpi.estDeclined':'Estimates Declined',
+    'an.rej.kpi.jobsVoided':'Jobs Voided','an.rej.kpi.invVoided':'Invoices Voided',
+    'an.rej.kpi.lostRev':'Lost Revenue','an.rej.kpi.declineRate':'Decline Rate',
+    'an.rej.sec.estimates':'Declined Estimates','an.rej.sec.jobs':'Voided Jobs','an.rej.sec.invoices':'Voided Invoices',
+    'an.rej.th.date':'Date','an.rej.th.client':'Client','an.rej.th.ref':'Ref #','an.rej.th.amount':'Amount',
+    'an.rej.th.reason':'Reason / Customer Message','an.rej.th.service':'Service','an.rej.th.status':'Status',
+    'an.rej.noReason':'No reason provided','an.rej.noData':'No rejections in this period — great work! 🎉',
+    'an.rej.noEst':'No declined estimates','an.rej.noJobs':'No voided jobs','an.rej.noInv':'No voided invoices',
+    'an.rej.export':'⬇ Export CSV',
     // ── WhatsApp
     'wa.send':'WhatsApp',
     'wa.noPhone':'No phone number on file for this client',
@@ -3463,7 +3476,7 @@ var STRINGS = {
     // ── Analytics page
     'an.title':'📊 Informes Financieros','an.subtitle':'Suite de informes nivel CFO',
     'an.tab.overview':'Resumen','an.tab.pl':'P&G','an.tab.ar':'CxC y Caja',
-    'an.tab.sales':'Ventas','an.tab.clients':'Clientes','an.tab.ops':'Operaciones','an.tab.forecast':'Pronóstico',
+    'an.tab.sales':'Ventas','an.tab.clients':'Clientes','an.tab.ops':'Operaciones','an.tab.forecast':'Pronóstico','an.tab.rejections':'⚠ Rechazos',
     'an.period.week':'Esta Semana','an.period.month':'Este Mes','an.period.quarter':'Este Trimestre',
     'an.period.year':'Este Año','an.period.all':'Todo el Tiempo',
     'an.months':'Ene,Feb,Mar,Abr,May,Jun,Jul,Ago,Sep,Oct,Nov,Dic',
@@ -3561,6 +3574,17 @@ var STRINGS = {
     'an.noOutstanding':'✅ Sin facturas pendientes',
     'an.noTeamData':'Agrega miembros al equipo y asígnalos a trabajos para ver datos de desempeño',
     'an.noPaidInv':'Sin facturas pagadas en el período',
+    // ── Rejections tab
+    'an.rej.title':'Análisis de Rechazos y Pérdidas','an.rej.subtitle':'Rastrea por qué los clientes declinan, anulan o se van',
+    'an.rej.kpi.total':'Total Rechazos','an.rej.kpi.estDeclined':'Estimados Rechazados',
+    'an.rej.kpi.jobsVoided':'Trabajos Anulados','an.rej.kpi.invVoided':'Facturas Anuladas',
+    'an.rej.kpi.lostRev':'Ingresos Perdidos','an.rej.kpi.declineRate':'Tasa de Rechazo',
+    'an.rej.sec.estimates':'Estimados Rechazados','an.rej.sec.jobs':'Trabajos Anulados','an.rej.sec.invoices':'Facturas Anuladas',
+    'an.rej.th.date':'Fecha','an.rej.th.client':'Cliente','an.rej.th.ref':'Ref #','an.rej.th.amount':'Monto',
+    'an.rej.th.reason':'Motivo / Mensaje del Cliente','an.rej.th.service':'Servicio','an.rej.th.status':'Estado',
+    'an.rej.noReason':'Sin motivo proporcionado','an.rej.noData':'Sin rechazos en este período — ¡excelente! 🎉',
+    'an.rej.noEst':'Sin estimados rechazados','an.rej.noJobs':'Sin trabajos anulados','an.rej.noInv':'Sin facturas anuladas',
+    'an.rej.export':'⬇ Exportar CSV',
     // ── WhatsApp
     'wa.send':'WhatsApp',
     'wa.noPhone':'Este cliente no tiene número de teléfono registrado',
@@ -16316,6 +16340,155 @@ function renderAnalytics() {
                 y:{grid:{color:'rgba(128,128,128,.1)'},ticks:{color:'#9ea3c0',callback:function(v){return '$'+v.toLocaleString();}}}}}});
     },50);
   }
+
+  // ══════════════════════════════════════════════════════════════
+  // TAB: REJECTIONS
+  // ══════════════════════════════════════════════════════════════
+  else if (_anTab === 'rejections') {
+    var rjEl = document.getElementById('an-tab-rejections');
+    if (!rjEl) return;
+
+    // ── Data collection ────────────────────────────────────────
+    var declinedEsts = estimates.filter(function(e) {
+      return e.status === 'rejected' || e.status === 'declined';
+    }).filter(function(e) {
+      if (!dateFrom) return true;
+      return e.date && new Date(e.date) >= dateFrom;
+    });
+
+    var voidedJobs = jobs.filter(function(j) {
+      return j.status === 'voided';
+    }).filter(function(j) {
+      if (!dateFrom) return true;
+      return j.created_at && new Date(j.created_at) >= dateFrom;
+    });
+
+    var voidedInvs = invoices.filter(function(i) {
+      return i.status === 'voided';
+    }).filter(function(i) {
+      if (!dateFrom) return true;
+      return i.date && new Date(i.date) >= dateFrom;
+    });
+
+    var totalRej     = declinedEsts.length + voidedJobs.length + voidedInvs.length;
+    var lostEstRev   = declinedEsts.reduce(function(s,e){ return s + parseFloat(e.grand||0); }, 0);
+    var lostJobRev   = voidedJobs.reduce(function(s,j){ return s + parseFloat(j.budget||0); }, 0);
+    var lostInvRev   = voidedInvs.reduce(function(s,i){ return s + parseFloat(i.grand||0); }, 0);
+    var lostTotal    = lostEstRev + lostInvRev;
+    var totalEsts    = estimates.filter(function(e){ return !dateFrom || (e.date && new Date(e.date) >= dateFrom); }).length;
+    var declineRate  = totalEsts > 0 ? (declinedEsts.length / totalEsts * 100).toFixed(1) : '0.0';
+
+    // ── KPI row ────────────────────────────────────────────────
+    var kpiHtml =
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">' +
+        anKpi(t('an.rej.kpi.total'), totalRej, periodLabel, totalRej > 0 ? '#ef4444' : '#4caf7d', null) +
+        anKpi(t('an.rej.kpi.estDeclined'), declinedEsts.length, t('an.rej.kpi.declineRate') + ': ' + declineRate + '%', declinedEsts.length > 0 ? '#f59e0b' : '#4caf7d', null) +
+        anKpi(t('an.rej.kpi.lostRev'), fmt(lostTotal), t('an.rej.kpi.jobsVoided') + ': ' + voidedJobs.length + ' · ' + t('an.rej.kpi.invVoided') + ': ' + voidedInvs.length, '#ef4444', null) +
+      '</div>';
+
+    // ── Helper: reason tag ─────────────────────────────────────
+    function rejReasonTag(reason) {
+      if (!reason || !reason.trim()) return '<span style="color:var(--t3);font-style:italic;font-size:12px">' + t('an.rej.noReason') + '</span>';
+      return '<span style="font-size:12px;color:var(--t2)">' + reason + '</span>';
+    }
+
+    // ── Declined estimates table ───────────────────────────────
+    var estRows = declinedEsts.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); }).map(function(e) {
+      var meta = {}; try { var pm = JSON.parse(e.description); if (pm && pm._v) meta = pm; } catch(ex) {}
+      var reason = meta.approvalMessage || meta.approvalResponse || '';
+      var svc = (meta.serviceType || '').replace(/-/g,' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+      return [
+        e.date || '—',
+        cName(e.cid),
+        '#EST-' + String(e.id).padStart(4,'0'),
+        { html: '<span style="color:#ef4444;font-weight:700">' + fmt(e.grand) + '</span>' },
+        svc || '—',
+        { html: rejReasonTag(reason) }
+      ];
+    });
+
+    var estSection = '<div class="card" style="margin-bottom:18px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<b style="color:#ef4444">📋 ' + t('an.rej.sec.estimates') + ' <span style="background:#ef444420;color:#ef4444;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:700;margin-left:6px">' + declinedEsts.length + '</span></b>' +
+        '<button class="btn btn-o btn-sm" onclick="exportRejectionCSV(\'estimates\')">'+t('an.rej.export')+'</button>' +
+      '</div>' +
+      (estRows.length ? anTable([t('an.rej.th.date'), t('an.rej.th.client'), t('an.rej.th.ref'), t('an.rej.th.amount'), t('an.rej.th.service'), t('an.rej.th.reason')], estRows) : '<div class="empty" style="padding:16px">' + t('an.rej.noEst') + '</div>') +
+    '</div>';
+
+    // ── Voided jobs table ──────────────────────────────────────
+    var jobRows = voidedJobs.slice().sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); }).map(function(j) {
+      return [
+        (j.created_at || '—').substring(0, 10),
+        cName(j.cid) || j.client_name || '—',
+        '#JOB-' + String(j.id).padStart(4,'0'),
+        { html: '<span style="color:#f59e0b;font-weight:700">' + fmt(j.budget||0) + '</span>' },
+        j.title || '—',
+        { html: rejReasonTag(j.void_reason) }
+      ];
+    });
+
+    var jobSection = '<div class="card" style="margin-bottom:18px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<b style="color:#f59e0b">🔧 ' + t('an.rej.sec.jobs') + ' <span style="background:#f59e0b20;color:#f59e0b;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:700;margin-left:6px">' + voidedJobs.length + '</span></b>' +
+        '<button class="btn btn-o btn-sm" onclick="exportRejectionCSV(\'jobs\')">'+t('an.rej.export')+'</button>' +
+      '</div>' +
+      (jobRows.length ? anTable([t('an.rej.th.date'), t('an.rej.th.client'), t('an.rej.th.ref'), t('an.rej.th.amount'), t('an.rej.th.service'), t('an.rej.th.reason')], jobRows) : '<div class="empty" style="padding:16px">' + t('an.rej.noJobs') + '</div>') +
+    '</div>';
+
+    // ── Voided invoices table ──────────────────────────────────
+    var invRows = voidedInvs.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); }).map(function(i) {
+      return [
+        i.date || '—',
+        cName(i.cid),
+        '#INV-' + String(i.id).padStart(4,'0'),
+        { html: '<span style="color:#ef4444;font-weight:700">' + fmt(i.grand) + '</span>' },
+        '—',
+        { html: rejReasonTag(i.notes || '') }
+      ];
+    });
+
+    var invSection = '<div class="card" style="margin-bottom:18px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<b style="color:#9ea3c0">🧾 ' + t('an.rej.sec.invoices') + ' <span style="background:rgba(158,163,192,.15);color:#9ea3c0;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:700;margin-left:6px">' + voidedInvs.length + '</span></b>' +
+        '<button class="btn btn-o btn-sm" onclick="exportRejectionCSV(\'invoices\')">'+t('an.rej.export')+'</button>' +
+      '</div>' +
+      (invRows.length ? anTable([t('an.rej.th.date'), t('an.rej.th.client'), t('an.rej.th.ref'), t('an.rej.th.amount'), t('an.rej.th.service'), t('an.rej.th.reason')], invRows) : '<div class="empty" style="padding:16px">' + t('an.rej.noInv') + '</div>') +
+    '</div>';
+
+    // ── Top reasons breakdown ──────────────────────────────────
+    var reasonCounts = {};
+    declinedEsts.forEach(function(e) {
+      var meta = {}; try { var pm = JSON.parse(e.description); if (pm && pm._v) meta = pm; } catch(ex) {}
+      var r = (meta.approvalMessage || '').trim();
+      if (r) { reasonCounts[r] = (reasonCounts[r] || 0) + 1; }
+    });
+    voidedJobs.forEach(function(j) {
+      var r = (j.void_reason || '').trim();
+      if (r) { reasonCounts[r] = (reasonCounts[r] || 0) + 1; }
+    });
+    var reasonList = Object.keys(reasonCounts).sort(function(a,b){ return reasonCounts[b] - reasonCounts[a]; }).slice(0, 8);
+
+    var reasonSection = '';
+    if (reasonList.length) {
+      var maxCount = reasonCounts[reasonList[0]] || 1;
+      reasonSection = '<div class="card" style="margin-bottom:18px"><b>🔍 Top Rejection Reasons</b><div style="margin-top:14px">' +
+        reasonList.map(function(r) {
+          var pct = Math.round(reasonCounts[r] / maxCount * 100);
+          return '<div style="margin-bottom:12px">' +
+            '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">' +
+              '<span style="color:var(--t2);max-width:80%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + r + '</span>' +
+              '<span style="color:#ef4444;font-weight:700">' + reasonCounts[r] + 'x</span>' +
+            '</div>' +
+            '<div style="background:var(--bg3);border-radius:4px;height:6px"><div style="background:#ef4444;border-radius:4px;height:6px;width:' + pct + '%"></div></div>' +
+          '</div>';
+        }).join('') +
+      '</div></div>';
+    }
+
+    rjEl.innerHTML = totalRej === 0
+      ? '<div class="card" style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:12px">🎉</div><div style="font-size:16px;font-weight:700;color:var(--t1)">' + t('an.rej.noData') + '</div></div>'
+      : kpiHtml + reasonSection + estSection + jobSection + invSection;
+  }
 }
 
 function growthColor(g){ return g===null?'var(--t3)':g>=0?'#4caf7d':'#ef4444'; }
@@ -16352,6 +16525,34 @@ function exportTeamCSV() {
   (teamMembers||[]).forEach(function(m){ var mj=jobs.filter(function(j){return j.members&&j.members.indexOf(m.id)>-1;}); var done=mj.filter(function(j){return j.status==='done';}).length; var act=mj.filter(function(j){return j.status==='in-progress';}).length; var ov=mj.filter(function(j){return j.due_date&&j.due_date<today()&&j.status!=='done';}).length; rows.push([m.name,m.role,mj.length,done,act,ov,mj.length>0?Math.round(done/mj.length*100)+'%':'0%']); });
   downloadDataUrl('data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(function(r){return r.join(',');}).join('\n')),'team-performance-'+today()+'.csv');
   toast('Team report exported!');
+}
+
+function exportRejectionCSV(type) {
+  var rows, filename;
+  if (type === 'estimates') {
+    rows = [['Date','Client','Ref #','Amount','Service','Customer Message']];
+    estimates.filter(function(e){ return e.status==='rejected'||e.status==='declined'; }).forEach(function(e) {
+      var meta={}; try{var pm=JSON.parse(e.description);if(pm&&pm._v)meta=pm;}catch(ex){}
+      var svc=(meta.serviceType||'').replace(/-/g,' ');
+      var reason=meta.approvalMessage||meta.approvalResponse||'';
+      rows.push([e.date||'',cName(e.cid),'#EST-'+String(e.id).padStart(4,'0'),e.grand||0,svc,'"'+reason+'"']);
+    });
+    filename='rejected-estimates-'+today()+'.csv';
+  } else if (type === 'jobs') {
+    rows = [['Date','Client','Ref #','Budget','Title','Void Reason']];
+    jobs.filter(function(j){ return j.status==='voided'; }).forEach(function(j) {
+      rows.push([(j.created_at||'').substring(0,10),cName(j.cid)||j.client_name||'','#JOB-'+String(j.id).padStart(4,'0'),j.budget||0,j.title||'','"'+(j.void_reason||'')+'"']);
+    });
+    filename='voided-jobs-'+today()+'.csv';
+  } else {
+    rows = [['Date','Client','Ref #','Amount','Notes']];
+    invoices.filter(function(i){ return i.status==='voided'; }).forEach(function(i) {
+      rows.push([i.date||'',cName(i.cid),'#INV-'+String(i.id).padStart(4,'0'),i.grand||0,'"'+(i.notes||'')+'"']);
+    });
+    filename='voided-invoices-'+today()+'.csv';
+  }
+  downloadDataUrl('data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(function(r){return r.join(',');}).join('\n')),filename);
+  toast('Export ready!');
 }
 
 function renderSettings() {
