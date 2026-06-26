@@ -8220,8 +8220,8 @@ function regCollectInvoicePayment() {
 var DEP_CATS = ['Project Deposit','Retainer','Advance Payment','Material Deposit','Rush Deposit','Event Deposit','Other'];
 
 function buildRegDepPanel() {
-  var openJobs = jobs.filter(function(j){ return j.status!=='done'&&j.status!=='voided'; });
-  var openEsts = estimates.filter(function(e){ return e.status!=='invoiced'&&e.status!=='declined'&&e.status!=='rejected'; });
+  var openJobs = jobs.filter(function(j){ return j.status!=='voided'; }).sort(function(a,b){ return b.id-a.id; });
+  var openEsts = estimates.filter(function(e){ return e.status!=='declined'&&e.status!=='rejected'; }).sort(function(a,b){ return b.id-a.id; });
 
   var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
     '<div class="fg" style="margin:0"><label class="fl">Client</label>' +
