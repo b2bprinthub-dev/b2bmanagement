@@ -1598,6 +1598,7 @@ textarea.fc{resize:vertical;min-height:72px}
         <button class="settings-tab" onclick="switchSettingsTab('security',this)" data-i18n="set.tab.security">Security</button>
         <button class="settings-tab" onclick="switchSettingsTab('business',this)" data-i18n="set.tab.business">Business Info</button>
         <button class="settings-tab" onclick="switchSettingsTab('pdf',this)" data-i18n="set.tab.pdf">PDF Settings</button>
+        <button class="settings-tab" onclick="switchSettingsTab('notifications',this)">🔔 Notifications</button>
         <button class="settings-tab" id="danger-zone-tab" style="color:var(--err);display:none" onclick="switchSettingsTab('danger',this)" data-i18n="set.tab.danger">⚠️ Danger Zone</button>
       </div>
       <div id="settings-tab-users">
@@ -1712,6 +1713,50 @@ textarea.fc{resize:vertical;min-height:72px}
           <div>
             <div class="fl" style="margin-bottom:8px">Live Preview</div>
             <div id="pdf-preview-box" class="pdf-preview"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="settings-tab-notifications" style="display:none">
+        <div style="max-width:560px">
+          <div style="font-size:18px;font-weight:700;margin-bottom:6px">🔔 Notification Settings</div>
+          <div style="font-size:13px;color:var(--t3);margin-bottom:24px">Control how you are alerted when customers respond to estimates.</div>
+
+          <div class="card" style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-weight:600;font-size:14px">🔊 Notification Sound</div>
+                <div style="font-size:12px;color:var(--t3);margin-top:4px">Play a chime when a customer approves, declines, or sends a question on an estimate.</div>
+              </div>
+              <label style="position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0;margin-left:16px">
+                <input type="checkbox" id="notif-sound-toggle" onchange="saveNotifSoundPref(this.checked)" style="opacity:0;width:0;height:0">
+                <span id="notif-sound-slider" style="position:absolute;cursor:pointer;inset:0;background:var(--bg3);border-radius:26px;transition:.3s;border:1px solid var(--bor)">
+                  <span id="notif-sound-knob" style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:var(--t3);border-radius:50%;transition:.3s"></span>
+                </span>
+              </label>
+            </div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bor);display:flex;align-items:center;gap:10px">
+              <button class="btn btn-o btn-sm" onclick="playNotifSound()">▶ Test Sound</button>
+              <span style="font-size:12px;color:var(--t3)">Click to preview the notification chime.</span>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:16px">
+            <div style="font-weight:600;font-size:14px;margin-bottom:8px">🔄 Auto-Refresh Interval</div>
+            <div style="font-size:12px;color:var(--t3);margin-bottom:12px">The app checks Supabase every 45 seconds for new customer responses while you're logged in.</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <button class="btn btn-o btn-sm" onclick="pollApprovalResponses();toast('Checked for new responses!')">🔄 Check Now</button>
+              <span style="font-size:12px;color:var(--t3)">Manually trigger a check immediately.</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="font-weight:600;font-size:14px;margin-bottom:8px">📬 What triggers a notification?</div>
+            <div style="font-size:13px;color:var(--t2);line-height:1.8">
+              ✅ Customer <b>approves</b> an estimate<br>
+              ❌ Customer <b>declines</b> an estimate<br>
+              💬 Customer sends a <b>question or message</b>
+            </div>
           </div>
         </div>
       </div>
@@ -3918,6 +3963,7 @@ function handleAuthSession(session) {
       loadAppData().then(function () {
         applyUserUI();
         refreshApprovalBell();
+        startApprovalPolling();
         startMessagingRealtime();
         withMinLoadingTime(function () {
           document.getElementById("appRoot").style.display = "block";
@@ -6330,21 +6376,131 @@ function recordEstResponse(estId, response) {
   });
 }
 
+// ── Notification Sound ───────────────────────────────────────────
+var NOTIF_SOUND_KEY = 'b2b_notif_sound';
+function isNotifSoundOn() {
+  return localStorage.getItem(NOTIF_SOUND_KEY) !== 'off';
+}
+function playNotifSound() {
+  if (!isNotifSoundOn()) return;
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Two-tone chime
+    [523, 659].forEach(function(freq, i) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      var t = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      osc.start(t); osc.stop(t + 0.4);
+    });
+  } catch(e) {}
+}
+
+// ── Seen-response tracking ────────────────────────────────────────
+var APV_SEEN_KEY = 'b2b_apv_seen';
+function getSeenIds() {
+  try { return JSON.parse(localStorage.getItem(APV_SEEN_KEY) || '[]'); } catch(e) { return []; }
+}
+function markSeenId(id) {
+  var seen = getSeenIds();
+  if (seen.indexOf(id) === -1) { seen.push(id); localStorage.setItem(APV_SEEN_KEY, JSON.stringify(seen)); }
+}
+
 // ── Notification Bell ────────────────────────────────────────────
 function refreshApprovalBell() {
-  var pending = estimates.filter(function(e) {
+  var seen = getSeenIds();
+  // Count: estimates that have a customer response not yet seen by admin
+  var newResponses = estimates.filter(function(e) {
+    var meta = getEstMeta(e);
+    return meta.approvalToken && meta.approvalResponse && seen.indexOf(e.id) === -1;
+  });
+  // Also count awaiting (sent, no response yet)
+  var awaiting = estimates.filter(function(e) {
     if (e.status !== 'sent') return false;
     var meta = getEstMeta(e);
     return meta.approvalToken && !meta.approvalResponse;
   });
   var badge = document.getElementById('approval-badge');
   if (!badge) return;
-  if (pending.length > 0) {
-    badge.textContent = pending.length;
+  var total = newResponses.length + awaiting.length;
+  if (newResponses.length > 0) {
+    // Red badge for unread responses
+    badge.textContent = newResponses.length;
+    badge.style.background = '#ef4444';
+    badge.style.color = '#fff';
+    badge.style.display = 'block';
+  } else if (awaiting.length > 0) {
+    badge.textContent = awaiting.length;
+    badge.style.background = 'var(--warn)';
+    badge.style.color = '#000';
     badge.style.display = 'block';
   } else {
     badge.style.display = 'none';
   }
+}
+
+// ── Auto-poll Supabase for new approval responses ────────────────
+var _lastApvPoll = {};  // id -> approvalResponse, to detect changes
+function pollApprovalResponses() {
+  var SUPA_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
+  var SUPA_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '';
+  if (!SUPA_URL || !SUPA_KEY) return;
+  var sentIds = estimates.filter(function(e) {
+    var meta = getEstMeta(e);
+    return meta.approvalToken;
+  }).map(function(e) { return e.id; });
+  if (!sentIds.length) return;
+  fetch(SUPA_URL + '/rest/v1/estimates?id=in.(' + sentIds.join(',') + ')&select=id,status,description', {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(rows) {
+    if (!Array.isArray(rows)) return;
+    var gotNew = false;
+    rows.forEach(function(row) {
+      var meta = {};
+      try { var m = JSON.parse(row.description); if (m && m._v) meta = m; } catch(ex) {}
+      var resp = meta.approvalResponse;
+      var prev = _lastApvPoll[row.id];
+      // Update local estimates array
+      for (var i = 0; i < estimates.length; i++) {
+        if (estimates[i].id === row.id) {
+          estimates[i].status = row.status;
+          estimates[i].description = row.description;
+          break;
+        }
+      }
+      // Detect newly arrived response
+      if (resp && resp !== prev) {
+        gotNew = true;
+        _lastApvPoll[row.id] = resp;
+      } else if (!prev) {
+        _lastApvPoll[row.id] = resp || null;
+      }
+    });
+    if (gotNew) {
+      refreshApprovalBell();
+      playNotifSound();
+      var msg = '🔔 A customer has responded to an estimate!';
+      toast(msg);
+    } else {
+      refreshApprovalBell();
+    }
+  })
+  .catch(function() {});
+}
+// Start polling every 45 seconds once app loads
+function startApprovalPolling() {
+  // Seed _lastApvPoll with current state so first poll doesn't false-fire
+  estimates.forEach(function(e) {
+    var meta = getEstMeta(e);
+    if (meta.approvalToken) _lastApvPoll[e.id] = meta.approvalResponse || null;
+  });
+  setInterval(pollApprovalResponses, 45000);
 }
 
 function toggleApprovalNotifs() {
@@ -6352,44 +6508,84 @@ function toggleApprovalNotifs() {
   if (!drop) return;
   if (drop.style.display !== 'none') { drop.style.display = 'none'; return; }
 
-  var pending = estimates.filter(function(e) {
-    if (e.status !== 'sent') return false;
+  var seen = getSeenIds();
+
+  // All estimates that have been sent for approval (have a token)
+  var allSent = estimates.filter(function(e) {
     var meta = getEstMeta(e);
     return meta.approvalToken;
   });
 
-  if (!pending.length) {
-    drop.innerHTML = '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">No estimates sent for approval</div>';
-  } else {
-    var html = '<div style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor)">Pending Approvals</div>';
-    pending.slice().reverse().forEach(function(e) {
-      var meta = getEstMeta(e);
-      var clientName = '—';
-      for (var i = 0; i < clients.length; i++) { if (clients[i].id === e.cid) { clientName = clients[i].name; break; } }
-      var resp = meta.approvalResponse;
-      var icon = resp === 'approved' ? '✅' : resp === 'declined' ? '❌' : resp === 'question' ? '💬' : '⏳';
-      var sentDate = meta.approvalSentAt ? new Date(meta.approvalSentAt).toLocaleDateString() : e.date;
-      html += '<div class="notif-item" onclick="toggleApprovalNotifs();openEstApproval('+e.id+')">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-        '<div><div style="font-weight:600;font-size:13px">' + icon + ' ' + clientName + '</div>' +
-        '<div style="font-size:11px;color:var(--t3);margin-top:2px">EST-' + String(e.id).padStart(4,'0') + ' &nbsp;·&nbsp; ' + fmt(e.grand) + '</div>' +
-        (resp ? '<div style="font-size:11px;color:var(--ok);margin-top:2px">' + (resp==='approved'?'Customer approved':resp==='declined'?'Customer declined':'Has a question') + '</div>' : '<div style="font-size:11px;color:var(--warn);margin-top:2px">Awaiting response · sent ' + sentDate + '</div>') +
-        '</div>' +
-        '<button class="btn btn-p btn-sm" onclick="event.stopPropagation();toggleApprovalNotifs();openEstApproval('+e.id+')">View</button>' +
-        '</div></div>';
-    });
-    drop.innerHTML = html;
+  var newResponses = allSent.filter(function(e) {
+    var meta = getEstMeta(e);
+    return meta.approvalResponse && seen.indexOf(e.id) === -1;
+  });
+  var awaiting = allSent.filter(function(e) {
+    var meta = getEstMeta(e);
+    return !meta.approvalResponse;
+  });
+  var oldResponses = allSent.filter(function(e) {
+    var meta = getEstMeta(e);
+    return meta.approvalResponse && seen.indexOf(e.id) !== -1;
+  });
+
+  function buildRow(e, isNew) {
+    var meta = getEstMeta(e);
+    var clientName = '—';
+    for (var i = 0; i < clients.length; i++) { if (clients[i].id === e.cid) { clientName = clients[i].name; break; } }
+    var resp = meta.approvalResponse;
+    var icon = resp === 'approved' ? '✅' : resp === 'declined' ? '❌' : resp === 'question' ? '💬' : '⏳';
+    var sentDate = meta.approvalSentAt ? new Date(meta.approvalSentAt).toLocaleDateString() : e.date;
+    var respLabel = resp === 'approved' ? '<span style="color:#4caf7d">Customer approved</span>'
+                  : resp === 'declined' ? '<span style="color:#ef4444">Customer declined</span>'
+                  : resp === 'question' ? '<span style="color:#38bdf8">Has a question</span>'
+                  : '<span style="color:var(--warn)">Awaiting · sent ' + sentDate + '</span>';
+    return '<div class="notif-item" style="'+(isNew?'border-left:3px solid #ef4444;':'')+'" onclick="apvBellClick('+e.id+')">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+      '<div><div style="font-weight:600;font-size:13px">' + icon + ' ' + clientName + (isNew ? ' <span style="background:#ef4444;color:#fff;border-radius:6px;font-size:9px;padding:1px 5px;margin-left:4px">NEW</span>' : '') + '</div>' +
+      '<div style="font-size:11px;color:var(--t3);margin-top:2px">#EST-' + String(e.id).padStart(4,'0') + ' · ' + fmt(e.grand) + '</div>' +
+      '<div style="font-size:11px;margin-top:2px">' + respLabel + '</div></div>' +
+      '<button class="btn btn-p btn-sm" onclick="event.stopPropagation();apvBellClick('+e.id+')">View</button>' +
+      '</div></div>';
   }
+
+  var html = '';
+  if (!allSent.length) {
+    html = '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">No estimates sent for approval</div>';
+  } else {
+    if (newResponses.length) {
+      html += '<div style="padding:8px 14px;font-size:11px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor);background:rgba(239,68,68,.07)">🔴 New Responses (' + newResponses.length + ')</div>';
+      newResponses.slice().reverse().forEach(function(e) { html += buildRow(e, true); });
+    }
+    if (awaiting.length) {
+      html += '<div style="padding:8px 14px;font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor)">⏳ Awaiting Response (' + awaiting.length + ')</div>';
+      awaiting.slice().reverse().forEach(function(e) { html += buildRow(e, false); });
+    }
+    if (oldResponses.length) {
+      html += '<div style="padding:8px 14px;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor)">✔ Seen</div>';
+      oldResponses.slice().reverse().slice(0,5).forEach(function(e) { html += buildRow(e, false); });
+    }
+    html += '<div style="padding:8px 14px;text-align:right"><button class="btn btn-o btn-sm" onclick="pollApprovalResponses();toggleApprovalNotifs()">🔄 Refresh</button></div>';
+  }
+
+  drop.innerHTML = html;
   drop.style.display = 'block';
-  // Close on outside click
   setTimeout(function() {
     document.addEventListener('click', function _close(ev) {
-      if (!document.getElementById('approvalBellWrap').contains(ev.target)) {
+      var wrap = document.getElementById('approvalBellWrap');
+      if (wrap && !wrap.contains(ev.target)) {
         drop.style.display = 'none';
         document.removeEventListener('click', _close);
       }
     });
   }, 10);
+}
+
+function apvBellClick(id) {
+  markSeenId(id);
+  refreshApprovalBell();
+  toggleApprovalNotifs();
+  openEstApproval(id);
 }
 
 // ── Public Approval Page (URL-based, no login needed) ────────────
@@ -16644,8 +16840,23 @@ function executeWipe() {
     });
   });
 }
+function saveNotifSoundPref(on) {
+  localStorage.setItem(NOTIF_SOUND_KEY, on ? 'on' : 'off');
+  var slider = document.getElementById('notif-sound-slider');
+  var knob   = document.getElementById('notif-sound-knob');
+  if (slider) slider.style.background = on ? 'var(--acc)' : 'var(--bg3)';
+  if (knob)   knob.style.transform    = on ? 'translateX(20px)' : '';
+  if (knob)   knob.style.background   = on ? '#fff' : 'var(--t3)';
+}
+function initNotifSoundToggle() {
+  var on = isNotifSoundOn();
+  var cb = document.getElementById('notif-sound-toggle');
+  if (cb) cb.checked = on;
+  saveNotifSoundPref(on);
+}
+
 function switchSettingsTab(tab, el) {
-  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf", "danger"];
+  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf", "notifications", "danger"];
   for (var i = 0; i < tabs.length; i++) {
     var panel = document.getElementById("settings-tab-" + tabs[i]);
     if (panel) panel.style.display = tabs[i] === tab ? "block" : "none";
@@ -16660,6 +16871,7 @@ function switchSettingsTab(tab, el) {
   else if (tab === "security") renderSecurityTab();
   else if (tab === "business") loadBizForm();
   else if (tab === "pdf") loadPDFForm();
+  else if (tab === "notifications") initNotifSoundToggle();
 }
 
 function checkPendingRequestsBadge() {
