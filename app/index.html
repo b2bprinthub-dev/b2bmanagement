@@ -17204,8 +17204,8 @@ function savePaymentMethods() {
     var tog = document.querySelector('#pay-row-'+m.key+' .tog-wrap');
     var on = tog && tog.dataset.on === '1';
     var handle = (document.getElementById('pay-handle-'+m.key)||{}).value || '';
-    saves.push(upsertSetting('pay_'+m.key+'_on', on ? 'true' : 'false'));
-    saves.push(upsertSetting('pay_'+m.key+'_handle', handle));
+    saves.push(saveSetting('pay_'+m.key+'_on', on ? 'true' : 'false'));
+    saves.push(saveSetting('pay_'+m.key+'_handle', handle));
   });
   Promise.all(saves).then(function(){ toast('Payment methods saved!'); });
 }
