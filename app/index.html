@@ -17141,7 +17141,7 @@ function initNotifSoundToggle() {
 /* ═══════════════════════════════════════════════════════════
    PAYMENT METHODS SETTINGS
    ═══════════════════════════════════════════════════════════ */
-var PAY_METHODS = [
+var DIGITAL_PAY_CFG = [
   { key:'cashapp',  label:'Cash App',   logo:'https://cdn.simpleicons.org/cashapp/00c244',  color:'#00c244', placeholder:'$yourcashtag',   hint:'Enter your $Cashtag',                                        deeplink: function(h,a){ return 'https://cash.app/'+h+'/'+a; } },
   { key:'venmo',    label:'Venmo',      logo:'https://cdn.simpleicons.org/venmo/008dff',    color:'#008dff', placeholder:'@yourhandle',    hint:'Enter your @username',                                       deeplink: function(h,a){ return 'https://venmo.com/'+h.replace(/^@/,'')+'?txn=pay&amount='+a; } },
   { key:'paypal',   label:'PayPal',     logo:'https://cdn.simpleicons.org/paypal/009cde',   color:'#009cde', placeholder:'yourname',       hint:'Enter your PayPal.me username',                              deeplink: function(h,a){ return 'https://paypal.me/'+h.replace(/^@/,'')+'/'+a; } },
@@ -17159,7 +17159,7 @@ function loadPaymentMethods() {
     var cfg = {};
     if (rows) rows.forEach(function(r){ cfg[r.key] = r.value; });
     var isLight = document.documentElement.classList.contains('light');
-    el.innerHTML = PAY_METHODS.map(function(m) {
+    el.innerHTML = DIGITAL_PAY_CFG.map(function(m) {
       var on = cfg['pay_'+m.key+'_on'] === 'true';
       var handle = cfg['pay_'+m.key+'_handle'] || '';
       var logoUrl = m.key === 'applepay' ? 'https://cdn.simpleicons.org/applepay/'+(isLight?'000000':'e8eaf6') : m.logo;
@@ -17200,7 +17200,7 @@ function togglePayMethod(key, tog) {
 
 function savePaymentMethods() {
   var saves = [];
-  PAY_METHODS.forEach(function(m) {
+  DIGITAL_PAY_CFG.forEach(function(m) {
     var tog = document.querySelector('#pay-row-'+m.key+' .tog-wrap');
     var on = tog && tog.dataset.on === '1';
     var handle = (document.getElementById('pay-handle-'+m.key)||{}).value || '';
