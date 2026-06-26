@@ -6808,23 +6808,27 @@ function submitApproval(eid, response, token) {
         '<div style="font-size:13px;color:#9ea3c0">This estimate has already been responded to. Thank you!</div></div>';
       return Promise.reject('already_done');
     }
-    meta._v = meta._v || 2;
-    meta.approvalResponse    = response;
-    meta.approvalMessage     = (name ? name + ': ' : '') + note;
-    meta.approvalRespondedAt = new Date().toISOString();
-    var newStatus = response === 'approved' ? 'approved' : response === 'declined' ? 'rejected' : 'sent';
-    return fetch(SUPA_URL + '/rest/v1/estimates?id=eq.' + eid, {
-      method: 'PATCH',
+    // Use SECURITY DEFINER RPC to bypass RLS — anon cannot PATCH estimates directly
+    return fetch(SUPA_URL + '/rest/v1/rpc/submit_approval_response', {
+      method: 'POST',
       headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY,
-                'Content-Type': 'application/json', 'Prefer': 'return=minimal'},
-      body: JSON.stringify({description: JSON.stringify(meta), status: newStatus})
-    }).then(function(patchRes) {
-      if (!patchRes.ok) {
-        return patchRes.text().then(function(body) {
-          console.error('[submitApproval] PATCH failed', patchRes.status, body);
-          return Promise.reject('patch_failed_' + patchRes.status + ': ' + body);
-        });
-      }
+                'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        p_eid: eid,
+        p_token: token,
+        p_response: response,
+        p_message: (name ? name + ': ' : '') + note
+      })
+    }).then(function(rpcRes) {
+      return rpcRes.json().then(function(data) {
+        if (!rpcRes.ok || (data && data.error)) {
+          var errCode = (data && data.error) || ('rpc_failed_' + rpcRes.status);
+          console.error('[submitApproval] RPC failed', errCode, data);
+          if (errCode === 'invalid_token') return Promise.reject('invalid_token');
+          if (errCode === 'already_done')  return Promise.reject('already_done');
+          return Promise.reject('rpc_error: ' + errCode);
+        }
+      });
     });
   })
   .then(function() {
