@@ -6819,7 +6819,12 @@ function submitApproval(eid, response, token) {
                 'Content-Type': 'application/json', 'Prefer': 'return=minimal'},
       body: JSON.stringify({description: JSON.stringify(meta), status: newStatus})
     }).then(function(patchRes) {
-      if (!patchRes.ok) return Promise.reject('patch_failed_' + patchRes.status);
+      if (!patchRes.ok) {
+        return patchRes.text().then(function(body) {
+          console.error('[submitApproval] PATCH failed', patchRes.status, body);
+          return Promise.reject('patch_failed_' + patchRes.status + ': ' + body);
+        });
+      }
     });
   })
   .then(function() {
@@ -6835,10 +6840,12 @@ function submitApproval(eid, response, token) {
   })
   .catch(function(err) {
     if (err === 'invalid_token' || err === 'already_done') return;
+    var errStr = typeof err === 'string' ? err : JSON.stringify(err);
     document.getElementById('apv-body').innerHTML =
       '<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:12px">❌</div>' +
       '<div style="font-size:16px;font-weight:700;color:#ef4444;margin-bottom:8px">Submission Failed</div>' +
       '<div style="font-size:13px;color:#9ea3c0;margin-bottom:16px">Something went wrong. Please try again or contact the shop directly.</div>' +
+      '<div style="font-size:10px;color:#555;word-break:break-all;margin-bottom:16px;background:#1a1a2e;padding:8px;border-radius:6px">' + errStr + '</div>' +
       '<button onclick="window.location.reload()" style="background:#6c63ff;color:#fff;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:14px">Try Again</button></div>';
   });
 }
