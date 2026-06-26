@@ -432,6 +432,7 @@ textarea.fc{resize:vertical;min-height:72px}
         </button>
         <div class="notif-drop" id="approvalNotifDrop" style="display:none"></div>
       </div>
+      <button id="app-refresh-btn" onclick="appRefresh()" title="Refresh app data" style="background:none;border:1px solid var(--bor);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--t2);font-size:18px;line-height:1;display:flex;align-items:center;transition:transform .3s">⟳</button>
       <div id="topNewJobBtn" style="display:none"><button class="btn btn-p" onclick="openIntakeWizard()" style="background:var(--acc);white-space:nowrap">+ New Job</button></div>
       <div id="topBtnWrap" style="display:none"><button class="btn btn-p" onclick="topAction()">+ <span id="topBtnLbl">New</span></button></div>
     </div>
@@ -6501,6 +6502,20 @@ function startApprovalPolling() {
     if (meta.approvalToken) _lastApvPoll[e.id] = meta.approvalResponse || null;
   });
   setInterval(pollApprovalResponses, 45000);
+}
+
+function appRefresh() {
+  var btn = document.getElementById('app-refresh-btn');
+  if (btn) {
+    btn.style.transform = 'rotate(360deg)';
+    btn.style.transition = 'transform 0.6s ease';
+    setTimeout(function() { btn.style.transform = ''; btn.style.transition = 'transform 0.3s'; }, 700);
+  }
+  loadAppData().then(function() {
+    refreshApprovalBell();
+    renderPage(curPage);
+    toast('App data refreshed!');
+  });
 }
 
 function toggleApprovalNotifs() {
