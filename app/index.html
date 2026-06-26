@@ -6442,13 +6442,41 @@ function renderApvForm(est, meta, token, eid) {
     (itemsHtml ? '<div style="margin-bottom:14px">' + itemsHtml + '</div>' : '') +
     '<div style="display:flex;justify-content:space-between;padding:10px 0;font-size:15px;font-weight:700">' +
     '<span style="color:#e8eaf6">Total</span><span style="color:#6c63ff">$' + (est.grand||0).toFixed(2) + '</span></div></div>' +
-    '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;color:#9ea3c0;margin-bottom:6px">Your name (optional)</label>' +
-    '<input id="apv-name" style="width:100%;padding:10px 12px;border:1px solid #3a3d52;border-radius:8px;background:#222539;color:#e8eaf6;font-size:14px" placeholder="Your name"/></div>' +
-    '<div style="margin-bottom:20px"><label style="display:block;font-size:12px;color:#9ea3c0;margin-bottom:6px">Message (optional)</label>' +
-    '<textarea id="apv-note" rows="3" style="width:100%;padding:10px 12px;border:1px solid #3a3d52;border-radius:8px;background:#222539;color:#e8eaf6;font-size:14px;resize:vertical" placeholder="Any notes, questions, or changes you\'d like..."></textarea></div>' +
+    '<input id="apv-name" style="display:none"/>' +
+    '<textarea id="apv-note" style="display:none"></textarea>' +
     '<button class="apv-btn" style="background:#4caf7d;color:#fff" onclick="submitApproval(' + eid + ',\'approved\',\'' + token + '\')">✅ Approve this Estimate</button>' +
-    '<button class="apv-btn" style="background:#222539;color:#e8eaf6;border:1px solid #3a3d52" onclick="submitApproval(' + eid + ',\'question\',\'' + token + '\')">💬 I Have a Question</button>' +
+    '<button class="apv-btn" id="apv-question-btn" style="background:#222539;color:#e8eaf6;border:1px solid #3a3d52" onclick="toggleApvQuestion()">💬 I Have a Question</button>' +
+    '<div id="apv-question-panel" style="display:none;margin-bottom:12px">' +
+      '<div style="margin-bottom:10px"><label style="display:block;font-size:12px;color:#9ea3c0;margin-bottom:6px">Your name (optional)</label>' +
+      '<input id="apv-name-vis" style="width:100%;padding:10px 12px;border:1px solid #3a3d52;border-radius:8px;background:#222539;color:#e8eaf6;font-size:14px;box-sizing:border-box" placeholder="Your name"/></div>' +
+      '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;color:#9ea3c0;margin-bottom:6px">Your question or message</label>' +
+      '<textarea id="apv-note-vis" rows="4" style="width:100%;padding:10px 12px;border:1px solid #3a3d52;border-radius:8px;background:#222539;color:#e8eaf6;font-size:14px;resize:vertical;box-sizing:border-box" placeholder="Type your question or requested changes here..."></textarea></div>' +
+      '<button class="apv-btn" style="background:#6c63ff;color:#fff" onclick="submitApvQuestion(' + eid + ',\'' + token + '\')">📤 Send Question</button>' +
+    '</div>' +
     '<button class="apv-btn" style="background:#222539;color:#ef4444;border:1px solid rgba(239,68,68,.4)" onclick="submitApproval(' + eid + ',\'declined\',\'' + token + '\')">❌ Decline</button>';
+}
+
+function toggleApvQuestion() {
+  var panel = document.getElementById('apv-question-panel');
+  var btn   = document.getElementById('apv-question-btn');
+  if (!panel) return;
+  var open = panel.style.display === 'none';
+  panel.style.display = open ? '' : 'none';
+  btn.textContent = open ? '✖ Cancel' : '💬 I Have a Question';
+  if (open) { setTimeout(function(){ var ta = document.getElementById('apv-note-vis'); if(ta) ta.focus(); }, 50); }
+}
+
+function submitApvQuestion(eid, token) {
+  var note = (document.getElementById('apv-note-vis')||{}).value || '';
+  var name = (document.getElementById('apv-name-vis')||{}).value || '';
+  if (!note.trim()) {
+    alert('Please type your question before sending.');
+    return;
+  }
+  // Sync into the hidden fields that submitApproval reads
+  var hn = document.getElementById('apv-name'); if (hn) hn.value = name;
+  var hv = document.getElementById('apv-note'); if (hv) hv.value = note;
+  submitApproval(eid, 'question', token);
 }
 
 function submitApproval(eid, response, token) {
