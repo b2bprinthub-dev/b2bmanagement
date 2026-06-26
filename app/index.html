@@ -3116,6 +3116,12 @@ var STRINGS = {
     'an.noOutstanding':'✅ No outstanding invoices',
     'an.noTeamData':'Add team members and assign them to jobs to see performance data',
     'an.noPaidInv':'No paid invoices in period',
+    // ── WhatsApp
+    'wa.send':'WhatsApp',
+    'wa.noPhone':'No phone number on file for this client',
+    'wa.inv.msg':'Hi {name}, your invoice {num} for {amt} is ready. Please review and let us know if you have any questions. — {biz}',
+    'wa.est.msg':'Hi {name}, your estimate {num} for {amt} is ready for your review. Feel free to reach out with any questions. — {biz}',
+    'wa.job.msg':'Hi {name}, your job "{title}" has been updated to: {status}. Thank you for your business! — {biz}',
     // ── Intake Wizard
     'wiz.title':'New Order Intake',
     'wiz.back':'← Back','wiz.next':'Next →','wiz.create':'🚀 Create Order','wiz.creating':'⏳ Creating…',
@@ -3555,6 +3561,12 @@ var STRINGS = {
     'an.noOutstanding':'✅ Sin facturas pendientes',
     'an.noTeamData':'Agrega miembros al equipo y asígnalos a trabajos para ver datos de desempeño',
     'an.noPaidInv':'Sin facturas pagadas en el período',
+    // ── WhatsApp
+    'wa.send':'WhatsApp',
+    'wa.noPhone':'Este cliente no tiene número de teléfono registrado',
+    'wa.inv.msg':'Hola {name}, su factura {num} por {amt} está lista. Por favor revísela y contáctenos si tiene preguntas. — {biz}',
+    'wa.est.msg':'Hola {name}, su estimado {num} por {amt} está listo para su revisión. No dude en contactarnos. — {biz}',
+    'wa.job.msg':'Hola {name}, su trabajo "{title}" ha sido actualizado a: {status}. ¡Gracias por su preferencia! — {biz}',
     // ── Intake Wizard
     'wiz.title':'Nueva Orden de Trabajo',
     'wiz.back':'← Atrás','wiz.next':'Siguiente →','wiz.create':'🚀 Crear Orden','wiz.creating':'⏳ Creando…',
@@ -4849,6 +4861,7 @@ function renderInvoices() {
       '<td><div style="display:flex;gap:5px;flex-wrap:wrap">' +
       '<button class="btn btn-o btn-sm" onclick="editInv(' + iv.id + ')">' + t('btn.edit') + '</button>' +
       '<button class="btn btn-p btn-sm" onclick="exportPDF(' + iv.id + ')">' + t('btn.pdf') + '</button>' +
+      '<button class="btn btn-o btn-sm" style="color:#25D366;border-color:#25D366" onclick="waInvoice(' + iv.id + ')">💬 ' + t('wa.send') + '</button>' +
       (iv.status !== 'paid' && iv.status !== 'voided' ? '<button class="btn btn-ok btn-sm" onclick="quickCollectPayment(' + iv.id + ')">💰 ' + t('btn.pay') + '</button>' : '') +
       (iv.status !== "voided" ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="voidInv(' + iv.id + ')">' + t('btn.void') + '</button>' : "") +
       "</div></td></tr>";
@@ -5211,6 +5224,79 @@ function exportEstPDF(id) {
   openPrintWin(html);
   logActivity("Export PDF", "Estimates", "#EST-" + String(id).padStart(4, "0"));
   toast("Estimate PDF opened!");
+}
+
+/* ================================================================
+   WHATSAPP INTEGRATION — wa.me link helpers
+   ================================================================ */
+function waCleanPhone(phone) {
+  if (!phone) return null;
+  var digits = phone.replace(/\D/g, '');
+  if (!digits) return null;
+  // If no country code (10 digits, US-style), prepend 1
+  if (digits.length === 10) digits = '1' + digits;
+  return digits;
+}
+
+function sendWhatsApp(phone, msg) {
+  var num = waCleanPhone(phone);
+  if (!num) { toast(t('wa.noPhone'), true); return; }
+  var url = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank');
+}
+
+function waInvoice(id) {
+  var inv = null;
+  for (var i = 0; i < invoices.length; i++) { if (invoices[i].id === id) { inv = invoices[i]; break; } }
+  if (!inv) return;
+  var cli = null;
+  for (var c = 0; c < clients.length; c++) { if (clients[c].id === inv.cid) { cli = clients[c]; break; } }
+  var num = '#INV-' + String(inv.id).padStart(4, '0');
+  var name = cli ? cli.name : cName(inv.cid);
+  var phone = cli ? cli.phone : '';
+  var biz = pdfSettings.bizName || 'us';
+  var msg = t('wa.inv.msg')
+    .replace('{name}', name)
+    .replace('{num}', num)
+    .replace('{amt}', fmt(inv.grand))
+    .replace('{biz}', biz);
+  sendWhatsApp(phone, msg);
+}
+
+function waEstimate(id) {
+  var est = null;
+  for (var i = 0; i < estimates.length; i++) { if (estimates[i].id === id) { est = estimates[i]; break; } }
+  if (!est) return;
+  var cli = null;
+  for (var c = 0; c < clients.length; c++) { if (clients[c].id === est.cid) { cli = clients[c]; break; } }
+  var num = '#EST-' + String(est.id).padStart(4, '0');
+  var name = cli ? cli.name : cName(est.cid);
+  var phone = cli ? cli.phone : '';
+  var biz = pdfSettings.bizName || 'us';
+  var msg = t('wa.est.msg')
+    .replace('{name}', name)
+    .replace('{num}', num)
+    .replace('{amt}', fmt(est.grand))
+    .replace('{biz}', biz);
+  sendWhatsApp(phone, msg);
+}
+
+function waJob(id) {
+  var job = null;
+  for (var i = 0; i < jobs.length; i++) { if (jobs[i].id === id) { job = jobs[i]; break; } }
+  if (!job) return;
+  var cli = null;
+  for (var c = 0; c < clients.length; c++) { if (clients[c].id === job.cid) { cli = clients[c]; break; } }
+  var phone = cli ? cli.phone : '';
+  var name = cli ? cli.name : (job.client_name || '');
+  var biz = pdfSettings.bizName || 'us';
+  var statusLabel = t('job.status.' + (job.status || 'pending'));
+  var msg = t('wa.job.msg')
+    .replace('{name}', name)
+    .replace('{title}', job.title || '')
+    .replace('{status}', statusLabel)
+    .replace('{biz}', biz);
+  sendWhatsApp(phone, msg);
 }
 
 /* ================================================================
@@ -5834,7 +5920,8 @@ function renderEstimates() {
 
     var actions = '<div style="display:flex;gap:5px;flex-wrap:wrap">' +
       '<button class="btn btn-o btn-sm" onclick="openEstModal(findEst('+e.id+'))">'+t('btn.edit')+'</button>' +
-      '<button class="btn btn-o btn-sm" style="color:var(--inf)" onclick="exportEstPDF('+e.id+')">'+t('btn.pdf')+'</button>';
+      '<button class="btn btn-o btn-sm" style="color:var(--inf)" onclick="exportEstPDF('+e.id+')">'+t('btn.pdf')+'</button>' +
+      '<button class="btn btn-o btn-sm" style="color:#25D366;border-color:#25D366" onclick="waEstimate('+e.id+')">💬 '+t('wa.send')+'</button>';
     if (e.status !== 'invoiced') actions += '<button class="btn btn-o btn-sm" style="color:var(--acc)" onclick="openEstApproval('+e.id+')">'+t('est.approval')+'</button>';
     if (e.status === 'approved') actions += '<button class="btn btn-p btn-sm" onclick="quickConv('+e.id+')">→ '+t('est.toInvoice')+'</button>';
     else if (e.status !== 'invoiced') actions += '<button class="btn btn-ok btn-sm" onclick="quickConv('+e.id+')">'+t('est.toInvoiceShort')+'</button>';
@@ -13024,7 +13111,10 @@ function openJobDetail(id) {
   var archiveBtn = (j.status === 'done' || j.status === 'voided')
     ? '<button class="btn btn-sm" onclick="closeM(\'jobDetailModal\');archiveJob(' + id + ')" style="background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.3);margin-right:auto">📦 Archive</button>'
     : '';
-  html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;align-items:center">' + archiveBtn + '<button class="btn btn-o" onclick="closeM(\'jobDetailModal\')">Close</button><button class="btn btn-p" onclick="closeM(\'jobDetailModal\');editJobById(' + id + ')">Edit</button></div>';
+  html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;align-items:center;flex-wrap:wrap">' + archiveBtn +
+    '<button class="btn btn-o" style="color:#25D366;border-color:#25D366" onclick="waJob(' + id + ')">💬 ' + t('wa.send') + '</button>' +
+    '<button class="btn btn-o" onclick="closeM(\'jobDetailModal\')">Close</button>' +
+    '<button class="btn btn-p" onclick="closeM(\'jobDetailModal\');editJobById(' + id + ')">Edit</button></div>';
   document.getElementById("jd-body").innerHTML = html;
   document.getElementById("jobDetailModal").classList.add("open");
 }
