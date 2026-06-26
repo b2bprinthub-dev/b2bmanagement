@@ -6545,77 +6545,108 @@ function toggleApprovalNotifs() {
   if (!drop) return;
   if (drop.style.display !== 'none') { drop.style.display = 'none'; return; }
 
-  var seen = getSeenIds();
-
-  // All estimates that have been sent for approval (have a token)
-  var allSent = estimates.filter(function(e) {
-    var meta = getEstMeta(e);
-    return meta.approvalToken;
-  });
-
-  var newResponses = allSent.filter(function(e) {
-    var meta = getEstMeta(e);
-    return meta.approvalResponse && seen.indexOf(e.id) === -1;
-  });
-  var awaiting = allSent.filter(function(e) {
-    var meta = getEstMeta(e);
-    return !meta.approvalResponse;
-  });
-  var oldResponses = allSent.filter(function(e) {
-    var meta = getEstMeta(e);
-    return meta.approvalResponse && seen.indexOf(e.id) !== -1;
-  });
-
-  function buildRow(e, isNew) {
-    var meta = getEstMeta(e);
-    var clientName = '—';
-    for (var i = 0; i < clients.length; i++) { if (clients[i].id === e.cid) { clientName = clients[i].name; break; } }
-    var resp = meta.approvalResponse;
-    var icon = resp === 'approved' ? '✅' : resp === 'declined' ? '❌' : resp === 'question' ? '💬' : '⏳';
-    var sentDate = meta.approvalSentAt ? new Date(meta.approvalSentAt).toLocaleDateString() : e.date;
-    var respLabel = resp === 'approved' ? '<span style="color:#4caf7d">Customer approved</span>'
-                  : resp === 'declined' ? '<span style="color:#ef4444">Customer declined</span>'
-                  : resp === 'question' ? '<span style="color:#38bdf8">Has a question</span>'
-                  : '<span style="color:var(--warn)">Awaiting · sent ' + sentDate + '</span>';
-    return '<div class="notif-item" style="'+(isNew?'border-left:3px solid #ef4444;':'')+'" onclick="apvBellClick('+e.id+')">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-      '<div><div style="font-weight:600;font-size:13px">' + icon + ' ' + clientName + (isNew ? ' <span style="background:#ef4444;color:#fff;border-radius:6px;font-size:9px;padding:1px 5px;margin-left:4px">NEW</span>' : '') + '</div>' +
-      '<div style="font-size:11px;color:var(--t3);margin-top:2px">#EST-' + String(e.id).padStart(4,'0') + ' · ' + fmt(e.grand) + '</div>' +
-      '<div style="font-size:11px;margin-top:2px">' + respLabel + '</div></div>' +
-      '<button class="btn btn-p btn-sm" onclick="event.stopPropagation();apvBellClick('+e.id+')">View</button>' +
-      '</div></div>';
-  }
-
-  var html = '';
-  if (!allSent.length) {
-    html = '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">No estimates sent for approval</div>';
-  } else {
-    if (newResponses.length) {
-      html += '<div style="padding:8px 14px;font-size:11px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor);background:rgba(239,68,68,.07)">🔴 New Responses (' + newResponses.length + ')</div>';
-      newResponses.slice().reverse().forEach(function(e) { html += buildRow(e, true); });
-    }
-    if (awaiting.length) {
-      html += '<div style="padding:8px 14px;font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor)">⏳ Awaiting Response (' + awaiting.length + ')</div>';
-      awaiting.slice().reverse().forEach(function(e) { html += buildRow(e, false); });
-    }
-    if (oldResponses.length) {
-      html += '<div style="padding:8px 14px;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor)">✔ Seen</div>';
-      oldResponses.slice().reverse().slice(0,5).forEach(function(e) { html += buildRow(e, false); });
-    }
-    html += '<div style="padding:8px 14px;text-align:right"><button class="btn btn-o btn-sm" onclick="pollApprovalResponses();toggleApprovalNotifs()">🔄 Refresh</button></div>';
-  }
-
-  drop.innerHTML = html;
+  // Show loading immediately, then fetch fresh data before rendering
+  drop.innerHTML = '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">🔄 Checking for updates…</div>';
   drop.style.display = 'block';
-  setTimeout(function() {
-    document.addEventListener('click', function _close(ev) {
-      var wrap = document.getElementById('approvalBellWrap');
-      if (wrap && !wrap.contains(ev.target)) {
-        drop.style.display = 'none';
-        document.removeEventListener('click', _close);
-      }
+
+  var SUPA_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
+  var SUPA_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '';
+  var tokenIds = estimates.filter(function(e){ var m=getEstMeta(e); return m.approvalToken; }).map(function(e){ return e.id; });
+
+  function renderBell() {
+    var seen = getSeenIds();
+
+    // All estimates that have been sent for approval (have a token)
+    var allSent = estimates.filter(function(e) {
+      var meta = getEstMeta(e);
+      return meta.approvalToken;
     });
-  }, 10);
+    var newResponses = allSent.filter(function(e) {
+      var meta = getEstMeta(e);
+      return meta.approvalResponse && seen.indexOf(e.id) === -1;
+    });
+    var awaiting = allSent.filter(function(e) {
+      var meta = getEstMeta(e);
+      return !meta.approvalResponse;
+    });
+    var oldResponses = allSent.filter(function(e) {
+      var meta = getEstMeta(e);
+      return meta.approvalResponse && seen.indexOf(e.id) !== -1;
+    });
+
+    function buildRow(e, isNew) {
+      var meta = getEstMeta(e);
+      var clientName = '—';
+      for (var i = 0; i < clients.length; i++) { if (clients[i].id === e.cid) { clientName = clients[i].name; break; } }
+      var resp = meta.approvalResponse;
+      var icon = resp === 'approved' ? '✅' : resp === 'declined' ? '❌' : resp === 'question' ? '💬' : '⏳';
+      var sentDate = meta.approvalSentAt ? new Date(meta.approvalSentAt).toLocaleDateString() : e.date;
+      var respLabel = resp === 'approved' ? '<span style="color:#4caf7d">Customer approved</span>'
+                    : resp === 'declined' ? '<span style="color:#ef4444">Customer declined</span>'
+                    : resp === 'question' ? '<span style="color:#38bdf8">Has a question</span>'
+                    : '<span style="color:var(--warn)">Awaiting · sent ' + sentDate + '</span>';
+      return '<div class="notif-item" style="'+(isNew?'border-left:3px solid #ef4444;':'')+'" onclick="apvBellClick('+e.id+')">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div><div style="font-weight:600;font-size:13px">' + icon + ' ' + clientName + (isNew ? ' <span style="background:#ef4444;color:#fff;border-radius:6px;font-size:9px;padding:1px 5px;margin-left:4px">NEW</span>' : '') + '</div>' +
+        '<div style="font-size:11px;color:var(--t3);margin-top:2px">#EST-' + String(e.id).padStart(4,'0') + ' · ' + fmt(e.grand) + '</div>' +
+        '<div style="font-size:11px;margin-top:2px">' + respLabel + '</div></div>' +
+        '<button class="btn btn-p btn-sm" onclick="event.stopPropagation();apvBellClick('+e.id+')">View</button>' +
+        '</div></div>';
+    }
+
+    var html = '';
+    if (!allSent.length) {
+      html = '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">No estimates sent for approval</div>';
+    } else {
+      if (newResponses.length) {
+        html += '<div style="padding:8px 14px;font-size:11px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor);background:rgba(239,68,68,.07)">🔴 New Responses (' + newResponses.length + ')</div>';
+        newResponses.slice().reverse().forEach(function(e) { html += buildRow(e, true); });
+      }
+      if (awaiting.length) {
+        html += '<div style="padding:8px 14px;font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor)">⏳ Awaiting Response (' + awaiting.length + ')</div>';
+        awaiting.slice().reverse().forEach(function(e) { html += buildRow(e, false); });
+      }
+      if (oldResponses.length) {
+        html += '<div style="padding:8px 14px;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor)">✔ Seen</div>';
+        oldResponses.slice().reverse().slice(0,5).forEach(function(e) { html += buildRow(e, false); });
+      }
+      html += '<div style="padding:8px 14px;text-align:right"><button class="btn btn-o btn-sm" onclick="drop.style.display=\'none\';toggleApprovalNotifs()">🔄 Refresh</button></div>';
+    }
+
+    drop.innerHTML = html;
+    refreshApprovalBell();
+
+    setTimeout(function() {
+      document.addEventListener('click', function _close(ev) {
+        var wrap = document.getElementById('approvalBellWrap');
+        if (wrap && !wrap.contains(ev.target)) {
+          drop.style.display = 'none';
+          document.removeEventListener('click', _close);
+        }
+      });
+    }, 10);
+  } // end renderBell
+
+  // Fetch fresh data for ALL estimates that have a token, then render
+  if (SUPA_URL && SUPA_KEY && tokenIds.length) {
+    fetch(SUPA_URL + '/rest/v1/estimates?id=in.(' + tokenIds.join(',') + ')&select=*', {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      if (Array.isArray(rows)) {
+        rows.forEach(function(row) {
+          for (var i = 0; i < estimates.length; i++) {
+            if (estimates[i].id === row.id) { estimates[i] = row; break; }
+          }
+        });
+      }
+      renderBell();
+    })
+    .catch(function() { renderBell(); });
+  } else {
+    renderBell();
+  }
 }
 
 function apvBellClick(id) {
