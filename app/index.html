@@ -6948,36 +6948,58 @@ function checkInvoiceViewURL() {
 function buildInvoicePaymentSection(cfg, amount) {
   var amt = amount.toFixed(2);
   var methods = [
-    { key:'cashapp',   label:'Cash App',   logo:'https://cdn.simpleicons.org/cashapp/00c244',  color:'#00c244', deeplink: function(h){ return 'https://cash.app/'+h+'/'+amt; } },
-    { key:'venmo',     label:'Venmo',      logo:'https://cdn.simpleicons.org/venmo/008dff',    color:'#008dff', deeplink: function(h){ return 'https://venmo.com/'+h.replace(/^@/,'')+'?txn=pay&amount='+amt; } },
-    { key:'paypal',    label:'PayPal',     logo:'https://cdn.simpleicons.org/paypal/009cde',   color:'#009cde', deeplink: function(h){ return 'https://paypal.me/'+h.replace(/^@/,'')+'/'+amt; } },
-    { key:'googlepay', label:'Google Pay', logo:'https://cdn.simpleicons.org/googlepay/4285f4',color:'#4285f4', deeplink: null },
-    { key:'zelle',     label:'Zelle',      logo:'https://cdn.simpleicons.org/zelle/6d1ed4',    color:'#6d1ed4', deeplink: null },
-    { key:'applepay',  label:'Apple Pay',  logo:'https://cdn.simpleicons.org/applepay/e8eaf6', color:'#555566', deeplink: null }
+    { key:'cashapp',   label:'Cash App',   logo:'https://cdn.simpleicons.org/cashapp/00c244',  color:'#00c244',
+      deeplink: function(h){ return 'https://cash.app/'+h+'/'+amt; },
+      hint: null },
+    { key:'venmo',     label:'Venmo',      logo:'https://cdn.simpleicons.org/venmo/008dff',    color:'#008dff',
+      deeplink: function(h){ return 'https://venmo.com/'+h.replace(/^@/,'')+'?txn=pay&amount='+amt; },
+      hint: null },
+    { key:'paypal',    label:'PayPal',     logo:'https://cdn.simpleicons.org/paypal/009cde',   color:'#009cde',
+      deeplink: function(h){ return 'https://paypal.me/'+h.replace(/^@/,'')+'/'+amt; },
+      hint: null },
+    { key:'googlepay', label:'Google Pay', logo:'https://cdn.simpleicons.org/googlepay/4285f4',color:'#4285f4',
+      deeplink: null,
+      hint: 'Tap to copy — then open Google Pay and send payment to this address' },
+    { key:'zelle',     label:'Zelle',      logo:'https://cdn.simpleicons.org/zelle/6d1ed4',    color:'#6d1ed4',
+      deeplink: null,
+      hint: 'Tap to copy — then open Zelle and send payment to this number' },
+    { key:'applepay',  label:'Apple Pay',  logo:'https://cdn.simpleicons.org/applepay/e8eaf6', color:'#555566',
+      deeplink: null,
+      hint: 'Tap to copy — then open Messages, tap the $ icon, and send to this number' }
   ];
   var enabled = methods.filter(function(m){ return cfg['pay_'+m.key+'_on'] === 'true' && cfg['pay_'+m.key+'_handle']; });
   if (!enabled.length) return '';
+  var uid = 0;
   var rows = enabled.map(function(m) {
     var handle = cfg['pay_'+m.key+'_handle'] || '';
+    var safeHandle = handle.replace(/'/g, "\\'");
     if (m.deeplink) {
       var url = m.deeplink(handle);
-      return '<a href="'+url+'" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:'+m.color+'22;border:1px solid '+m.color+'44;border-radius:10px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity=\'.8\'" onmouseout="this.style.opacity=\'1\'">'+
-        '<img src="'+m.logo+'" style="width:32px;height:32px;object-fit:contain" alt="'+m.label+'"/>'+
-        '<div style="flex:1"><div style="font-weight:700;color:#e8eaf6;font-size:14px">'+m.label+'</div><div style="font-size:12px;color:#9ea3c0;margin-top:2px">'+handle+'</div></div>'+
-        '<div style="background:'+m.color+';color:#fff;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">Pay Now →</div>'+
+      return '<a href="'+url+'" target="_blank" style="display:flex;align-items:center;gap:12px;padding:16px;background:'+m.color+'22;border:1px solid '+m.color+'44;border-radius:12px;text-decoration:none;-webkit-tap-highlight-color:transparent;active:opacity:.8">'+
+        '<img src="'+m.logo+'" style="width:36px;height:36px;object-fit:contain;flex-shrink:0" alt="'+m.label+'"/>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;color:#e8eaf6;font-size:15px">'+m.label+'</div><div style="font-size:12px;color:#9ea3c0;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+handle+'</div></div>'+
+        '<div style="background:'+m.color+';color:#fff;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:700;white-space:nowrap;flex-shrink:0">Pay Now →</div>'+
       '</a>';
     } else {
-      return '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:'+m.color+'22;border:1px solid '+m.color+'44;border-radius:10px">'+
-        '<img src="'+m.logo+'" style="width:32px;height:32px;object-fit:contain" alt="'+m.label+'"/>'+
-        '<div style="flex:1"><div style="font-weight:700;color:#e8eaf6;font-size:14px">'+m.label+'</div><div style="font-size:12px;color:#9ea3c0;margin-top:2px">'+handle+'</div></div>'+
-        '<button onclick="navigator.clipboard.writeText(\''+handle+'\').then(function(){this.textContent=\'✓ Copied!\';var b=this;setTimeout(function(){b.textContent=\'Copy\';},2000)}.bind(this))" style="background:'+m.color+';color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer">Copy</button>'+
+      var btnId = 'inv-copy-btn-'+(uid++);
+      return '<div onclick="(function(el){navigator.clipboard.writeText(\''+safeHandle+'\').then(function(){'+
+          'var b=document.getElementById(\''+btnId+'\');if(b){b.textContent=\'✓ Copied!\';b.style.background=\'#22c55e\';}'+
+          'setTimeout(function(){if(b){b.textContent=\'Tap to Copy\';b.style.background=\''+m.color+'\';}},2500);'+
+        '});'+
+      '})(this)" style="display:flex;align-items:center;gap:12px;padding:16px;background:'+m.color+'22;border:1px solid '+m.color+'44;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none">'+
+        '<img src="'+m.logo+'" style="width:36px;height:36px;object-fit:contain;flex-shrink:0" alt="'+m.label+'"/>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-weight:700;color:#e8eaf6;font-size:15px">'+m.label+'</div>'+
+          '<div style="font-size:13px;color:#c8cde8;margin-top:2px;font-weight:600">'+handle+'</div>'+
+          (m.hint ? '<div style="font-size:11px;color:#7b82a8;margin-top:4px;line-height:1.4">'+m.hint+'</div>' : '')+
+        '</div>'+
+        '<div id="'+btnId+'" style="background:'+m.color+';color:#fff;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0;min-width:90px;text-align:center">Tap to Copy</div>'+
       '</div>';
     }
   }).join('');
   return '<div style="border-top:1px solid #2a2d45;padding-top:20px;margin-top:8px">'+
     '<div style="font-size:13px;font-weight:700;color:#6c63ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">💳 Pay Your Invoice — $'+amt+'</div>'+
     '<div style="display:flex;flex-direction:column;gap:10px">'+rows+'</div>'+
-    '<div style="font-size:11px;color:#6b7099;margin-top:12px;text-align:center">Tap a button to open the payment app, or copy the handle to send manually.</div>'+
   '</div>';
 }
 
