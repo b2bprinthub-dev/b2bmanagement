@@ -5347,6 +5347,8 @@ function waEstimate(id) {
 
   // Generate/reuse approval token and save if new
   var meta = getEstMeta(est);
+  // If estimate has no _v (old format), start fresh meta so _v is always set
+  if (!meta._v) { meta = { _v: 2, scope: est.description || '', serviceType: '' }; }
   var token = meta.approvalToken || genApprovalToken();
   if (!meta.approvalToken) {
     meta.approvalToken = token;
@@ -6784,17 +6786,29 @@ function submitApproval(eid, response, token) {
   .then(function(r) { return r.json(); })
   .then(function(rows) {
     var est = rows && rows[0];
+    if (!est) return Promise.reject('not_found');
     var meta = {};
-    try { var m = JSON.parse(est.description); if (m && m._v) meta = m; } catch(e){}
-    // Re-verify token server-side before writing — prevents console bypass
+    try {
+      var m = JSON.parse(est.description);
+      // Accept meta with OR without _v — just needs to be a valid object
+      if (m && typeof m === 'object') meta = m;
+    } catch(e){}
+    // Verify token
     if (!meta.approvalToken || meta.approvalToken !== token) {
-      alert('This approval link is invalid or has expired. Please contact the shop for a new link.');
+      document.getElementById('apv-body').innerHTML =
+        '<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:12px">⚠️</div>' +
+        '<div style="font-size:16px;font-weight:700;color:#ef4444;margin-bottom:8px">Link Invalid or Expired</div>' +
+        '<div style="font-size:13px;color:#9ea3c0">Please contact the shop for a new approval link.</div></div>';
       return Promise.reject('invalid_token');
     }
     if (est.status !== 'sent') {
-      alert('This estimate has already been responded to.');
+      document.getElementById('apv-body').innerHTML =
+        '<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:12px">ℹ️</div>' +
+        '<div style="font-size:16px;font-weight:700;color:#e8eaf6;margin-bottom:8px">Already Responded</div>' +
+        '<div style="font-size:13px;color:#9ea3c0">This estimate has already been responded to. Thank you!</div></div>';
       return Promise.reject('already_done');
     }
+    meta._v = meta._v || 2;
     meta.approvalResponse    = response;
     meta.approvalMessage     = (name ? name + ': ' : '') + note;
     meta.approvalRespondedAt = new Date().toISOString();
@@ -6804,6 +6818,8 @@ function submitApproval(eid, response, token) {
       headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY,
                 'Content-Type': 'application/json', 'Prefer': 'return=minimal'},
       body: JSON.stringify({description: JSON.stringify(meta), status: newStatus})
+    }).then(function(patchRes) {
+      if (!patchRes.ok) return Promise.reject('patch_failed_' + patchRes.status);
     });
   })
   .then(function() {
@@ -6817,8 +6833,13 @@ function submitApproval(eid, response, token) {
       '<div style="font-size:14px;color:#9ea3c0;line-height:1.6">' + label + '</div>' +
       '<div style="margin-top:20px;font-size:12px;color:#6b7099">You can now close this page.</div></div>';
   })
-  .catch(function() {
-    alert('Something went wrong submitting your response. Please try again or contact the shop directly.');
+  .catch(function(err) {
+    if (err === 'invalid_token' || err === 'already_done') return;
+    document.getElementById('apv-body').innerHTML =
+      '<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:12px">❌</div>' +
+      '<div style="font-size:16px;font-weight:700;color:#ef4444;margin-bottom:8px">Submission Failed</div>' +
+      '<div style="font-size:13px;color:#9ea3c0;margin-bottom:16px">Something went wrong. Please try again or contact the shop directly.</div>' +
+      '<button onclick="window.location.reload()" style="background:#6c63ff;color:#fff;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:14px">Try Again</button></div>';
   });
 }
 
