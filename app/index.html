@@ -17158,12 +17158,14 @@ function loadPaymentMethods() {
     var rows = res.data || [];
     var cfg = {};
     if (rows) rows.forEach(function(r){ cfg[r.key] = r.value; });
+    var isLight = document.documentElement.classList.contains('light');
     el.innerHTML = PAY_METHODS.map(function(m) {
       var on = cfg['pay_'+m.key+'_on'] === 'true';
       var handle = cfg['pay_'+m.key+'_handle'] || '';
+      var logoUrl = m.key === 'applepay' ? 'https://cdn.simpleicons.org/applepay/'+(isLight?'000000':'e8eaf6') : m.logo;
       return '<div class="card" style="margin-bottom:12px;padding:16px 20px">'+
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:'+(on?'12px':'0px')+'" id="pay-row-'+m.key+'">'+
-          '<img src="'+m.logo+'" style="width:28px;height:28px;object-fit:contain" alt="'+m.label+'"/>'+
+          '<img src="'+logoUrl+'" style="width:28px;height:28px;object-fit:contain" alt="'+m.label+'"/>'+
           '<div style="flex:1">'+
             '<div style="font-weight:600;font-size:14px">'+m.label+'</div>'+
             '<div style="font-size:11px;color:var(--t3);margin-top:2px">'+m.hint+'</div>'+
