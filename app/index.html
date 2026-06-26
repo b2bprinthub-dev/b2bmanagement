@@ -6036,6 +6036,28 @@ function findEst(id) {
 }
 
 function openEstApproval(id) {
+  // Always fetch fresh data from Supabase before rendering so customer responses show immediately
+  var SUPA_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
+  var SUPA_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '';
+  if (SUPA_URL && SUPA_KEY) {
+    fetch(SUPA_URL + '/rest/v1/estimates?id=eq.' + id + '&select=*', {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      if (rows && rows[0]) {
+        for (var i = 0; i < estimates.length; i++) {
+          if (estimates[i].id === rows[0].id) { estimates[i] = rows[0]; break; }
+        }
+      }
+      _openEstApprovalRender(id);
+    })
+    .catch(function() { _openEstApprovalRender(id); });
+  } else {
+    _openEstApprovalRender(id);
+  }
+}
+function _openEstApprovalRender(id) {
   var e = findEst(id);
   if (!e) return;
   var client = {name:'Unknown', email:''};
