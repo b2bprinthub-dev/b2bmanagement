@@ -403,6 +403,7 @@ textarea.fc{resize:vertical;min-height:72px}
     <div class="nav-grp" id="nav-grp-finance">
       <div class="nav-lbl" data-i18n="nav.grp.finance">Finance</div>
       <button class="nav-i" onclick="gotoPage('finance',this)" data-perm="invoices"><span>💳</span><span data-i18n="nav.finance">Transaction Ledger</span><span id="pending-txn-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto">!</span></button>
+      <button class="nav-i" onclick="gotoPage('expenses',this)" data-perm="invoices"><span>💸</span><span>Expenses</span></button>
     </div>
     <div class="nav-grp">
       <div class="nav-lbl" data-i18n="nav.grp.communication">Communication</div>
@@ -1129,6 +1130,7 @@ textarea.fc{resize:vertical;min-height:72px}
             <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('personal',this)" data-i18n="rpt.cat.personal">My Reports</button>
             <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('compliance',this)" data-i18n="rpt.cat.compliance">Compliance</button>
             <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('inventory',this)" data-i18n="rpt.cat.inventory">Inventory</button>
+            <button class="mr-cat-btn rc-nav-item" onclick="filterMrCat('expenses',this)">💸 Expenses</button>
           </nav>
         </div>
         <!-- Right: report list -->
@@ -1607,6 +1609,119 @@ textarea.fc{resize:vertical;min-height:72px}
       </div>
     </div>
 
+    <!-- ═══ EXPENSES PAGE ═══ -->
+    <div class="page" id="page-expenses">
+      <div id="exp-kpi-bar" class="g4" style="margin-bottom:18px"></div>
+      <div class="card" style="padding:14px;margin-bottom:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-p btn-sm" onclick="openExpModal(null)">+ Add Expense</button>
+          <button class="btn btn-o btn-sm" onclick="openRecurringExpModal(null)">🔁 Add Recurring</button>
+          <input class="fc" id="exp-search" placeholder="Search vendor, category, notes…" oninput="renderExpensesPage()" style="flex:1;min-width:180px"/>
+          <select class="fc" id="exp-cat-filter" onchange="renderExpensesPage()" style="width:180px">
+            <option value="">All Categories</option>
+          </select>
+          <select class="fc" id="exp-period-filter" onchange="renderExpensesPage()" style="width:140px">
+            <option value="month">This Month</option>
+            <option value="week">This Week</option>
+            <option value="today">Today</option>
+            <option value="all">All Time</option>
+          </select>
+          <button class="btn btn-o btn-sm" onclick="exportExpensesCSV()">⬇ CSV</button>
+        </div>
+      </div>
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--bor);margin-bottom:16px">
+        <button class="settings-tab active" id="exp-tab-all-btn" onclick="switchExpTab('all',this)">All Expenses</button>
+        <button class="settings-tab" id="exp-tab-recurring-btn" onclick="switchExpTab('recurring',this)">🔁 Recurring</button>
+      </div>
+      <!-- All expenses table -->
+      <div id="exp-tab-all">
+        <div class="card" style="padding:0;overflow:hidden">
+          <table>
+            <thead><tr>
+              <th>Date</th><th>Category</th><th>Vendor / Payee</th><th>Amount</th>
+              <th>Method</th><th>Reference</th><th>Notes</th><th>Receipt</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="exp-tbody"><tr><td colspan="9"><div class="empty">Loading…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Recurring expenses table -->
+      <div id="exp-tab-recurring" style="display:none">
+        <div id="exp-recurring-list"></div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Expense Modal -->
+    <div class="overlay" id="expModal" style="display:none">
+      <div class="modal" style="max-width:560px">
+        <div class="modal-header"><span id="exp-modal-title">Add Expense</span><button class="close-btn" onclick="closeModal('expModal')">✕</button></div>
+        <div class="modal-body" style="padding:20px">
+          <input type="hidden" id="exp-modal-id"/>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="fg" style="margin:0"><label class="fl">Category</label><select class="fc" id="exp-modal-cat"></select></div>
+            <div class="fg" style="margin:0"><label class="fl">Vendor / Payee</label><input class="fc" id="exp-modal-vendor" placeholder="Who was paid?"/></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="fg" style="margin:0"><label class="fl">Amount</label><input class="fc" type="number" id="exp-modal-amount" min="0.01" step="0.01" placeholder="0.00" style="font-size:16px;font-weight:700"/></div>
+            <div class="fg" style="margin:0"><label class="fl">Payment Method</label><select class="fc" id="exp-modal-method"></select></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="fg" style="margin:0"><label class="fl">Date</label><input class="fc" type="date" id="exp-modal-date"/></div>
+            <div class="fg" style="margin:0"><label class="fl">Reference / Receipt #</label><input class="fc" id="exp-modal-ref" placeholder="Receipt, PO, or check #"/></div>
+          </div>
+          <div class="fg" style="margin-bottom:12px"><label class="fl">Description / Notes</label><input class="fc" id="exp-modal-notes" placeholder="What was purchased or why…"/></div>
+          <div class="fg" style="margin-bottom:16px">
+            <label class="fl">Attach Receipt</label>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="file" id="exp-modal-receipt-file" accept="image/*,.pdf" style="display:none" onchange="expReceiptFileChosen(this)"/>
+              <button class="btn btn-o btn-sm" onclick="document.getElementById('exp-modal-receipt-file').click()">📎 Choose File</button>
+              <span id="exp-modal-receipt-name" style="font-size:12px;color:var(--t3)">No file chosen</span>
+              <a id="exp-modal-receipt-link" href="#" target="_blank" style="display:none;font-size:12px;color:var(--acc)">View</a>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px">
+            <button class="btn btn-o" onclick="closeModal('expModal')">Cancel</button>
+            <button class="btn btn-p" onclick="saveExpModal()">Save Expense</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Recurring Expense Modal -->
+    <div class="overlay" id="recurringExpModal" style="display:none">
+      <div class="modal" style="max-width:520px">
+        <div class="modal-header"><span id="rec-exp-modal-title">Add Recurring Expense</span><button class="close-btn" onclick="closeModal('recurringExpModal')">✕</button></div>
+        <div class="modal-body" style="padding:20px">
+          <input type="hidden" id="rec-exp-id"/>
+          <div class="fg" style="margin-bottom:12px"><label class="fl">Name / Label</label><input class="fc" id="rec-exp-name" placeholder="e.g. Monthly Rent, Adobe Subscription"/></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="fg" style="margin:0"><label class="fl">Category</label><select class="fc" id="rec-exp-cat"></select></div>
+            <div class="fg" style="margin:0"><label class="fl">Vendor / Payee</label><input class="fc" id="rec-exp-vendor" placeholder="Vendor name"/></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="fg" style="margin:0"><label class="fl">Amount</label><input class="fc" type="number" id="rec-exp-amount" min="0.01" step="0.01" placeholder="0.00" style="font-weight:700"/></div>
+            <div class="fg" style="margin:0"><label class="fl">Payment Method</label><select class="fc" id="rec-exp-method"></select></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="fg" style="margin:0"><label class="fl">Frequency</label>
+              <select class="fc" id="rec-exp-freq">
+                <option value="monthly">Monthly</option>
+                <option value="weekly">Weekly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            <div class="fg" style="margin:0"><label class="fl">Day of Month (for monthly)</label><input class="fc" type="number" id="rec-exp-day" min="1" max="28" value="1" placeholder="1–28"/></div>
+          </div>
+          <div class="fg" style="margin-bottom:16px"><label class="fl">Notes</label><input class="fc" id="rec-exp-notes" placeholder="Optional notes"/></div>
+          <div style="display:flex;justify-content:flex-end;gap:10px">
+            <button class="btn btn-o" onclick="closeModal('recurringExpModal')">Cancel</button>
+            <button class="btn btn-p" onclick="saveRecurringExpModal()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-settings">
       <div class="settings-tabs">
         <button class="settings-tab active" onclick="switchSettingsTab('users',this)" data-i18n="set.tab.users">Users</button>
@@ -1618,6 +1733,7 @@ textarea.fc{resize:vertical;min-height:72px}
         <button class="settings-tab" onclick="switchSettingsTab('pdf',this)" data-i18n="set.tab.pdf">PDF Settings</button>
         <button class="settings-tab" onclick="switchSettingsTab('payments',this)">💳 Payment Methods</button>
         <button class="settings-tab" onclick="switchSettingsTab('notifications',this)">🔔 Notifications</button>
+        <button class="settings-tab" onclick="switchSettingsTab('expense_cats',this)">💸 Expense Categories</button>
         <button class="settings-tab" id="danger-zone-tab" style="color:var(--err);display:none" onclick="switchSettingsTab('danger',this)" data-i18n="set.tab.danger">⚠️ Danger Zone</button>
       </div>
       <div id="settings-tab-users">
@@ -1788,6 +1904,15 @@ textarea.fc{resize:vertical;min-height:72px}
             </div>
           </div>
         </div>
+      </div>
+
+      <div id="settings-tab-expense_cats" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div><div style="font-weight:600;font-size:16px">Expense Categories</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Customize the categories available when recording expenses</div></div>
+          <button class="btn btn-p btn-sm" onclick="addExpCat()">+ Add Category</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden" id="exp-cats-list"></div>
+        <div style="margin-top:14px;font-size:12px;color:var(--t3)">* Default categories cannot be deleted but can be renamed. Custom categories can be fully removed.</div>
       </div>
 
       <div id="settings-tab-danger" style="display:none">
@@ -4000,6 +4125,7 @@ function handleAuthSession(session) {
           hideLoading();
           // Apply saved language to static elements
           applyLang();
+          checkRecurringExps();
           if (!canEditPayment() && hasPermission('designer_portal')) {
             gotoPage('designer', document.querySelector('.nav-i[onclick*="designer"]'));
           } else if (!canEditPayment() && hasPermission('installer_portal')) {
@@ -4243,7 +4369,7 @@ function gotoPage(p, el) {
     designer: "designer_portal",
     crm: "crm", analytics: "analytics", settings: "settings",
     messages: "messages", myreports: "installer_portal",
-    inventory: "inventory", knowledgebase: "settings"
+    inventory: "inventory", knowledgebase: "settings", expenses: "invoices"
   };
   var requiredPerm = permMap[p] || p;
   if (!hasPermission(requiredPerm)) { toast("Access denied for this module", true); return; }
@@ -4254,7 +4380,7 @@ function gotoPage(p, el) {
   document.getElementById("page-" + p).classList.add("active");
   if (el) el.classList.add("active");
   curPage = p;
-  var titles = {dashboard:t('page.dashboard'),invoices:t('page.invoices'),estimates:t('page.estimates'),pos:t('page.pos'),jobs:t('page.jobs'),crm:t('page.crm'),analytics:t('page.analytics'),settings:t('page.settings'),messages:t('page.messages'),myportal:t('page.myportal'),designer:t('page.designer'),knowledgebase:t('page.knowledgebase'),myreports:t('page.myreports'),inventory:t('page.inventory'),finance:t('page.finance')};
+  var titles = {dashboard:t('page.dashboard'),invoices:t('page.invoices'),estimates:t('page.estimates'),pos:t('page.pos'),jobs:t('page.jobs'),crm:t('page.crm'),analytics:t('page.analytics'),settings:t('page.settings'),messages:t('page.messages'),myportal:t('page.myportal'),designer:t('page.designer'),knowledgebase:t('page.knowledgebase'),myreports:t('page.myreports'),inventory:t('page.inventory'),finance:t('page.finance'),expenses:'Expenses'};
   var btns = {invoices:t('topbtn.newInvoice'),estimates:t('topbtn.newEstimate'),jobs: canEditPayment() ? t('topbtn.newJob') : null,crm:t('topbtn.newClient')};
   if (!btns.jobs) delete btns.jobs;
   document.getElementById("pageTitle").textContent = titles[p] || p;
@@ -4275,6 +4401,7 @@ function gotoPage(p, el) {
   else if (p === "messages") renderMessagesPage();
   else if (p === "crm") renderCRM();
   else if (p === "finance") renderFinancePage();
+  else if (p === "expenses") renderExpensesPage();
   else if (p === "analytics") renderAnalytics();
   else if (p === "myreports") renderMyReports();
   else if (p === "inventory") renderInventory();
@@ -8361,6 +8488,413 @@ function regRecordExpense() {
     if (curPage==='finance') renderFinancePage();
   });
 }
+// ═══════════════════════════════════════════════════════════════
+// EXPENSES PAGE
+// ═══════════════════════════════════════════════════════════════
+var _expTab = 'all';
+
+function getExpCats() {
+  var stored = localStorage.getItem('b2b_exp_cats');
+  return stored ? JSON.parse(stored) : EXP_CATS.slice();
+}
+function saveExpCats(arr) { localStorage.setItem('b2b_exp_cats', JSON.stringify(arr)); }
+
+function getRecurringExps() { return JSON.parse(localStorage.getItem('b2b_recurring_exps')||'[]'); }
+function saveRecurringExps(arr) { localStorage.setItem('b2b_recurring_exps', JSON.stringify(arr)); }
+
+function getExpReceipts() { return JSON.parse(localStorage.getItem('b2b_receipts')||'{}'); }
+function saveExpReceipts(map) { localStorage.setItem('b2b_receipts', JSON.stringify(map)); }
+
+function switchExpTab(tab, el) {
+  _expTab = tab;
+  document.getElementById('exp-tab-all').style.display = tab==='all' ? '' : 'none';
+  document.getElementById('exp-tab-recurring').style.display = tab==='recurring' ? '' : 'none';
+  document.querySelectorAll('#exp-tab-all-btn,#exp-tab-recurring-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  if (tab==='recurring') renderRecurringExpenses();
+}
+
+function renderExpensesPage() {
+  // populate category filter
+  var catSel = document.getElementById('exp-cat-filter');
+  if (catSel) {
+    var cats = getExpCats();
+    catSel.innerHTML = '<option value="">All Categories</option>' +
+      cats.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  }
+
+  // KPI bar
+  var now = new Date(); var yr = now.getFullYear(); var mo = now.getMonth();
+  var moStart = new Date(yr, mo, 1);
+  var moExp = expenses.filter(function(e){ return e.date && new Date(e.date) >= moStart; });
+  var moTotal = moExp.reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
+  var byCat = {};
+  moExp.forEach(function(e){ byCat[e.category||'Other']=(byCat[e.category||'Other']||0)+parseFloat(e.amount||0); });
+  var topCat = Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];})[0]||'—';
+  var recurringActive = getRecurringExps().filter(function(r){return r.active;}).length;
+  var kpi = document.getElementById('exp-kpi-bar');
+  if (kpi) kpi.innerHTML =
+    '<div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">This Month</div><div style="font-size:22px;font-weight:700;color:#ef4444;margin-top:4px">'+fmt(moTotal)+'</div></div>'+
+    '<div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Transactions</div><div style="font-size:22px;font-weight:700;color:var(--acc);margin-top:4px">'+moExp.length+'</div></div>'+
+    '<div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Top Category</div><div style="font-size:16px;font-weight:700;color:var(--t1);margin-top:4px">'+topCat+(topCat!=='—'?' <span style="font-size:12px;color:var(--t3)">'+fmt(byCat[topCat])+'</span>':'')+'</div></div>'+
+    '<div class="card" style="padding:14px"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Active Recurring</div><div style="font-size:22px;font-weight:700;color:#f59e0b;margin-top:4px">'+recurringActive+'</div></div>';
+
+  if (_expTab==='recurring') { renderRecurringExpenses(); return; }
+
+  // Filter expenses
+  var period = (document.getElementById('exp-period-filter')||{}).value||'month';
+  var catF   = (document.getElementById('exp-cat-filter')||{}).value||'';
+  var search = ((document.getElementById('exp-search')||{}).value||'').toLowerCase();
+  var from = null;
+  if (period==='today') from = new Date(today()+'T00:00:00');
+  else if (period==='week') { from = new Date(); from.setDate(from.getDate()-7); }
+  else if (period==='month') from = moStart;
+
+  var rows = expenses.filter(function(e){
+    if (from && e.date && new Date(e.date) < from) return false;
+    if (catF && (e.category||'Other') !== catF) return false;
+    if (search) {
+      var hay = ((e.vendor||'')+(e.category||'')+(e.notes||'')+(e.reference||'')).toLowerCase();
+      if (hay.indexOf(search)<0) return false;
+    }
+    return true;
+  }).sort(function(a,b){ return new Date(b.date||0)-new Date(a.date||0); });
+
+  var receipts = getExpReceipts();
+  var tb = document.getElementById('exp-tbody');
+  if (!tb) return;
+  if (!rows.length) { tb.innerHTML='<tr><td colspan="9"><div class="empty">No expenses found.</div></td></tr>'; return; }
+  tb.innerHTML = rows.map(function(e){
+    var rid = e.id||e.local_id||'';
+    var receiptUrl = e.receipt_url || receipts['exp_'+rid] || '';
+    return '<tr>'+
+      '<td style="font-size:12px;white-space:nowrap">'+(e.date||'—')+'</td>'+
+      '<td><span style="font-size:12px;font-weight:600;color:#f59e0b">'+(e.category||'Other')+'</span></td>'+
+      '<td style="font-size:13px">'+(e.vendor||'—')+'</td>'+
+      '<td style="font-weight:700;color:var(--err)">'+fmt(e.amount)+'</td>'+
+      '<td style="font-size:12px;color:var(--t3)">'+(e.method||'—')+'</td>'+
+      '<td style="font-size:12px;color:var(--t3)">'+(e.reference||'—')+'</td>'+
+      '<td style="font-size:12px;color:var(--t3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(e.notes||'—')+'</td>'+
+      '<td>'+(receiptUrl ? '<a href="'+receiptUrl+'" target="_blank" style="font-size:12px;color:var(--acc)">📎 View</a>' : '<span style="font-size:11px;color:var(--t3)">—</span>')+'</td>'+
+      '<td><div style="display:flex;gap:4px">'+
+        '<button class="btn btn-o btn-sm" onclick="openExpModal('+JSON.stringify(rid)+')">Edit</button>'+
+        '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="deleteExpense('+JSON.stringify(rid)+')">Del</button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function openExpModal(id) {
+  var cats = getExpCats();
+  var catSel = document.getElementById('exp-modal-cat');
+  if (catSel) catSel.innerHTML = cats.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  var mSel = document.getElementById('exp-modal-method');
+  if (mSel) mSel.innerHTML = PAY_METHODS.map(function(m){ return '<option value="'+m+'">'+m+'</option>'; }).join('');
+
+  var idEl = document.getElementById('exp-modal-id');
+  if (idEl) idEl.value = id||'';
+  document.getElementById('exp-modal-title').textContent = id ? 'Edit Expense' : 'Add Expense';
+  document.getElementById('exp-modal-vendor').value='';
+  document.getElementById('exp-modal-amount').value='';
+  document.getElementById('exp-modal-date').value=today();
+  document.getElementById('exp-modal-ref').value='';
+  document.getElementById('exp-modal-notes').value='';
+  document.getElementById('exp-modal-receipt-name').textContent='No file chosen';
+  document.getElementById('exp-modal-receipt-link').style.display='none';
+  document.getElementById('exp-modal-receipt-file').value='';
+  window._expModalReceiptUrl = '';
+
+  if (id) {
+    var e = expenses.find(function(x){ return String(x.id)===String(id)||x.local_id===id; });
+    if (e) {
+      if (catSel) catSel.value = e.category||'Other';
+      document.getElementById('exp-modal-vendor').value = e.vendor||'';
+      document.getElementById('exp-modal-amount').value = e.amount||'';
+      if (mSel) mSel.value = e.method||'';
+      document.getElementById('exp-modal-date').value = e.date||today();
+      document.getElementById('exp-modal-ref').value = e.reference||'';
+      document.getElementById('exp-modal-notes').value = e.notes||'';
+      var receipts = getExpReceipts();
+      var url = e.receipt_url || receipts['exp_'+id]||'';
+      if (url) {
+        window._expModalReceiptUrl = url;
+        document.getElementById('exp-modal-receipt-name').textContent = 'Existing receipt';
+        var lnk = document.getElementById('exp-modal-receipt-link');
+        lnk.href=url; lnk.style.display='';
+      }
+    }
+  }
+  openM('expModal');
+}
+
+function expReceiptFileChosen(input) {
+  if (!input.files||!input.files[0]) return;
+  document.getElementById('exp-modal-receipt-name').textContent = input.files[0].name;
+}
+
+function saveExpModal() {
+  var id     = (document.getElementById('exp-modal-id')||{}).value||'';
+  var cat    = (document.getElementById('exp-modal-cat')||{}).value||'Other';
+  var vendor = document.getElementById('exp-modal-vendor').value.trim();
+  var amount = parseFloat(document.getElementById('exp-modal-amount').value||0);
+  var method = (document.getElementById('exp-modal-method')||{}).value||'';
+  var date   = document.getElementById('exp-modal-date').value||today();
+  var ref    = document.getElementById('exp-modal-ref').value.trim();
+  var notes  = document.getElementById('exp-modal-notes').value.trim();
+  if (!amount||amount<=0) { toast('Enter a valid amount', true); return; }
+
+  var fileInput = document.getElementById('exp-modal-receipt-file');
+  var file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+  function finalize(receiptUrl) {
+    var row = { date:date, type:'expense', category:cat, vendor:vendor, client_id:null,
+                amount:amount, method:method, reference:ref||null, notes:notes,
+                created_by: currentUser?currentUser.id:null };
+    if (receiptUrl) row.receipt_url = receiptUrl;
+
+    if (id) {
+      // Edit existing
+      var existing = expenses.find(function(x){ return String(x.id)===String(id)||x.local_id===id; });
+      var dbId = existing && existing.id && !String(existing.id).startsWith('tmp_') ? existing.id : null;
+      if (dbId) {
+        dbUpdate('expenses', dbId, row).then(function(updated){
+          if (updated) { Object.assign(existing, updated); }
+          else { Object.assign(existing, row); }
+          if (receiptUrl) { var m=getExpReceipts(); m['exp_'+id]=receiptUrl; saveExpReceipts(m); }
+          toast('Expense updated!'); closeModal('expModal'); renderExpensesPage();
+          if (curPage==='finance') renderFinancePage();
+        });
+      } else {
+        if (existing) Object.assign(existing, row);
+        if (receiptUrl) { var m=getExpReceipts(); m['exp_'+id]=receiptUrl; saveExpReceipts(m); }
+        toast('Expense updated!'); closeModal('expModal'); renderExpensesPage();
+      }
+    } else {
+      dbInsert('expenses', row).then(function(created){
+        var saved = created || row;
+        expenses.unshift(saved);
+        if (receiptUrl) { var m=getExpReceipts(); m['exp_'+(saved.id||saved.local_id||Date.now())]=receiptUrl; saveExpReceipts(m); }
+        logTxn('expense', amount, method, null, null, cat+(vendor?' — '+vendor:'')+(ref?' ['+ref+']':'')+(notes?' | '+notes:''));
+        logActivity('Expense Recorded', 'Expenses', cat+' — '+fmt(amount)+(vendor?' / '+vendor:''));
+        toast('📤 Expense of '+fmt(amount)+' recorded!');
+        closeModal('expModal'); renderExpensesPage();
+        if (curPage==='finance') renderFinancePage();
+      });
+    }
+  }
+
+  if (file) {
+    var ext = file.name.split('.').pop();
+    var path = 'receipts/'+(currentUser?currentUser.id:'anon')+'/'+Date.now()+'.'+ext;
+    sb.storage.from('message-attachments').upload(path, file, {upsert:false}).then(function(res){
+      if (res.error) { toast('Receipt upload failed, saving without receipt', true); finalize(window._expModalReceiptUrl||''); return; }
+      var pub = sb.storage.from('message-attachments').getPublicUrl(path);
+      finalize(pub.data&&pub.data.publicUrl ? pub.data.publicUrl : '');
+    });
+  } else {
+    finalize(window._expModalReceiptUrl||'');
+  }
+}
+
+function deleteExpense(id) {
+  if (!confirm('Delete this expense?')) return;
+  var idx = expenses.findIndex(function(x){ return String(x.id)===String(id)||x.local_id===id; });
+  if (idx<0) return;
+  var e = expenses[idx];
+  var dbId = e.id && !String(e.id).startsWith('tmp_') ? e.id : null;
+  expenses.splice(idx,1);
+  if (dbId) sb.from('expenses').delete().eq('id',dbId).then(function(){});
+  toast('Expense deleted.');
+  renderExpensesPage();
+  if (curPage==='finance') renderFinancePage();
+}
+
+function exportExpensesCSV() {
+  var rows = [['Date','Category','Vendor','Amount','Method','Reference','Notes']];
+  expenses.forEach(function(e){ rows.push([e.date||'',e.category||'',e.vendor||'',e.amount||'',e.method||'',e.reference||'',e.notes||'']); });
+  var csv = rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  downloadDataUrl('data:text/csv;charset=utf-8,'+encodeURIComponent(csv), 'expenses-'+today()+'.csv');
+}
+
+// ── Recurring Expenses ──────────────────────────────────────────
+function checkRecurringExps() {
+  var recs = getRecurringExps();
+  var changed = false;
+  recs.forEach(function(r){
+    if (!r.active) return;
+    var due = new Date(r.next_due);
+    if (due > new Date()) return;
+    // auto-log it
+    var row = { date:today(), type:'expense', category:r.category||'Other', vendor:r.vendor||'', client_id:null,
+                amount:r.amount, method:r.method||'', reference:'AUTO-RECURRING', notes:r.name||'' };
+    dbInsert('expenses', row).then(function(created){ if(created) expenses.unshift(created); });
+    logTxn('expense', r.amount, r.method||'', null, null, (r.category||'Other')+(r.vendor?' — '+r.vendor:'')+' [Recurring]');
+    logActivity('Recurring Expense Auto-Logged', 'Expenses', (r.name||r.category)+' — '+fmt(r.amount));
+    // advance next_due
+    var next = new Date(r.next_due);
+    if (r.frequency==='weekly') next.setDate(next.getDate()+7);
+    else if (r.frequency==='yearly') next.setFullYear(next.getFullYear()+1);
+    else { next.setMonth(next.getMonth()+1); if(r.day_of_month) next.setDate(Math.min(r.day_of_month,28)); }
+    r.next_due = next.toISOString().substr(0,10);
+    r.last_logged = today();
+    changed = true;
+  });
+  if (changed) saveRecurringExps(recs);
+}
+
+function renderRecurringExpenses() {
+  var recs = getRecurringExps();
+  var el = document.getElementById('exp-recurring-list');
+  if (!el) return;
+  if (!recs.length) {
+    el.innerHTML='<div class="card"><div class="empty">No recurring expenses set up yet.<br><button class="btn btn-p btn-sm" style="margin-top:10px" onclick="openRecurringExpModal(null)">+ Add First Recurring Expense</button></div></div>';
+    return;
+  }
+  el.innerHTML='<div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Name</th><th>Category</th><th>Vendor</th><th>Amount</th><th>Frequency</th><th>Next Due</th><th>Last Logged</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
+    recs.map(function(r){
+      var overdue = r.active && r.next_due && new Date(r.next_due) < new Date();
+      return '<tr>'+
+        '<td style="font-weight:600">'+(r.name||'—')+'</td>'+
+        '<td><span style="font-size:12px;color:#f59e0b">'+(r.category||'—')+'</span></td>'+
+        '<td style="font-size:13px">'+(r.vendor||'—')+'</td>'+
+        '<td style="font-weight:700;color:var(--err)">'+fmt(r.amount)+'</td>'+
+        '<td style="font-size:12px">'+r.frequency+'</td>'+
+        '<td style="font-size:12px;color:'+(overdue?'var(--err)':'var(--t2)')+'">'+(r.next_due||'—')+(overdue?' ⚠️':'')+'</td>'+
+        '<td style="font-size:11px;color:var(--t3)">'+(r.last_logged||'Never')+'</td>'+
+        '<td><span class="badge '+(r.active?'b-green':'b-gray')+'">'+(r.active?'Active':'Paused')+'</span></td>'+
+        '<td><div style="display:flex;gap:4px">'+
+          '<button class="btn btn-o btn-sm" onclick="openRecurringExpModal(\''+r.id+'\')">Edit</button>'+
+          '<button class="btn btn-o btn-sm" onclick="toggleRecurringExp(\''+r.id+'\')">'+(r.active?'Pause':'Resume')+'</button>'+
+          '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="deleteRecurringExp(\''+r.id+'\')">Del</button>'+
+        '</div></td>'+
+      '</tr>';
+    }).join('')+
+  '</tbody></table></div>';
+}
+
+function openRecurringExpModal(id) {
+  var cats = getExpCats();
+  var catSel = document.getElementById('rec-exp-cat');
+  if (catSel) catSel.innerHTML = cats.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  var mSel = document.getElementById('rec-exp-method');
+  if (mSel) mSel.innerHTML = PAY_METHODS.map(function(m){ return '<option value="'+m+'">'+m+'</option>'; }).join('');
+
+  document.getElementById('rec-exp-id').value = id||'';
+  document.getElementById('rec-exp-modal-title').textContent = id ? 'Edit Recurring Expense' : 'Add Recurring Expense';
+  document.getElementById('rec-exp-name').value='';
+  document.getElementById('rec-exp-vendor').value='';
+  document.getElementById('rec-exp-amount').value='';
+  document.getElementById('rec-exp-day').value='1';
+  document.getElementById('rec-exp-notes').value='';
+
+  if (id) {
+    var r = getRecurringExps().find(function(x){ return x.id===id; });
+    if (r) {
+      document.getElementById('rec-exp-name').value = r.name||'';
+      if (catSel) catSel.value = r.category||'Other';
+      document.getElementById('rec-exp-vendor').value = r.vendor||'';
+      document.getElementById('rec-exp-amount').value = r.amount||'';
+      if (mSel) mSel.value = r.method||'';
+      document.getElementById('rec-exp-freq').value = r.frequency||'monthly';
+      document.getElementById('rec-exp-day').value = r.day_of_month||1;
+      document.getElementById('rec-exp-notes').value = r.notes||'';
+    }
+  }
+  openM('recurringExpModal');
+}
+
+function saveRecurringExpModal() {
+  var id      = document.getElementById('rec-exp-id').value;
+  var name    = document.getElementById('rec-exp-name').value.trim();
+  var cat     = (document.getElementById('rec-exp-cat')||{}).value||'Other';
+  var vendor  = document.getElementById('rec-exp-vendor').value.trim();
+  var amount  = parseFloat(document.getElementById('rec-exp-amount').value||0);
+  var method  = (document.getElementById('rec-exp-method')||{}).value||'';
+  var freq    = document.getElementById('rec-exp-freq').value||'monthly';
+  var day     = parseInt(document.getElementById('rec-exp-day').value||1);
+  var notes   = document.getElementById('rec-exp-notes').value.trim();
+  if (!name) { toast('Enter a name', true); return; }
+  if (!amount||amount<=0) { toast('Enter a valid amount', true); return; }
+
+  var recs = getRecurringExps();
+  // compute next_due
+  var nextDue = new Date();
+  if (freq==='monthly') { nextDue.setDate(Math.min(day,28)); if(nextDue<=new Date()) nextDue.setMonth(nextDue.getMonth()+1); }
+  else if (freq==='weekly') { nextDue.setDate(nextDue.getDate()+7); }
+  else { nextDue.setFullYear(nextDue.getFullYear()+1); }
+  var nextDueStr = nextDue.toISOString().substr(0,10);
+
+  if (id) {
+    var idx = recs.findIndex(function(x){ return x.id===id; });
+    if (idx>=0) Object.assign(recs[idx], {name:name,category:cat,vendor:vendor,amount:amount,method:method,frequency:freq,day_of_month:day,notes:notes,next_due:nextDueStr});
+  } else {
+    recs.push({id:'rec_'+Date.now(),name:name,category:cat,vendor:vendor,amount:amount,method:method,frequency:freq,day_of_month:day,notes:notes,active:true,next_due:nextDueStr,last_logged:null});
+  }
+  saveRecurringExps(recs);
+  toast(id?'Recurring expense updated!':'Recurring expense added!');
+  closeModal('recurringExpModal');
+  renderRecurringExpenses();
+}
+
+function toggleRecurringExp(id) {
+  var recs = getRecurringExps();
+  var r = recs.find(function(x){ return x.id===id; });
+  if (r) { r.active=!r.active; saveRecurringExps(recs); renderRecurringExpenses(); toast(r.active?'Resumed':'Paused'); }
+}
+
+function deleteRecurringExp(id) {
+  if (!confirm('Delete this recurring expense?')) return;
+  var recs = getRecurringExps().filter(function(x){ return x.id!==id; });
+  saveRecurringExps(recs);
+  renderRecurringExpenses();
+  toast('Deleted.');
+}
+
+// ── Expense Categories Settings ─────────────────────────────────
+function renderExpCatSettings() {
+  var cats = getExpCats();
+  var el = document.getElementById('exp-cats-list');
+  if (!el) return;
+  el.innerHTML = cats.map(function(c, i){
+    var isDefault = EXP_CATS.indexOf(c)>=0;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--bor)">'+
+      '<span style="font-size:13px">'+c+(isDefault?' <span style="font-size:10px;color:var(--t3)">(default)</span>':'')+'</span>'+
+      '<div style="display:flex;gap:6px">'+
+        '<button class="btn btn-o btn-sm" onclick="renameExpCat('+i+')">Rename</button>'+
+        (!isDefault ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="removeExpCat('+i+')">Remove</button>' : '')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function addExpCat() {
+  var v = prompt('New category name:');
+  if (!v||!v.trim()) return;
+  var cats = getExpCats();
+  if (cats.indexOf(v.trim())>=0) { toast('Category already exists', true); return; }
+  cats.push(v.trim());
+  saveExpCats(cats);
+  renderExpCatSettings();
+  toast('Category added!');
+}
+
+function renameExpCat(idx) {
+  var cats = getExpCats();
+  var v = prompt('Rename to:', cats[idx]);
+  if (!v||!v.trim()) return;
+  cats[idx] = v.trim();
+  saveExpCats(cats);
+  renderExpCatSettings();
+}
+
+function removeExpCat(idx) {
+  if (!confirm('Remove this category?')) return;
+  var cats = getExpCats();
+  cats.splice(idx,1);
+  saveExpCats(cats);
+  renderExpCatSettings();
+}
+
 function showReceipt(inv, method, change, totals) {
   var client = {name: "Walk-in"};
   for (var c = 0; c < clients.length; c++) { if (clients[c].id === inv.cid) { client = clients[c]; break; } }
@@ -14245,6 +14779,12 @@ var REPORT_CATALOG = [
   {id:'inv-movement',    cat:'inventory',   freq:'Weekly',     icon:'📊', title:'Stock Movement Report',       desc:'All inventory transactions in the period: purchases, sales, adjustments, returns, damage.',       perm:'finance'},
   {id:'inv-cogs',        cat:'inventory',   freq:'Monthly',    icon:'🧮', title:'COGS Report',                 desc:'Cost of Goods Sold for the period derived from inventory deductions tied to sales.',              perm:'finance'},
   {id:'inv-po',          cat:'inventory',   freq:'On Demand',  icon:'🛒', title:'Purchase Order History',      desc:'All purchase orders with status, supplier, items ordered, and received quantities.',              perm:'finance'},
+
+  // ── EXPENSES ─────────────────────────────────────────────────
+  {id:'exp-summary',     cat:'expenses',    freq:'Monthly',    icon:'💸', title:'Expense Summary',             desc:'Total expenses for the period broken down by category with trends vs prior period.',              perm:'finance'},
+  {id:'exp-by-vendor',   cat:'expenses',    freq:'On Demand',  icon:'🏪', title:'Expenses by Vendor',          desc:'All vendors paid in the period with subtotals, payment methods, and transaction count.',           perm:'finance'},
+  {id:'exp-recurring',   cat:'expenses',    freq:'Monthly',    icon:'🔁', title:'Recurring Expenses Schedule', desc:'All active recurring expenses with next due date, frequency, annual cost projection.',              perm:'finance'},
+  {id:'exp-vs-revenue',  cat:'expenses',    freq:'Monthly',    icon:'📊', title:'Expense vs Revenue Analysis', desc:'Expense ratio against revenue — how much of each dollar earned goes to operating costs.',           perm:'finance'},
 ];
 
 function renderMyReports() {
@@ -14299,11 +14839,11 @@ function mrRenderCards(cat) {
   }
 
   // Group by category for "All" view
-  var catOrder = ['daily','weekly','monthly','quarterly','annual','personal','compliance','inventory'];
+  var catOrder = ['daily','weekly','monthly','quarterly','annual','personal','compliance','inventory','expenses'];
   var catLabels = {
     daily:t('rpt.grp.daily'), weekly:t('rpt.grp.weekly'), monthly:t('rpt.grp.monthly'),
     quarterly:t('rpt.grp.quarterly'), annual:t('rpt.grp.annual'), personal:t('rpt.grp.personal'),
-    compliance:t('rpt.grp.compliance'), inventory:t('rpt.grp.inventory')
+    compliance:t('rpt.grp.compliance'), inventory:t('rpt.grp.inventory'), expenses:'💸 Expenses'
   };
 
   var html = '';
@@ -14827,6 +15367,75 @@ function buildReport(id) {
       purchaseOrders.length ? tbl(['PO #','Supplier','Items','Total Cost','Expected','Status','Ordered','Received'],
         purchaseOrders.map(function(po){var items3=Array.isArray(po.items)?po.items:[];var tot3=items3.reduce(function(s,l){return s+(parseFloat(l.qty||0)*parseFloat(l.unit_cost||0));},0);var sc4=stColors3[po.status]||'#9ea3c0';return ['PO-'+String(po.id).padStart(4,'0'),po.supplier_name,items3.length,fmt(tot3),po.expected_date||'—',badge(po.status,sc4),po.ordered_at?new Date(po.ordered_at).toLocaleDateString():'—',po.received_at?new Date(po.received_at).toLocaleDateString():'Pending'];})
       ) : '<div class="empty">No purchase orders yet.</div>'); }
+
+  // ── EXPENSE REPORTS ──────────────────────────────────────────
+  var expCur = expenses.filter(function(e){ return inR(e.date); });
+  var expTotal = expCur.reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
+
+  if (id==='exp-summary') {
+    var byCat={};
+    expCur.forEach(function(e){ byCat[e.category||'Other']=(byCat[e.category||'Other']||0)+parseFloat(e.amount||0); });
+    var catRows = Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];}).map(function(k){
+      var pct=expTotal>0?Math.round(byCat[k]/expTotal*100):0;
+      return [k, expCur.filter(function(e){return (e.category||'Other')===k;}).length, fmt(byCat[k]), pct+'%'];
+    });
+    return H+
+    kpiGrid([
+      {l:'Total Expenses',v:fmt(expTotal),c:'#ef4444'},{l:'Transactions',v:expCur.length,c:'#f59e0b'},
+      {l:'Avg per Transaction',v:expCur.length?fmt(expTotal/expCur.length):'—',c:'#6c63ff'},
+      {l:'Largest Category',v:Object.keys(byCat).length?Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];})[0]:'—',c:'#a78bfa',sub:Object.keys(byCat).length?fmt(byCat[Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];})[0]]):''}
+    ])+
+    sec('Expenses by Category — '+b.label, catRows.length ? tbl(['Category','Transactions','Total','% of Spend'], catRows, ['','',fmt(expTotal),'100%']) : '<div class="empty">No expenses in this period.</div>')+
+    sec('All Expense Transactions', expCur.length ? tbl(['Date','Category','Vendor','Reference','Method','Amount'],
+      expCur.slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).map(function(e){
+        return [e.date, e.category||'Other', e.vendor||'—', e.reference||'—', e.method||'—', fmt(e.amount)];
+      }), ['','','','','Total',fmt(expTotal)]
+    ) : '<div class="empty">No expenses in this period.</div>');
+  }
+
+  if (id==='exp-by-vendor') {
+    var byVendor={};
+    expCur.forEach(function(e){ var v=e.vendor||'Unknown'; byVendor[v]=(byVendor[v]||{total:0,count:0,methods:{}}); byVendor[v].total+=parseFloat(e.amount||0); byVendor[v].count++; byVendor[v].methods[e.method||'other']=(byVendor[v].methods[e.method||'other']||0)+1; });
+    var vendorRows = Object.keys(byVendor).sort(function(a,b){return byVendor[b].total-byVendor[a].total;}).map(function(v){
+      var topM=Object.keys(byVendor[v].methods).sort(function(a,b){return byVendor[v].methods[b]-byVendor[v].methods[a];})[0]||'—';
+      return [v, byVendor[v].count, fmt(byVendor[v].total), topM];
+    });
+    return H+
+    kpiGrid([{l:'Total Expenses',v:fmt(expTotal),c:'#ef4444'},{l:'Unique Vendors',v:Object.keys(byVendor).length,c:'#f59e0b'},{l:'Transactions',v:expCur.length,c:'#6c63ff'},{l:'Avg per Vendor',v:Object.keys(byVendor).length?fmt(expTotal/Object.keys(byVendor).length):'—',c:'#a78bfa'}])+
+    sec('Expenses by Vendor — '+b.label, vendorRows.length ? tbl(['Vendor','Transactions','Total Paid','Top Method'], vendorRows, ['Total', expCur.length, fmt(expTotal),'']) : '<div class="empty">No expenses in this period.</div>');
+  }
+
+  if (id==='exp-recurring') {
+    var recExps = getRecurringExps();
+    var active = recExps.filter(function(r){return r.active;});
+    var paused = recExps.filter(function(r){return !r.active;});
+    var annualCost = active.reduce(function(s,r){
+      var amt=parseFloat(r.amount||0);
+      return s+(r.frequency==='weekly'?amt*52:r.frequency==='yearly'?amt:amt*12);
+    },0);
+    return H+
+    kpiGrid([{l:'Active Recurring',v:active.length,c:'#4caf7d'},{l:'Paused',v:paused.length,c:'#9ea3c0'},{l:'Monthly Total',v:fmt(active.reduce(function(s,r){var a=parseFloat(r.amount||0);return s+(r.frequency==='weekly'?a*4.33:r.frequency==='yearly'?a/12:a);},0)),c:'#ef4444'},{l:'Annual Projection',v:fmt(annualCost),c:'#f59e0b'}])+
+    sec('Active Recurring Expenses', active.length ? tbl(['Name','Category','Vendor','Amount','Frequency','Next Due','Annual Cost'],
+      active.map(function(r){
+        var ann=parseFloat(r.amount||0)*(r.frequency==='weekly'?52:r.frequency==='yearly'?1:12);
+        return [r.name||'—', r.category||'—', r.vendor||'—', fmt(r.amount), r.frequency||'monthly', r.next_due||'—', fmt(ann)];
+      })
+    ) : '<div class="empty">No active recurring expenses.</div>')+
+    (paused.length ? sec('Paused', tbl(['Name','Category','Amount','Frequency'], paused.map(function(r){return [r.name||'—',r.category||'—',fmt(r.amount),r.frequency||'monthly'];}))) : '');
+  }
+
+  if (id==='exp-vs-revenue') {
+    var expByMo={}; var revByMo={};
+    expenses.forEach(function(e){ if(!e.date)return; var k=e.date.substr(0,7); expByMo[k]=(expByMo[k]||0)+parseFloat(e.amount||0); });
+    invoices.filter(function(i){return i.status==='paid'&&i.date;}).forEach(function(i){ var k=i.date.substr(0,7); revByMo[k]=(revByMo[k]||0)+parseFloat(i.grand||0); });
+    var allMos=Array.from(new Set(Object.keys(expByMo).concat(Object.keys(revByMo)))).sort();
+    var expRatio = revCur>0 ? (expTotal/revCur*100).toFixed(1)+'%' : '—';
+    return H+
+    kpiGrid([{l:'Revenue (Period)',v:fmt(revCur),c:'#4caf7d'},{l:'Expenses (Period)',v:fmt(expTotal),c:'#ef4444'},{l:'Expense Ratio',v:expRatio,c:expTotal/Math.max(1,revCur)>0.5?'#ef4444':'#f59e0b'},{l:'Net After Expenses',v:fmt(revCur-expTotal),c:revCur-expTotal>=0?'#4caf7d':'#ef4444'}])+
+    sec('Monthly Expense vs Revenue', allMos.length ? tbl(['Month','Revenue','Expenses','Net','Expense Ratio'],
+      allMos.map(function(m){ var r=revByMo[m]||0; var e=expByMo[m]||0; var rat=r>0?(e/r*100).toFixed(1)+'%':'—'; return [m, fmt(r), fmt(e), fmt(r-e), rat]; })
+    ) : '<div class="empty">No data available.</div>');
+  }
 
   return H+'<div class="empty" style="padding:40px">Report "'+id+'" — content coming soon.</div>';
 }
@@ -17340,7 +17949,7 @@ function upsertSetting(key, value) {
 }
 
 function switchSettingsTab(tab, el) {
-  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf", "payments", "notifications", "danger"];
+  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf", "payments", "notifications", "expense_cats", "danger"];
   for (var i = 0; i < tabs.length; i++) {
     var panel = document.getElementById("settings-tab-" + tabs[i]);
     if (panel) panel.style.display = tabs[i] === tab ? "block" : "none";
@@ -17357,6 +17966,7 @@ function switchSettingsTab(tab, el) {
   else if (tab === "pdf") loadPDFForm();
   else if (tab === "payments") loadPaymentMethods();
   else if (tab === "notifications") initNotifSoundToggle();
+  else if (tab === "expense_cats") renderExpCatSettings();
 }
 
 function checkPendingRequestsBadge() {
