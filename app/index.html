@@ -3120,7 +3120,7 @@ var STRINGS = {
     'wa.send':'WhatsApp',
     'wa.noPhone':'No phone number on file for this client',
     'wa.inv.msg':'Hi {name}, your invoice {num} for {amt} is ready. Please review and let us know if you have any questions. — {biz}',
-    'wa.est.msg':'Hi {name}, your estimate {num} for {amt} is ready for your review. Feel free to reach out with any questions. — {biz}',
+    'wa.est.msg':'Hi {name}, your estimate {num} for {amt} is ready for your review. Click the link below to approve or request changes:\n{link}\n\nFeel free to reach out with any questions. — {biz}',
     'wa.job.msg':'Hi {name}, your job "{title}" has been updated to: {status}. Thank you for your business! — {biz}',
     // ── Intake Wizard
     'wiz.title':'New Order Intake',
@@ -3565,7 +3565,7 @@ var STRINGS = {
     'wa.send':'WhatsApp',
     'wa.noPhone':'Este cliente no tiene número de teléfono registrado',
     'wa.inv.msg':'Hola {name}, su factura {num} por {amt} está lista. Por favor revísela y contáctenos si tiene preguntas. — {biz}',
-    'wa.est.msg':'Hola {name}, su estimado {num} por {amt} está listo para su revisión. No dude en contactarnos. — {biz}',
+    'wa.est.msg':'Hola {name}, su estimado {num} por {amt} está listo para su revisión. Haga clic en el enlace para aprobar o solicitar cambios:\n{link}\n\nNo dude en contactarnos. — {biz}',
     'wa.job.msg':'Hola {name}, su trabajo "{title}" ha sido actualizado a: {status}. ¡Gracias por su preferencia! — {biz}',
     // ── Intake Wizard
     'wiz.title':'Nueva Orden de Trabajo',
@@ -5273,10 +5273,26 @@ function waEstimate(id) {
   var name = cli ? cli.name : cName(est.cid);
   var phone = cli ? cli.phone : '';
   var biz = pdfSettings.bizName || 'us';
+
+  // Generate/reuse approval token and save if new
+  var meta = getEstMeta(est);
+  var token = meta.approvalToken || genApprovalToken();
+  if (!meta.approvalToken) {
+    meta.approvalToken = token;
+    meta.approvalSentAt = new Date().toISOString();
+    meta.approvalResponse = null;
+    var updRow = { description: JSON.stringify(meta), status: est.status === 'draft' ? 'sent' : est.status };
+    dbUpdate('estimates', est.id, updRow).then(function(updated) {
+      if (updated) { for (var j=0;j<estimates.length;j++) if(estimates[j].id===est.id){estimates[j]=updated;break;} }
+    });
+  }
+  var approvalUrl = getApprovalBaseURL() + '?approve=' + token + '&eid=' + est.id;
+
   var msg = t('wa.est.msg')
     .replace('{name}', name)
     .replace('{num}', num)
     .replace('{amt}', fmt(est.grand))
+    .replace('{link}', approvalUrl)
     .replace('{biz}', biz);
   sendWhatsApp(phone, msg);
 }
