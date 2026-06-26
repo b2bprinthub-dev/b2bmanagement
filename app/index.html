@@ -8312,8 +8312,12 @@ function openCloseShiftModal() {
     else if (n.indexOf('card')>-1) cardSales+=parseFloat(i.grand||0);
     else otherSales+=parseFloat(i.grand||0);
   });
-  var expectedCash = parseFloat(s.opening_amount||0) + cashSales;
-  window._closeShiftData = { shiftSales:shiftSales.length, totalSales:totalSales, cashSales:cashSales, cardSales:cardSales, otherSales:otherSales, expectedCash:expectedCash };
+  var drawerPayouts = expenses.filter(function(e){
+    return e.from_drawer && s.opened_at && new Date(e.created_at||e.date) >= new Date(s.opened_at);
+  });
+  var drawerPayoutTotal = drawerPayouts.reduce(function(a,e){ return a+parseFloat(e.amount||0); }, 0);
+  var expectedCash = parseFloat(s.opening_amount||0) + cashSales - drawerPayoutTotal;
+  window._closeShiftData = { shiftSales:shiftSales.length, totalSales:totalSales, cashSales:cashSales, cardSales:cardSales, otherSales:otherSales, expectedCash:expectedCash, drawerPayoutTotal:drawerPayoutTotal, drawerPayouts:drawerPayouts };
 
   var summaryEl = document.getElementById('close-shift-summary');
   if (summaryEl) summaryEl.innerHTML =
@@ -8324,9 +8328,16 @@ function openCloseShiftModal() {
       '<span style="color:var(--t3)">Cash Sales</span><span style="font-weight:600;color:#f59e0b">'+fmt(cashSales)+'</span>'+
       '<span style="color:var(--t3)">Card Sales</span><span style="font-weight:600;color:#38bdf8">'+fmt(cardSales)+'</span>'+
       (otherSales>0?'<span style="color:var(--t3)">Other</span><span style="font-weight:600">'+fmt(otherSales)+'</span>':'')+
+      (drawerPayoutTotal>0?'<span style="color:#ef4444">Cash Drawer Payouts</span><span style="font-weight:600;color:#ef4444">-'+fmt(drawerPayoutTotal)+' ('+drawerPayouts.length+' expense'+(drawerPayouts.length!==1?'s':'')+')</span>':'')+
       '<span style="color:var(--t3);font-weight:700;border-top:1px solid var(--bor);padding-top:6px;margin-top:2px">Expected Cash</span>'+
       '<span style="font-weight:700;color:var(--acc);border-top:1px solid var(--bor);padding-top:6px;margin-top:2px">'+fmt(expectedCash)+'</span>'+
-    '</div>';
+    '</div>'+
+    (drawerPayoutTotal>0?'<div style="margin-top:10px;padding:8px 10px;border-radius:6px;background:#ef444415;border:1px solid #ef444430;font-size:11px;color:var(--t2)">'+
+      '<div style="font-weight:700;margin-bottom:4px;color:#ef4444">💵 Cash Drawer Payouts This Shift</div>'+
+      drawerPayouts.map(function(e){ return '<div style="display:flex;justify-content:space-between;padding:2px 0">'+
+        '<span>'+(e.category||'Expense')+(e.vendor?' — '+e.vendor:'')+'</span>'+
+        '<span style="font-weight:600">-'+fmt(e.amount)+'</span></div>'; }).join('')+
+    '</div>':'');
 
   var amtEl = document.getElementById('shift-closing-amount');
   if (amtEl) amtEl.value = '';
@@ -8869,10 +8880,21 @@ function buildRegExpPanel() {
       '<input class="fc" id="reg-exp-ref" placeholder="Receipt, PO, or check #" style="font-size:13px"/>' +
     '</div>' +
   '</div>' +
-  '<div class="fg" style="margin-bottom:14px">' +
+  '<div class="fg" style="margin-bottom:10px">' +
     '<label class="fl">Description / Notes</label>' +
     '<input class="fc" id="reg-exp-notes" placeholder="What was purchased or why…" style="font-size:13px"/>' +
   '</div>' +
+  (currentShift ? '<div style="margin-bottom:14px;padding:10px 12px;border-radius:8px;border:1px solid var(--bor);background:var(--bg2)">' +
+    '<div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px">💵 Payment Source</div>' +
+    '<div style="display:flex;gap:8px">' +
+      '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;padding:8px 10px;border-radius:6px;border:2px solid var(--acc);background:var(--acc)15;font-size:12px;font-weight:600">' +
+        '<input type="radio" name="reg-exp-source" id="reg-exp-src-drawer" value="drawer" checked style="accent-color:var(--acc)"/> 🏧 From Cash Drawer <span style="font-size:10px;opacity:.7;font-weight:400">(deducts from shift)</span>' +
+      '</label>' +
+      '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;padding:8px 10px;border-radius:6px;border:1px solid var(--bor);font-size:12px;font-weight:600">' +
+        '<input type="radio" name="reg-exp-source" id="reg-exp-src-external" value="external" style="accent-color:var(--acc)"/> 💳 External Payment <span style="font-size:10px;opacity:.7;font-weight:400">(no drawer impact)</span>' +
+      '</label>' +
+    '</div>' +
+  '</div>' : '') +
   '<button class="btn" style="width:100%;justify-content:center;font-size:14px;font-weight:700;padding:12px;background:#f59e0b20;color:#f59e0b;border:1px solid rgba(245,158,11,.4)" onclick="regRecordExpense()">📤 Record Expense</button>';
   return html;
 }
@@ -8886,18 +8908,22 @@ function regRecordExpense() {
   var ref    = (document.getElementById('reg-exp-ref')||{}).value||'';
   var notes  = (document.getElementById('reg-exp-notes')||{}).value||'';
   if (!amount||amount<=0) { toast('Enter a valid amount',true); return; }
+  var srcEl = document.querySelector('input[name="reg-exp-source"]:checked');
+  var fromDrawer = currentShift && srcEl ? srcEl.value === 'drawer' : false;
 
   var row = {
-    date:       date,
-    type:       'expense',
-    category:   cat,
-    vendor:     vendor,
-    client_id:  null,
-    amount:     amount,
-    method:     method,
-    reference:  ref||null,
-    notes:      notes,
-    created_by: currentUser ? currentUser.id : null
+    date:        date,
+    type:        'expense',
+    category:    cat,
+    vendor:      vendor,
+    client_id:   null,
+    amount:      amount,
+    method:      method,
+    reference:   ref||null,
+    notes:       notes,
+    from_drawer: fromDrawer,
+    shift_id:    currentShift ? currentShift.id : null,
+    created_by:  currentUser ? currentUser.id : null
   };
   dbInsert('expenses', row).then(function(created){
     if (created) expenses.unshift(created);
