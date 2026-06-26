@@ -4433,7 +4433,7 @@ function loadAppData() {
     transactions = results[17] || [];
     _plItems     = (results[18] || []).filter(function(r){ return !r.deleted; });
     pos_shifts   = results[19] || [];
-    currentShift = pos_shifts.find(function(s){ return s.status==='open' && s.cashier_id===(currentUser&&currentUser.id); }) || null;
+    currentShift = pos_shifts.find(function(s){ return s.status==='open' && String(s.cashier_id)===String(currentUser&&currentUser.id); }) || null;
     updateMsgBadge();
     updateInvAlertBadge();
     checkPendingTxns();
