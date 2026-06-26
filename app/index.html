@@ -8282,9 +8282,12 @@ function submitOpenShift() {
     opened_at:       new Date().toISOString()
   };
   dbInsert('pos_shifts', row).then(function(created){
-    var saved = created || Object.assign({id:'tmp_'+Date.now()}, row);
-    pos_shifts.unshift(saved);
-    currentShift = saved;
+    if (!created) {
+      toast('❌ Could not save shift — make sure the pos_shifts table exists in Supabase. See Settings → Business Info for setup instructions.', true);
+      return;
+    }
+    pos_shifts.unshift(created);
+    currentShift = created;
     logActivity('Shift Opened', 'POS', cashierName+' — Float: '+fmt(amount));
     toast('🟢 Shift opened for '+cashierName);
     closeModal('openShiftModal');
