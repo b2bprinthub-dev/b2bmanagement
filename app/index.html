@@ -1616,6 +1616,7 @@ textarea.fc{resize:vertical;min-height:72px}
         <button class="settings-tab" onclick="switchSettingsTab('security',this)" data-i18n="set.tab.security">Security</button>
         <button class="settings-tab" onclick="switchSettingsTab('business',this)" data-i18n="set.tab.business">Business Info</button>
         <button class="settings-tab" onclick="switchSettingsTab('pdf',this)" data-i18n="set.tab.pdf">PDF Settings</button>
+        <button class="settings-tab" onclick="switchSettingsTab('payments',this)">💳 Payment Methods</button>
         <button class="settings-tab" onclick="switchSettingsTab('notifications',this)">🔔 Notifications</button>
         <button class="settings-tab" id="danger-zone-tab" style="color:var(--err);display:none" onclick="switchSettingsTab('danger',this)" data-i18n="set.tab.danger">⚠️ Danger Zone</button>
       </div>
@@ -1732,6 +1733,16 @@ textarea.fc{resize:vertical;min-height:72px}
             <div class="fl" style="margin-bottom:8px">Live Preview</div>
             <div id="pdf-preview-box" class="pdf-preview"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- ── Payment Methods Tab ── -->
+      <div id="settings-tab-payments" style="display:none">
+        <div style="max-width:620px">
+          <div style="font-size:18px;font-weight:700;margin-bottom:6px">💳 Payment Methods</div>
+          <div style="font-size:13px;color:var(--t3);margin-bottom:24px">Enable payment methods and enter your handles. Enabled methods appear on customer invoice links so they can pay instantly.</div>
+          <div id="pay-methods-list"></div>
+          <button onclick="savePaymentMethods()" style="background:var(--acc);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px">💾 Save Payment Methods</button>
         </div>
       </div>
 
@@ -6715,15 +6726,51 @@ function checkInvoiceViewURL() {
     .then(function(r){return r.json();})
     .then(function(cliRows) {
       var cli = (cliRows && cliRows[0]) || {name:'Valued Customer',address:'',phone:'',email:''};
-      renderPublicInvoiceView(inv, cli, bizName, bizAddr, bizPhone, bizEmail);
-    }).catch(function(){ renderPublicInvoiceView(inv, {name:'Valued Customer',address:'',phone:'',email:''}, bizName, bizAddr, bizPhone, bizEmail); });
+      renderPublicInvoiceView(inv, cli, bizName, bizAddr, bizPhone, bizEmail, cfg);
+    }).catch(function(){ renderPublicInvoiceView(inv, {name:'Valued Customer',address:'',phone:'',email:''}, bizName, bizAddr, bizPhone, bizEmail, cfg); });
   }).catch(function() {
     document.getElementById('inv-view-body').innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444">Unable to load invoice. Check your connection.</div>';
   });
   return true;
 }
 
-function renderPublicInvoiceView(inv, cli, bizName, bizAddr, bizPhone, bizEmail) {
+function buildInvoicePaymentSection(cfg, amount) {
+  var amt = amount.toFixed(2);
+  var methods = [
+    { key:'cashapp',   label:'Cash App',   icon:'💚', color:'#00c244', deeplink: function(h){ return 'https://cash.app/'+h+'/'+amt; }, btnLabel:'Pay with Cash App' },
+    { key:'venmo',     label:'Venmo',      icon:'💙', color:'#3d95ce', deeplink: function(h){ return 'https://venmo.com/'+h.replace(/^@/,'')+'?txn=pay&amount='+amt; }, btnLabel:'Pay with Venmo' },
+    { key:'paypal',    label:'PayPal',     icon:'🅿️', color:'#003087', deeplink: function(h){ return 'https://paypal.me/'+h.replace(/^@/,'')+'/'+amt; }, btnLabel:'Pay with PayPal' },
+    { key:'googlepay', label:'Google Pay', icon:'🔵', color:'#4285f4', deeplink: null, btnLabel:'Copy Google Pay Info' },
+    { key:'zelle',     label:'Zelle',      icon:'💜', color:'#6d1ed4', deeplink: null, btnLabel:'Copy Zelle Info' },
+    { key:'applepay',  label:'Apple Pay',  icon:'⬛', color:'#1c1c1e', deeplink: null, btnLabel:'Copy Apple Pay Info' }
+  ];
+  var enabled = methods.filter(function(m){ return cfg['pay_'+m.key+'_on'] === 'true' && cfg['pay_'+m.key+'_handle']; });
+  if (!enabled.length) return '';
+  var rows = enabled.map(function(m) {
+    var handle = cfg['pay_'+m.key+'_handle'] || '';
+    if (m.deeplink) {
+      var url = m.deeplink(handle);
+      return '<a href="'+url+'" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:'+m.color+'22;border:1px solid '+m.color+'44;border-radius:10px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity=\'.8\'" onmouseout="this.style.opacity=\'1\'">'+
+        '<span style="font-size:24px">'+m.icon+'</span>'+
+        '<div style="flex:1"><div style="font-weight:700;color:#e8eaf6;font-size:14px">'+m.label+'</div><div style="font-size:12px;color:#9ea3c0;margin-top:2px">'+handle+'</div></div>'+
+        '<div style="background:'+m.color+';color:#fff;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600">Pay Now →</div>'+
+      '</a>';
+    } else {
+      return '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:'+m.color+'22;border:1px solid '+m.color+'44;border-radius:10px">'+
+        '<span style="font-size:24px">'+m.icon+'</span>'+
+        '<div style="flex:1"><div style="font-weight:700;color:#e8eaf6;font-size:14px">'+m.label+'</div><div style="font-size:12px;color:#9ea3c0;margin-top:2px">'+handle+'</div></div>'+
+        '<button onclick="navigator.clipboard.writeText(\''+handle+'\').then(function(){this.textContent=\'✓ Copied!\';var b=this;setTimeout(function(){b.textContent=\'Copy\';},2000)}.bind(this))" style="background:'+m.color+';color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer">Copy</button>'+
+      '</div>';
+    }
+  }).join('');
+  return '<div style="border-top:1px solid #2a2d45;padding-top:20px;margin-top:8px">'+
+    '<div style="font-size:13px;font-weight:700;color:#6c63ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">💳 Pay Your Invoice — $'+amt+'</div>'+
+    '<div style="display:flex;flex-direction:column;gap:10px">'+rows+'</div>'+
+    '<div style="font-size:11px;color:#6b7099;margin-top:12px;text-align:center">Tap a button to open the payment app, or copy the handle to send manually.</div>'+
+  '</div>';
+}
+
+function renderPublicInvoiceView(inv, cli, bizName, bizAddr, bizPhone, bizEmail, cfg) {
   var invNum = '#INV-' + String(inv.id).padStart(4,'0');
   var items = inv.items || [];
   var rowsHtml = items.length ? items.map(function(it) {
@@ -6775,7 +6822,9 @@ function renderPublicInvoiceView(inv, cli, bizName, bizAddr, bizPhone, bizEmail)
         '<div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:17px;font-weight:700;border-top:1px solid #3a3d52;margin-top:6px"><span style="color:#e8eaf6">Total Due</span><span style="color:#6c63ff">' + fmtMoney(inv.grand) + '</span></div>' +
       '</div>' +
     '</div>' +
-    (inv.notes ? '<div style="font-size:12px;color:#9ea3c0;border-top:1px solid #2a2d45;padding-top:12px;margin-top:4px"><b style="color:#c8cde8">Notes:</b> ' + inv.notes + '</div>' : '') +
+    (inv.notes ? '<div style="font-size:12px;color:#9ea3c0;border-top:1px solid #2a2d45;padding-top:12px;margin-bottom:20px"><b style="color:#c8cde8">Notes:</b> ' + inv.notes + '</div>' : '') +
+    // Payment methods
+    buildInvoicePaymentSection(cfg, parseFloat(inv.grand||0)) +
     // Print button
     '<div style="text-align:center;margin-top:24px">' +
       '<button onclick="window.print()" style="background:#6c63ff;color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:14px;font-weight:600;cursor:pointer">🖨️ Print / Save as PDF</button>' +
@@ -17089,8 +17138,96 @@ function initNotifSoundToggle() {
   saveNotifSoundPref(on);
 }
 
+/* ═══════════════════════════════════════════════════════════
+   PAYMENT METHODS SETTINGS
+   ═══════════════════════════════════════════════════════════ */
+var PAY_METHODS = [
+  { key:'cashapp',  label:'Cash App',    icon:'💚', color:'#00c244', placeholder:'$yourcashtag',   hint:'Enter your $Cashtag',           deeplink: function(h,a){ return 'https://cash.app/'+h+'/'+a; } },
+  { key:'venmo',    label:'Venmo',       icon:'💙', color:'#3d95ce', placeholder:'@yourhandle',    hint:'Enter your @username',          deeplink: function(h,a){ return 'https://venmo.com/'+h.replace(/^@/,'')+'?txn=pay&amount='+a; } },
+  { key:'paypal',   label:'PayPal',      icon:'🅿️', color:'#009cde', placeholder:'yourname',       hint:'Enter your PayPal.me username', deeplink: function(h,a){ return 'https://paypal.me/'+h.replace(/^@/,'')+'/'+a; } },
+  { key:'googlepay',label:'Google Pay',  icon:'🔵', color:'#4285f4', placeholder:'email or phone', hint:'Enter your Google Pay email or phone — customers copy & pay', deeplink: null },
+  { key:'zelle',    label:'Zelle',       icon:'💜', color:'#6d1ed4', placeholder:'email or phone', hint:'Enter your Zelle email or phone — customers copy & pay',       deeplink: null },
+  { key:'applepay', label:'Apple Pay',   icon:'⬛', color:'#555',    placeholder:'phone number',   hint:'Enter your Apple Pay phone number — customers copy & pay',    deeplink: null }
+];
+
+function loadPaymentMethods() {
+  var el = document.getElementById('pay-methods-list');
+  if (!el) return;
+  // Load current values from settings
+  var keys = PAY_METHODS.map(function(m){ return 'pay_'+m.key+'_on'; }).concat(PAY_METHODS.map(function(m){ return 'pay_'+m.key+'_handle'; }));
+  dbSelect('settings', 'key,value').then(function(rows) {
+    var cfg = {};
+    if (rows) rows.forEach(function(r){ cfg[r.key] = r.value; });
+    el.innerHTML = PAY_METHODS.map(function(m) {
+      var on = cfg['pay_'+m.key+'_on'] === 'true';
+      var handle = cfg['pay_'+m.key+'_handle'] || '';
+      return '<div class="card" style="margin-bottom:12px;padding:16px 20px">'+
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:'+(on?'12px':'0px')+'" id="pay-row-'+m.key+'">'+
+          '<span style="font-size:22px">'+m.icon+'</span>'+
+          '<div style="flex:1">'+
+            '<div style="font-weight:600;font-size:14px">'+m.label+'</div>'+
+            '<div style="font-size:11px;color:var(--t3);margin-top:2px">'+m.hint+'</div>'+
+          '</div>'+
+          '<label style="display:flex;align-items:center;gap:8px;cursor:pointer">'+
+            '<div class="tog-wrap" onclick="togglePayMethod(\''+m.key+'\',this)" style="width:42px;height:24px;border-radius:12px;background:'+(on?'var(--acc)':'#3a3d52')+';position:relative;cursor:pointer;transition:background .2s" data-on="'+(on?'1':'0')+'">'+
+              '<div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:'+(on?'21px':'3px')+';transition:left .2s"></div>'+
+            '</div>'+
+            '<span style="font-size:13px;color:var(--t2)">'+(on?'Enabled':'Disabled')+'</span>'+
+          '</label>'+
+        '</div>'+
+        '<div id="pay-input-'+m.key+'" style="display:'+(on?'block':'none')+'">'+
+          '<input id="pay-handle-'+m.key+'" value="'+handle+'" placeholder="'+m.placeholder+'" '+
+            'style="width:100%;padding:10px 12px;border:1px solid #3a3d52;border-radius:8px;background:#1a1d30;color:var(--t1);font-size:14px;box-sizing:border-box"/>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  });
+}
+
+function togglePayMethod(key, tog) {
+  var on = tog.dataset.on !== '1';
+  tog.dataset.on = on ? '1' : '0';
+  tog.style.background = on ? 'var(--acc)' : '#3a3d52';
+  tog.querySelector('div').style.left = on ? '21px' : '3px';
+  tog.nextElementSibling.textContent = on ? 'Enabled' : 'Disabled';
+  var row = tog.closest('.card').querySelector('[id^="pay-row-"]');
+  if (row) row.style.marginBottom = on ? '12px' : '0px';
+  var inp = document.getElementById('pay-input-'+key);
+  if (inp) inp.style.display = on ? 'block' : 'none';
+}
+
+function savePaymentMethods() {
+  var saves = [];
+  PAY_METHODS.forEach(function(m) {
+    var tog = document.querySelector('#pay-row-'+m.key+' .tog-wrap');
+    var on = tog && tog.dataset.on === '1';
+    var handle = (document.getElementById('pay-handle-'+m.key)||{}).value || '';
+    saves.push(upsertSetting('pay_'+m.key+'_on', on ? 'true' : 'false'));
+    saves.push(upsertSetting('pay_'+m.key+'_handle', handle));
+  });
+  Promise.all(saves).then(function(){ toast('Payment methods saved!'); });
+}
+
+function upsertSetting(key, value) {
+  return fetch(SUPABASE_URL+'/rest/v1/settings?key=eq.'+encodeURIComponent(key), {
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+  }).then(function(r){return r.json();}).then(function(rows){
+    if (rows && rows.length) {
+      return fetch(SUPABASE_URL+'/rest/v1/settings?key=eq.'+encodeURIComponent(key), {
+        method:'PATCH', headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body: JSON.stringify({value: value})
+      });
+    } else {
+      return fetch(SUPABASE_URL+'/rest/v1/settings', {
+        method:'POST', headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body: JSON.stringify({key: key, value: value})
+      });
+    }
+  });
+}
+
 function switchSettingsTab(tab, el) {
-  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf", "notifications", "danger"];
+  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf", "payments", "notifications", "danger"];
   for (var i = 0; i < tabs.length; i++) {
     var panel = document.getElementById("settings-tab-" + tabs[i]);
     if (panel) panel.style.display = tabs[i] === tab ? "block" : "none";
@@ -17105,6 +17242,7 @@ function switchSettingsTab(tab, el) {
   else if (tab === "security") renderSecurityTab();
   else if (tab === "business") loadBizForm();
   else if (tab === "pdf") loadPDFForm();
+  else if (tab === "payments") loadPaymentMethods();
   else if (tab === "notifications") initNotifSoundToggle();
 }
 

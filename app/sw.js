@@ -1,7 +1,7 @@
 // B2B Print Hub — Service Worker
 // Strategy: Cache-first for app shell, network-first for API calls
 
-var CACHE_NAME = 'b2bprinthub-v18';
+var CACHE_NAME = 'b2bprinthub-v19';
 var SHELL_FILES = [
   './',
   './index.html',
