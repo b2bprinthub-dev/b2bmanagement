@@ -15089,22 +15089,33 @@ function buildReport(id) {
 
   if (id==='monthly-pl' || id==='quarterly-pl' || id==='annual-pl') {
     var svcRev2={}; paidCur.forEach(function(inv){(inv.items||[]).forEach(function(it){svcRev2[it.svc||'Other']=(svcRev2[it.svc||'Other']||0)+parseFloat(it.tot||0);});});
+    var plExpCur = expenses.filter(function(e){ return inR(e.date); });
+    var plExpTotal = plExpCur.reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
+    var plExpByCat = {};
+    plExpCur.forEach(function(e){ plExpByCat[e.category||'Other']=(plExpByCat[e.category||'Other']||0)+parseFloat(e.amount||0); });
+    var netOpIncome = gp - plExpTotal;
     return H+
-    kpiGrid([{l:'Gross Revenue',v:fmt(revCur),c:'#4caf7d'},{l:'Labor Cost',v:fmt(laborCur),c:'#ef4444'},{l:'Gross Profit',v:fmt(gp),c:gp>=0?'#4caf7d':'#ef4444'},{l:'Gross Margin',v:gm.toFixed(1)+'%',c:gm>=40?'#4caf7d':gm>=20?'#f59e0b':'#ef4444'}])+
+    kpiGrid([{l:'Gross Revenue',v:fmt(revCur),c:'#4caf7d'},{l:'Labor Cost',v:fmt(laborCur),c:'#ef4444'},{l:'Gross Profit',v:fmt(gp),c:gp>=0?'#4caf7d':'#ef4444'},{l:'Net Operating Income',v:fmt(netOpIncome),c:netOpIncome>=0?'#4caf7d':'#ef4444'}])+
     sec('Income Statement — '+b.label,
       '<div style="max-width:500px">'+
       rRow('REVENUE','','',true)+
       Object.keys(svcRev2).map(function(k){return rRow(k,fmt(svcRev2[k]),'var(--t3)');}).join('')+
       rRow('Total Revenue',fmt(revCur),'#4caf7d',true)+
       '<div style="height:8px"></div>'+
-      rRow('COST','','',true)+
+      rRow('COST OF LABOR','','',true)+
       rRow('Labor / Contractor Payments',fmt(laborCur),'#ef4444')+
-      rRow('Total Cost',fmt(laborCur),'#ef4444',true)+
+      rRow('Total Labor Cost',fmt(laborCur),'#ef4444',true)+
       '<div style="height:8px"></div>'+
       rRow('GROSS PROFIT',fmt(gp),gp>=0?'#4caf7d':'#ef4444',true)+
       rRow('Gross Margin %',gm.toFixed(1)+'%',gm>=40?'#4caf7d':'#f59e0b')+
+      (plExpTotal>0 ?
+        '<div style="height:8px"></div>'+
+        rRow('OPERATING EXPENSES','','',true)+
+        Object.keys(plExpByCat).map(function(k){return rRow(k,'-'+fmt(plExpByCat[k]),'#f59e0b');}).join('')+
+        rRow('Total Operating Expenses','-'+fmt(plExpTotal),'#ef4444',true)
+      : '')+
       '<div style="height:8px"></div>'+
-      '<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-top:8px">'+rRow('NET OPERATING INCOME',fmt(gp),gp>=0?'#4caf7d':'#ef4444',true)+'</div>'+
+      '<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-top:8px">'+rRow('NET OPERATING INCOME',fmt(netOpIncome),netOpIncome>=0?'#4caf7d':'#ef4444',true)+'</div>'+
       '</div>'); }
 
   if (id==='monthly-ar' || id==='quarterly-ar') { return buildReport('daily-ar'); }
