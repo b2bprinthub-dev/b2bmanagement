@@ -8222,6 +8222,7 @@ var DEP_CATS = ['Project Deposit','Retainer','Advance Payment','Material Deposit
 function buildRegDepPanel() {
   var openJobs = jobs.filter(function(j){ return j.status!=='voided'; }).sort(function(a,b){ return b.id-a.id; });
   var openEsts = estimates.filter(function(e){ return e.status!=='declined'&&e.status!=='rejected'; }).sort(function(a,b){ return b.id-a.id; });
+  var openInvs = invoices.filter(function(i){ return i.status!=='voided'&&i.status!=='draft'; }).sort(function(a,b){ return b.id-a.id; }).slice(0,50);
 
   var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
     '<div class="fg" style="margin:0"><label class="fl">Client</label>' +
@@ -8242,12 +8243,15 @@ function buildRegDepPanel() {
     '<label class="fl">Link to Job or Estimate (optional)</label>' +
     '<select class="fc" id="reg-dep-link" style="font-size:13px">' +
       '<option value="">— None / Standalone —</option>' +
-      '<optgroup label="Jobs">' +
+      (openInvs.length ? '<optgroup label="Invoices">' +
+        openInvs.map(function(i){ return '<option value="INV-'+i.id+'">#INV-'+String(i.id).padStart(4,'0')+' — '+cName(i.cid)+(i.grand?' ('+fmt(i.grand)+')':'')+'</option>'; }).join('') +
+      '</optgroup>' : '') +
+      (openJobs.length ? '<optgroup label="Jobs">' +
         openJobs.map(function(j){ return '<option value="JOB-'+j.id+'">'+j.title+'</option>'; }).join('') +
-      '</optgroup>' +
-      '<optgroup label="Estimates">' +
+      '</optgroup>' : '') +
+      (openEsts.length ? '<optgroup label="Estimates">' +
         openEsts.map(function(e){ return '<option value="EST-'+e.id+'">#EST-'+String(e.id).padStart(4,'0')+' — '+cName(e.cid)+'</option>'; }).join('') +
-      '</optgroup>' +
+      '</optgroup>' : '') +
     '</select>' +
   '</div>' +
   '<div class="fg" style="margin-bottom:14px">' +
