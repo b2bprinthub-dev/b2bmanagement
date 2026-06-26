@@ -16507,7 +16507,16 @@ function renderAnalytics() {
   else if (_anTab==='pl') {
     var pl = document.getElementById('an-tab-pl');
     if (!pl) return;
-    var netIncome = grossProfit; // approximation (no expense tracking yet)
+    // Operating expenses from Cash Register (transactions type='expense' in period)
+    var expTxns = transactions.filter(function(tx){ return tx.type==='expense' && inRange(tx.created_at, cur); });
+    var totalExpenses = expTxns.reduce(function(s,tx){ return s + Math.abs(parseFloat(tx.amount)||0); }, 0);
+    // Group by category (stored in notes as "Cat — Vendor..." prefix)
+    var expByCat = {};
+    expTxns.forEach(function(tx){
+      var cat = (tx.notes||'').split(' — ')[0].split(' | ')[0] || 'Other';
+      expByCat[cat] = (expByCat[cat]||0) + Math.abs(parseFloat(tx.amount)||0);
+    });
+    var netIncome = grossProfit - totalExpenses;
     var prevGross = revPrev - jobPayments.filter(function(p){ var j=jobs.find(function(jj){return jj.id==p.job_id;}); return j&&inRange(j.due_date||j.created_at,prev); }).reduce(function(s,p){return s+payAmt(p);},0);
 
     // Revenue by service
@@ -16519,7 +16528,7 @@ function renderAnalytics() {
         anKpi(t('an.kpi.grossRevenue'),fmt(revCur),'',growthColor(growth)+'',growth)+
         anKpi(t('an.kpi.laborCost'),fmt(laborCur),pct(laborCur,revCur)+' '+t('an.accrualBasis'),'#ef4444',null)+
         anKpi(t('an.kpi.grossProfit'),fmt(grossProfit),grossMargin.toFixed(1)+'% '+t('an.r.grossMargin'),grossMargin>=40?'#4caf7d':'#f59e0b',null)+
-        anKpi(t('an.kpi.vsPrior'),revPrev>0?fmt(revCur-revPrev):'—',growth!=null?(growth>=0?'▲':'▼')+Math.abs(growth).toFixed(1)+'%':t('an.fc.onTrack'),growth==null?'var(--t3)':growth>=0?'#4caf7d':'#ef4444',null)+
+        anKpi('Operating Expenses',fmt(totalExpenses),expTxns.length+' transactions','#f59e0b',null)+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">'+
         '<div class="card">'+
@@ -16534,6 +16543,12 @@ function renderAnalytics() {
           '<div style="height:10px"></div>'+
           plRow(t('an.r.grossProfit'),fmt(grossProfit),grossProfit>=0?'#4caf7d':'#ef4444',false,true)+
           plRow(t('an.r.grossMargin'),grossMargin.toFixed(1)+'%',grossProfit>=0?'#4caf7d':'#ef4444',true,false)+
+          (totalExpenses>0 ?
+            '<div style="height:10px"></div>'+
+            plRow('Operating Expenses','','','',true)+
+            Object.keys(expByCat).map(function(k){ return plRow(k,'-'+fmt(expByCat[k]),'#f59e0b',true,false); }).join('')+
+            plRow('Total Expenses','-'+fmt(totalExpenses),'var(--err)',false,true)
+          : '')+
           '<div style="height:10px"></div>'+
           '<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-top:8px">'+
           plRow(t('an.r.netOpIncome'),fmt(netIncome),netIncome>=0?'#4caf7d':'#ef4444',false,true)+
