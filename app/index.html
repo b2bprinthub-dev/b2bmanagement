@@ -7199,7 +7199,8 @@ function renderFinancePage() {
   if (!rows.length) { tb.innerHTML = '<tr><td colspan="10"><div class="empty">'+t('fin.noTxns')+'</div></td></tr>'; return; }
 
   tb.innerHTML = rows.map(function(txn) {
-    var clientLabel = txn.client_id ? cName(txn.client_id) : t('fin.walkIn');
+    var noClientTypes = ['expense','deposit'];
+    var clientLabel = txn.client_id ? cName(txn.client_id) : (noClientTypes.indexOf(txn.type)>=0 ? '—' : t('fin.walkIn'));
     var icon  = typeIcons[txn.type]  || '💳';
     var color = typeColors[txn.type] || 'var(--t2)';
     var bc    = statusColors[txn.status] || 'b-gray';
