@@ -402,6 +402,7 @@ textarea.fc{resize:vertical;min-height:72px}
     </div>
     <div class="nav-grp" id="nav-grp-finance">
       <div class="nav-lbl" data-i18n="nav.grp.finance">Finance</div>
+      <button class="nav-i" onclick="gotoPage('pos',this)" data-perm="pos" id="nav-pos-shift-btn" style="display:none"><span>🖥️</span><span>POS Shifts</span><span id="shift-approval-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto"></span></button>
       <button class="nav-i" onclick="gotoPage('finance',this)" data-perm="invoices"><span>💳</span><span data-i18n="nav.finance">Transaction Ledger</span><span id="pending-txn-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto">!</span></button>
       <button class="nav-i" onclick="gotoPage('expenses',this)" data-perm="invoices"><span>💸</span><span>Expenses</span></button>
     </div>
@@ -590,6 +591,8 @@ textarea.fc{resize:vertical;min-height:72px}
     </div>
 
     <div class="page" id="page-pos">
+      <!-- Shift Banner -->
+      <div id="pos-shift-banner" style="margin-bottom:12px"></div>
       <!-- Today's Sales Bar -->
       <div id="pos-today-bar" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap"></div>
       <div style="display:grid;grid-template-columns:1fr 400px;gap:0;height:calc(100vh - 120px);border-radius:12px;overflow:hidden;border:1px solid var(--bor)">
@@ -1800,6 +1803,24 @@ textarea.fc{resize:vertical;min-height:72px}
           </div>
           <button class="btn btn-p btn-sm" onclick="saveBusinessSettings()">Save Business Info</button>
         </div>
+        <div class="card" style="margin-top:16px">
+          <div style="font-weight:600;margin-bottom:14px">🖥️ POS Settings</div>
+          <label style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:14px">
+            <input type="checkbox" id="biz-shift-approval" style="width:16px;height:16px;accent-color:var(--acc)"/>
+            <div>
+              <div style="font-size:13px;font-weight:600">Require manager approval when cashier closes a shift</div>
+              <div style="font-size:12px;color:var(--t3);margin-top:2px">Shift goes to "Pending" state until a manager reviews and approves the over/short</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:12px;cursor:pointer">
+            <input type="checkbox" id="biz-require-shift" style="width:16px;height:16px;accent-color:var(--acc)"/>
+            <div>
+              <div style="font-size:13px;font-weight:600">Require an open shift to process POS sales</div>
+              <div style="font-size:12px;color:var(--t3);margin-top:2px">Cashier must open a shift before they can ring up any sales</div>
+            </div>
+          </label>
+          <button class="btn btn-p btn-sm" style="margin-top:14px" onclick="savePOSSettings()">Save POS Settings</button>
+        </div>
       </div>
       <div id="settings-tab-pdf" style="display:none">
         <div style="font-weight:600;font-size:16px;margin-bottom:16px">PDF Invoice Settings</div>
@@ -2646,6 +2667,64 @@ textarea.fc{resize:vertical;min-height:72px}
 </div>
 </div>
 
+<!-- ══ Open Shift Modal ══════════════════════════════════════════ -->
+<div class="overlay" id="openShiftModal" style="display:none">
+<div class="modal" style="max-width:440px">
+  <div class="modal-header"><span>🟢 Open Cash Drawer Shift</span><button class="close-btn" onclick="closeModal('openShiftModal')">✕</button></div>
+  <div class="modal-body" style="padding:20px">
+    <div class="fg" style="margin-bottom:14px">
+      <label class="fl">Cashier</label>
+      <select class="fc" id="shift-cashier-sel"></select>
+    </div>
+    <div class="fg" style="margin-bottom:14px">
+      <label class="fl">Opening Cash Float</label>
+      <input class="fc" type="number" id="shift-opening-amount" min="0" step="0.01" placeholder="0.00" style="font-size:20px;font-weight:700"/>
+      <div style="font-size:12px;color:var(--t3);margin-top:4px">Count the bills and coins in the drawer before you start.</div>
+    </div>
+    <div class="fg" style="margin-bottom:18px">
+      <label class="fl">Notes (optional)</label>
+      <input class="fc" id="shift-open-notes" placeholder="Any notes for this shift…"/>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button class="btn btn-o" onclick="closeModal('openShiftModal')">Cancel</button>
+      <button class="btn btn-p" onclick="submitOpenShift()">🟢 Open Shift</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ Close Shift Modal ══════════════════════════════════════════ -->
+<div class="overlay" id="closeShiftModal" style="display:none">
+<div class="modal" style="max-width:520px">
+  <div class="modal-header"><span>🔴 Close Shift</span><button class="close-btn" onclick="closeModal('closeShiftModal')">✕</button></div>
+  <div class="modal-body" style="padding:20px">
+    <div id="close-shift-summary" style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:16px"></div>
+    <div class="fg" style="margin-bottom:14px">
+      <label class="fl">Actual Cash in Drawer</label>
+      <input class="fc" type="number" id="shift-closing-amount" min="0" step="0.01" placeholder="0.00" style="font-size:20px;font-weight:700" oninput="updateOverShort()"/>
+      <div id="shift-over-short" style="margin-top:6px;font-size:13px;font-weight:700"></div>
+    </div>
+    <div class="fg" style="margin-bottom:18px">
+      <label class="fl">Closing Notes</label>
+      <input class="fc" id="shift-close-notes" placeholder="Any discrepancies or notes…"/>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button class="btn btn-o btn-sm" onclick="printZReport()">🖨 Z-Report</button>
+      <button class="btn btn-o" onclick="closeModal('closeShiftModal')">Cancel</button>
+      <button class="btn btn-p" onclick="submitCloseShift()">🔴 Close Shift</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ Pending Shifts Modal (manager approval) ══════════════════ -->
+<div class="overlay" id="pendingShiftsModal" style="display:none">
+<div class="modal" style="max-width:600px">
+  <div class="modal-header"><span>📋 Pending Shift Approvals</span><button class="close-btn" onclick="closeModal('pendingShiftsModal')">✕</button></div>
+  <div class="modal-body" style="padding:20px" id="pending-shifts-body"></div>
+</div>
+</div>
+
 <!-- ══ Reconcile Modal ══════════════════════════════════════════ -->
 <div class="overlay" id="reconcileModal">
 <div class="modal" style="max-width:480px">
@@ -2769,7 +2848,9 @@ var jobNotes = [];
 var appMessages = [];
 var _currentThreadId = null;
 var posItems = [];
-var expenses  = [];
+var expenses   = [];
+var pos_shifts = [];
+var currentShift = null;
 var transactions = [];
 var activityLog = [];
 var invItems = [];
@@ -4328,7 +4409,8 @@ function loadAppData() {
     dbGet("suppliers", {order: "name"}),
     dbGet("expenses",  {order: "created_at", asc: false, limit: 1000}).catch(function(){ return []; }),
     dbGet("transactions", {order: "created_at", asc: false, limit: 2000}).catch(function(){ return []; }),
-    dbGet("price_list",  {order: "created_at", asc: false}).catch(function(){ return []; })
+    dbGet("price_list",  {order: "created_at", asc: false}).catch(function(){ return []; }),
+    dbGet("pos_shifts",  {order: "opened_at", asc: false, limit: 200}).catch(function(){ return []; })
   ]).then(function (results) {
     appRoles     = results[0];
     if (!appRoles.find(function(r){ return r.id === 9999; })) appRoles.push(DEV_ROLE);
@@ -4350,6 +4432,8 @@ function loadAppData() {
     expenses     = results[16] || [];
     transactions = results[17] || [];
     _plItems     = (results[18] || []).filter(function(r){ return !r.deleted; });
+    pos_shifts   = results[19] || [];
+    currentShift = pos_shifts.find(function(s){ return s.status==='open' && s.cashier_id===(currentUser&&currentUser.id); }) || null;
     updateMsgBadge();
     updateInvAlertBadge();
     checkPendingTxns();
@@ -7753,6 +7837,7 @@ function renderPOS() {
   renderPOSItems();
   renderCart();
   renderPOSTodayBar();
+  renderShiftBanner();
 }
 function buildPosCatTabs() {
   var cats = getPosCats();
@@ -8093,6 +8178,339 @@ function posStat(label, val, color) {
   return '<div class="card" style="padding:10px 14px;flex:1;min-width:110px">' +
     '<div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">'+label+'</div>' +
     '<div style="font-size:17px;font-weight:700;color:'+color+'">'+val+'</div></div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// POS SHIFT MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+function getPOSSettings() {
+  return bizSettings && bizSettings.posSettings ? bizSettings.posSettings : {};
+}
+
+function savePOSSettings() {
+  var ps = {
+    requireShiftApproval: document.getElementById('biz-shift-approval') ? document.getElementById('biz-shift-approval').checked : false,
+    requireShift:         document.getElementById('biz-require-shift')  ? document.getElementById('biz-require-shift').checked  : false
+  };
+  bizSettings.posSettings = ps;
+  saveSetting('business', bizSettings).then(function(){ toast('POS settings saved!'); });
+}
+
+function renderShiftBanner() {
+  var el = document.getElementById('pos-shift-banner');
+  if (!el) return;
+  var ps = getPOSSettings();
+  var pendingCount = pos_shifts.filter(function(s){ return s.status==='pending_approval'; }).length;
+
+  // Show pending approval badge for managers
+  var badge = document.getElementById('shift-approval-badge');
+  if (badge) { badge.textContent = pendingCount; badge.style.display = pendingCount>0 ? '' : 'none'; }
+  var shiftBtn = document.getElementById('nav-pos-shift-btn');
+  if (shiftBtn) shiftBtn.style.display = canEditPayment() && pendingCount>0 ? '' : 'none';
+
+  if (!currentShift) {
+    // No open shift
+    var requireMsg = ps.requireShift ? '<span style="color:var(--err);font-size:12px;margin-left:8px">⚠️ Shift required to process sales</span>' : '';
+    el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--bg2);border:1px solid var(--bor);border-radius:10px;flex-wrap:wrap">' +
+      '<span style="font-size:13px;color:var(--t3)">🔴 No shift open</span>' + requireMsg +
+      (canEditPayment() && pendingCount>0 ? '<button class="btn btn-o btn-sm" style="color:var(--warn)" onclick="openPendingShiftsModal()">📋 '+pendingCount+' Pending Approval</button>' : '') +
+      '<button class="btn btn-p btn-sm" style="margin-left:auto" onclick="openShiftModal()">🟢 Open Shift</button>' +
+    '</div>';
+    return;
+  }
+
+  // Shift is open — show stats
+  var s = currentShift;
+  var shiftSales = invoices.filter(function(inv){
+    return inv.notes && inv.notes.indexOf('POS Sale')===0 && inv.status!=='voided' &&
+           s.opened_at && new Date(inv.created_at||inv.date) >= new Date(s.opened_at);
+  });
+  var shiftTotal = shiftSales.reduce(function(a,i){ return a+parseFloat(i.grand||0); }, 0);
+  var shiftCash  = 0;
+  shiftSales.forEach(function(i){
+    var n=(i.notes||'').toLowerCase();
+    if (/\bcash\b/.test(n) && n.indexOf('cashapp')<0) shiftCash += parseFloat(i.grand||0);
+  });
+  var openedTime = s.opened_at ? new Date(s.opened_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—';
+
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:#4caf7d18;border:1px solid #4caf7d44;border-radius:10px;flex-wrap:wrap">' +
+    '<span style="font-size:13px;font-weight:700;color:#4caf7d">🟢 Shift Open</span>' +
+    '<span style="font-size:12px;color:var(--t2)">Cashier: <b>' + (s.cashier_name||'—') + '</b></span>' +
+    '<span style="font-size:12px;color:var(--t3)">Since ' + openedTime + '</span>' +
+    '<span style="font-size:12px;color:var(--t2)">Float: <b>' + fmt(s.opening_amount||0) + '</b></span>' +
+    '<span style="font-size:12px;color:#4caf7d">Sales: <b>' + fmt(shiftTotal) + '</b> (' + shiftSales.length + ')</span>' +
+    '<span style="font-size:12px;color:#f59e0b">Cash: <b>' + fmt(shiftCash) + '</b></span>' +
+    (canEditPayment() && pendingCount>0 ? '<button class="btn btn-o btn-sm" style="color:var(--warn)" onclick="openPendingShiftsModal()">📋 '+pendingCount+' Pending</button>' : '') +
+    '<button class="btn btn-o btn-sm" style="color:var(--err);margin-left:auto" onclick="openCloseShiftModal()">🔴 Close Shift</button>' +
+  '</div>';
+}
+
+function openShiftModal() {
+  var sel = document.getElementById('shift-cashier-sel');
+  if (sel) {
+    var opts = '<option value="__self__">' + (currentUser ? currentUser.name : 'Me') + ' (myself)</option>';
+    appUsers.forEach(function(u){
+      if (currentUser && u.id===currentUser.id) return;
+      opts += '<option value="'+u.id+'">'+u.name+'</option>';
+    });
+    sel.innerHTML = opts;
+  }
+  var amtEl = document.getElementById('shift-opening-amount');
+  if (amtEl) amtEl.value = '';
+  var notesEl = document.getElementById('shift-open-notes');
+  if (notesEl) notesEl.value = '';
+  openM('openShiftModal');
+}
+
+function submitOpenShift() {
+  var selEl   = document.getElementById('shift-cashier-sel');
+  var amtEl   = document.getElementById('shift-opening-amount');
+  var notesEl = document.getElementById('shift-open-notes');
+  var amount  = parseFloat((amtEl||{}).value||0);
+  var selVal  = (selEl||{}).value||'__self__';
+  var cashierId   = selVal==='__self__' ? (currentUser?currentUser.id:null) : selVal;
+  var cashierName = selVal==='__self__' ? (currentUser?currentUser.name:'Unknown') :
+    (appUsers.find(function(u){return u.id===selVal;})||{}).name||'Unknown';
+
+  var row = {
+    cashier_id:      cashierId,
+    cashier_name:    cashierName,
+    status:          'open',
+    opening_amount:  amount,
+    notes:           (notesEl||{}).value||'',
+    opened_at:       new Date().toISOString()
+  };
+  dbInsert('pos_shifts', row).then(function(created){
+    var saved = created || Object.assign({id:'tmp_'+Date.now()}, row);
+    pos_shifts.unshift(saved);
+    currentShift = saved;
+    logActivity('Shift Opened', 'POS', cashierName+' — Float: '+fmt(amount));
+    toast('🟢 Shift opened for '+cashierName);
+    closeModal('openShiftModal');
+    renderShiftBanner();
+  });
+}
+
+function openCloseShiftModal() {
+  if (!currentShift) { toast('No open shift', true); return; }
+  var s = currentShift;
+  var shiftSales = invoices.filter(function(inv){
+    return inv.notes && inv.notes.indexOf('POS Sale')===0 && inv.status!=='voided' &&
+           s.opened_at && new Date(inv.created_at||inv.date) >= new Date(s.opened_at);
+  });
+  var totalSales = shiftSales.reduce(function(a,i){ return a+parseFloat(i.grand||0); }, 0);
+  var cashSales=0, cardSales=0, otherSales=0;
+  shiftSales.forEach(function(i){
+    var n=(i.notes||'').toLowerCase();
+    var sm=n.match(/split \(card \$([\d.]+) \+ cash \$([\d.]+)\)/);
+    if (sm) { cardSales+=parseFloat(sm[1])||0; cashSales+=parseFloat(sm[2])||0; }
+    else if (/\bcash\b/.test(n)&&n.indexOf('cashapp')<0) cashSales+=parseFloat(i.grand||0);
+    else if (n.indexOf('card')>-1) cardSales+=parseFloat(i.grand||0);
+    else otherSales+=parseFloat(i.grand||0);
+  });
+  var expectedCash = parseFloat(s.opening_amount||0) + cashSales;
+  window._closeShiftData = { shiftSales:shiftSales.length, totalSales:totalSales, cashSales:cashSales, cardSales:cardSales, otherSales:otherSales, expectedCash:expectedCash };
+
+  var summaryEl = document.getElementById('close-shift-summary');
+  if (summaryEl) summaryEl.innerHTML =
+    '<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--t1)">Shift Summary — '+s.cashier_name+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">'+
+      '<span style="color:var(--t3)">Opening Float</span><span style="font-weight:600">'+fmt(s.opening_amount||0)+'</span>'+
+      '<span style="color:var(--t3)">Total Sales</span><span style="font-weight:600;color:#4caf7d">'+fmt(totalSales)+' ('+shiftSales.length+' orders)</span>'+
+      '<span style="color:var(--t3)">Cash Sales</span><span style="font-weight:600;color:#f59e0b">'+fmt(cashSales)+'</span>'+
+      '<span style="color:var(--t3)">Card Sales</span><span style="font-weight:600;color:#38bdf8">'+fmt(cardSales)+'</span>'+
+      (otherSales>0?'<span style="color:var(--t3)">Other</span><span style="font-weight:600">'+fmt(otherSales)+'</span>':'')+
+      '<span style="color:var(--t3);font-weight:700;border-top:1px solid var(--bor);padding-top:6px;margin-top:2px">Expected Cash</span>'+
+      '<span style="font-weight:700;color:var(--acc);border-top:1px solid var(--bor);padding-top:6px;margin-top:2px">'+fmt(expectedCash)+'</span>'+
+    '</div>';
+
+  var amtEl = document.getElementById('shift-closing-amount');
+  if (amtEl) amtEl.value = '';
+  var osEl = document.getElementById('shift-over-short');
+  if (osEl) osEl.innerHTML = '';
+  var notesEl = document.getElementById('shift-close-notes');
+  if (notesEl) notesEl.value = '';
+  openM('closeShiftModal');
+}
+
+function updateOverShort() {
+  var amtEl = document.getElementById('shift-closing-amount');
+  var osEl  = document.getElementById('shift-over-short');
+  if (!amtEl||!osEl||!window._closeShiftData) return;
+  var actual = parseFloat(amtEl.value||0);
+  var expected = window._closeShiftData.expectedCash;
+  var diff = actual - expected;
+  if (isNaN(actual)||amtEl.value==='') { osEl.innerHTML=''; return; }
+  var color = Math.abs(diff)<0.01 ? '#4caf7d' : diff>0 ? '#f59e0b' : '#ef4444';
+  var label = Math.abs(diff)<0.01 ? '✅ Exact — no discrepancy' : diff>0 ? '▲ Over by '+fmt(diff) : '▼ Short by '+fmt(Math.abs(diff));
+  osEl.innerHTML = '<span style="color:'+color+'">'+label+'</span>';
+}
+
+function submitCloseShift() {
+  if (!currentShift) return;
+  var amtEl   = document.getElementById('shift-closing-amount');
+  var notesEl = document.getElementById('shift-close-notes');
+  var actual  = parseFloat((amtEl||{}).value||0);
+  var d       = window._closeShiftData||{};
+  var overShort = actual - (d.expectedCash||0);
+  var ps = getPOSSettings();
+  var needApproval = ps.requireShiftApproval && !canEditPayment();
+  var newStatus = needApproval ? 'pending_approval' : 'closed';
+
+  var updates = {
+    status:                  newStatus,
+    closing_amount_counted:  actual,
+    expected_cash:           d.expectedCash||0,
+    over_short:              overShort,
+    notes:                   (notesEl||{}).value||'',
+    sales_count:             d.shiftSales||0,
+    sales_total:             d.totalSales||0,
+    cash_sales:              d.cashSales||0,
+    card_sales:              d.cardSales||0,
+    other_sales:             d.otherSales||0,
+    closed_at:               newStatus==='closed' ? new Date().toISOString() : null
+  };
+
+  var dbId = currentShift.id && !String(currentShift.id).startsWith('tmp_') ? currentShift.id : null;
+  function finish(updated) {
+    Object.assign(currentShift, updates);
+    if (updated) Object.assign(currentShift, updated);
+    var idx = pos_shifts.findIndex(function(s){ return s.id===currentShift.id; });
+    if (idx>=0) pos_shifts[idx] = currentShift;
+    if (newStatus==='closed') {
+      logActivity('Shift Closed', 'POS', currentShift.cashier_name+' — Over/Short: '+fmt(overShort));
+      currentShift = null;
+      toast('🔴 Shift closed.');
+    } else {
+      logActivity('Shift Pending Approval', 'POS', currentShift.cashier_name+' submitted for manager review');
+      currentShift = null;
+      toast('⏳ Shift submitted for manager approval.');
+      checkShiftApprovalBadge();
+    }
+    closeModal('closeShiftModal');
+    renderShiftBanner();
+  }
+  if (dbId) { dbUpdate('pos_shifts', dbId, updates).then(finish); }
+  else { finish(null); }
+}
+
+function openPendingShiftsModal() {
+  var el = document.getElementById('pending-shifts-body');
+  var pending = pos_shifts.filter(function(s){ return s.status==='pending_approval'; });
+  if (!el) return;
+  if (!pending.length) { el.innerHTML='<div class="empty">No shifts pending approval.</div>'; openM('pendingShiftsModal'); return; }
+  el.innerHTML = pending.map(function(s){
+    var diff = parseFloat(s.over_short||0);
+    var color = Math.abs(diff)<0.01?'#4caf7d':diff>0?'#f59e0b':'#ef4444';
+    var label = Math.abs(diff)<0.01?'Exact':diff>0?'+'+fmt(diff):'-'+fmt(Math.abs(diff));
+    return '<div class="card" style="margin-bottom:12px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'+
+        '<div>'+
+          '<div style="font-weight:700;font-size:14px">'+s.cashier_name+'</div>'+
+          '<div style="font-size:11px;color:var(--t3)">Opened: '+(s.opened_at?new Date(s.opened_at).toLocaleString():'—')+'</div>'+
+        '</div>'+
+        '<span style="font-size:12px;font-weight:700;color:'+color+'">'+label+'</span>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px;margin-bottom:12px">'+
+        '<div><div style="color:var(--t3)">Float</div><div style="font-weight:600">'+fmt(s.opening_amount||0)+'</div></div>'+
+        '<div><div style="color:var(--t3)">Sales</div><div style="font-weight:600;color:#4caf7d">'+fmt(s.sales_total||0)+'</div></div>'+
+        '<div><div style="color:var(--t3)">Expected</div><div style="font-weight:600">'+fmt(s.expected_cash||0)+'</div></div>'+
+        '<div><div style="color:var(--t3)">Counted</div><div style="font-weight:600">'+fmt(s.closing_amount_counted||0)+'</div></div>'+
+        '<div><div style="color:var(--t3)">Cash Sales</div><div style="font-weight:600;color:#f59e0b">'+fmt(s.cash_sales||0)+'</div></div>'+
+        '<div><div style="color:var(--t3)">Over/Short</div><div style="font-weight:700;color:'+color+'">'+label+'</div></div>'+
+      '</div>'+
+      (s.notes?'<div style="font-size:12px;color:var(--t3);margin-bottom:10px">Notes: '+s.notes+'</div>':'')+
+      '<div style="display:flex;gap:8px">'+
+        '<button class="btn btn-p btn-sm" onclick="approveShift('+s.id+')">✅ Approve & Close</button>'+
+        '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="rejectShift('+s.id+')">↩ Reject (Reopen)</button>'+
+        '<button class="btn btn-o btn-sm" onclick="printZReportById('+s.id+')">🖨 Z-Report</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  openM('pendingShiftsModal');
+}
+
+function approveShift(id) {
+  var s = pos_shifts.find(function(x){ return x.id===id; });
+  if (!s) return;
+  var updates = { status:'closed', approved_by: currentUser?currentUser.name:'Manager', approved_at: new Date().toISOString(), closed_at: new Date().toISOString() };
+  var dbId = s.id && !String(s.id).startsWith('tmp_') ? s.id : null;
+  if (dbId) dbUpdate('pos_shifts', dbId, updates).then(function(){ Object.assign(s, updates); afterShiftApproval(s); });
+  else { Object.assign(s, updates); afterShiftApproval(s); }
+}
+function afterShiftApproval(s) {
+  logActivity('Shift Approved', 'POS', s.cashier_name+' — Over/Short: '+fmt(s.over_short||0));
+  toast('✅ Shift approved and closed.');
+  checkShiftApprovalBadge();
+  closeModal('pendingShiftsModal');
+  renderShiftBanner();
+}
+
+function rejectShift(id) {
+  var s = pos_shifts.find(function(x){ return x.id===id; });
+  if (!s) return;
+  var updates = { status:'open', closing_amount_counted:null, expected_cash:null, over_short:null, closed_at:null };
+  var dbId = s.id && !String(s.id).startsWith('tmp_') ? s.id : null;
+  if (dbId) dbUpdate('pos_shifts', dbId, updates).then(function(){ Object.assign(s, updates); });
+  else Object.assign(s, updates);
+  // If this cashier is still logged in, restore currentShift
+  if (currentUser && s.cashier_id===currentUser.id) currentShift = s;
+  logActivity('Shift Rejected', 'POS', s.cashier_name+' — sent back to cashier');
+  toast('↩ Shift reopened — sent back to '+s.cashier_name);
+  checkShiftApprovalBadge();
+  closeModal('pendingShiftsModal');
+  renderShiftBanner();
+}
+
+function checkShiftApprovalBadge() {
+  var pending = pos_shifts.filter(function(s){ return s.status==='pending_approval'; }).length;
+  var badge = document.getElementById('shift-approval-badge');
+  if (badge) { badge.textContent = pending; badge.style.display = pending>0 ? '' : 'none'; }
+  var btn = document.getElementById('nav-pos-shift-btn');
+  if (btn) btn.style.display = canEditPayment() && pending>0 ? '' : 'none';
+}
+
+function printZReport() {
+  if (!currentShift && !window._closeShiftData) return;
+  printZReportById(currentShift ? currentShift.id : null);
+}
+function printZReportById(id) {
+  var s = id ? pos_shifts.find(function(x){ return x.id===id; }) : currentShift;
+  if (!s) return;
+  var d = window._closeShiftData || {};
+  var openedTime = s.opened_at ? new Date(s.opened_at).toLocaleString() : '—';
+  var closedTime = s.closed_at ? new Date(s.closed_at).toLocaleString() : 'Still Open';
+  var overShort  = parseFloat(s.over_short||d.overShort||0);
+  var line = '═══════════════════════════════════';
+  var w = window.open('','_blank','width=400,height=700');
+  if (!w) { toast('Allow pop-ups to print Z-Report', true); return; }
+  w.document.write('<html><head><title>Z-Report</title><style>body{font-family:monospace;font-size:13px;padding:20px;color:#000;background:#fff}h2{text-align:center}pre{white-space:pre-wrap}</style></head><body>');
+  w.document.write('<h2>'+(bizSettings.name||'B2B Print Hub')+'</h2>');
+  w.document.write('<pre>');
+  w.document.write(line+'\n         Z-REPORT / SHIFT CLOSE\n'+line+'\n');
+  w.document.write('Cashier   : '+s.cashier_name+'\n');
+  w.document.write('Opened    : '+openedTime+'\n');
+  w.document.write('Closed    : '+closedTime+'\n');
+  w.document.write(line+'\n');
+  w.document.write('Opening Float : '+fmt(s.opening_amount||0)+'\n');
+  w.document.write('Total Sales   : '+fmt(s.sales_total||d.totalSales||0)+' ('+( s.sales_count||d.shiftSales||0)+' orders)\n');
+  w.document.write('  Cash Sales  : '+fmt(s.cash_sales||d.cashSales||0)+'\n');
+  w.document.write('  Card Sales  : '+fmt(s.card_sales||d.cardSales||0)+'\n');
+  if ((s.other_sales||d.otherSales||0)>0)
+    w.document.write('  Other       : '+fmt(s.other_sales||d.otherSales||0)+'\n');
+  w.document.write(line+'\n');
+  w.document.write('Expected Cash : '+fmt(s.expected_cash||d.expectedCash||0)+'\n');
+  w.document.write('Counted Cash  : '+fmt(s.closing_amount_counted||0)+'\n');
+  var osLabel = Math.abs(overShort)<0.01 ? 'EXACT' : overShort>0 ? 'OVER  +'+fmt(overShort) : 'SHORT -'+fmt(Math.abs(overShort));
+  w.document.write('Over/Short    : '+osLabel+'\n');
+  w.document.write(line+'\n');
+  if (s.notes) w.document.write('Notes: '+s.notes+'\n'+line+'\n');
+  if (s.approved_by) w.document.write('Approved by: '+s.approved_by+'\n');
+  w.document.write('\nGenerated: '+new Date().toLocaleString()+'\n');
+  w.document.write('</pre></body></html>');
+  w.document.close();
+  w.print();
 }
 
 /* ================================================================
@@ -14721,6 +15139,7 @@ var _mrCatFilter  = 'all';
 // ── Report Catalog Definition ────────────────────────────────
 var REPORT_CATALOG = [
   // ── DAILY ───────────────────────────────────────────────────
+  {id:'daily-shifts',    cat:'daily',       freq:'Daily',      icon:'🖥️', title:'POS Shift Report (Z-Report)',  desc:'All shifts for the period: cashier, opening float, cash sales, over/short, and close status.',   perm:'finance'},
   {id:'daily-eod',       cat:'daily',       freq:'Daily',      icon:'🌅', title:'End-of-Day Summary',         desc:'Cash collected, jobs closed, invoices sent, and open items — full daily close report.',        perm:'any'},
   {id:'daily-cash',      cat:'daily',       freq:'Daily',      icon:'💵', title:'Daily Cash Receipts',         desc:'All payments received today: invoices paid and POS transactions.',                              perm:'finance'},
   {id:'daily-ar',        cat:'daily',       freq:'Daily',      icon:'🏦', title:'Daily AR Snapshot',           desc:'Outstanding invoices and aging status as of today.',                                           perm:'finance'},
@@ -14984,6 +15403,40 @@ function buildReport(id) {
   var H = '<div id="rpt-generated" style="display:none">'+today()+'</div>'; // hidden metadata
 
   // ════════════════════════════════════════════════════════════
+  if (id==='daily-shifts') {
+    var shiftsInRange = pos_shifts.filter(function(s){ return inR(s.opened_at); });
+    var closedShifts  = shiftsInRange.filter(function(s){ return s.status==='closed'; });
+    var pendingShifts = shiftsInRange.filter(function(s){ return s.status==='pending_approval'; });
+    var totalOver  = closedShifts.filter(function(s){ return (s.over_short||0)>0.01; }).reduce(function(a,s){ return a+(s.over_short||0); },0);
+    var totalShort = closedShifts.filter(function(s){ return (s.over_short||0)<-0.01; }).reduce(function(a,s){ return a+Math.abs(s.over_short||0); },0);
+    return H+
+    kpiGrid([
+      {l:'Total Shifts',    v:shiftsInRange.length,   c:'#6c63ff'},
+      {l:'Closed',          v:closedShifts.length,    c:'#4caf7d'},
+      {l:'Pending Approval',v:pendingShifts.length,   c:'#f59e0b'},
+      {l:'Net Over/Short',  v:(totalOver-totalShort>=0?'+':'')+fmt(totalOver-totalShort), c:totalOver-totalShort>=0?'#4caf7d':'#ef4444'}
+    ])+
+    sec('Shift Details — '+b.label,
+      shiftsInRange.length ? tbl(
+        ['Cashier','Opened','Closed','Float','Sales','Cash','Card','Expected','Counted','Over/Short','Status'],
+        shiftsInRange.map(function(s){
+          var diff = parseFloat(s.over_short||0);
+          var osLabel = Math.abs(diff)<0.01 ? 'Exact' : diff>0 ? '+'+fmt(diff) : '-'+fmt(Math.abs(diff));
+          var osColor = Math.abs(diff)<0.01?'#4caf7d':diff>0?'#f59e0b':'#ef4444';
+          return [
+            s.cashier_name||'—',
+            s.opened_at?new Date(s.opened_at).toLocaleString():'—',
+            s.closed_at?new Date(s.closed_at).toLocaleString():'—',
+            fmt(s.opening_amount||0), fmt(s.sales_total||0), fmt(s.cash_sales||0), fmt(s.card_sales||0),
+            fmt(s.expected_cash||0), fmt(s.closing_amount_counted||0),
+            {html:'<span style="color:'+osColor+';font-weight:700">'+osLabel+'</span>'},
+            {html:'<span style="font-size:11px;color:'+(s.status==='closed'?'#4caf7d':s.status==='pending_approval'?'#f59e0b':'#38bdf8')+'">'+s.status+'</span>'}
+          ];
+        })
+      ) : '<div class="empty">No shifts in this period.</div>'
+    );
+  }
+
   if (id==='daily-eod' || id==='daily-cash' || id==='daily-sales') {
     var todayPaid = invoices.filter(function(i){return i.status==='paid'&&i.date===todayStr;});
     var todayRev  = sum(todayPaid,function(i){return i.grand;});
@@ -19720,6 +20173,11 @@ function loadBizForm() {
   document.getElementById("biz-tax-rate").value = b.taxRate || 8;
   document.getElementById("biz-currency").value = b.currency || "USD";
   document.getElementById("biz-terms").value = b.terms || "Net 30";
+  var ps = b.posSettings || {};
+  var saEl = document.getElementById('biz-shift-approval');
+  var rsEl = document.getElementById('biz-require-shift');
+  if (saEl) saEl.checked = !!ps.requireShiftApproval;
+  if (rsEl) rsEl.checked = !!ps.requireShift;
 }
 function saveBusinessSettings() {
   bizSettings = {
