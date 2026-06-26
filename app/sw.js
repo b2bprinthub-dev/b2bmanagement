@@ -1,7 +1,7 @@
 // B2B Print Hub — Service Worker
 // Strategy: Cache-first for app shell, network-first for API calls
 
-var CACHE_NAME = 'b2bprinthub-v19';
+var CACHE_NAME = 'b2bprinthub-v20';
 var SHELL_FILES = [
   './',
   './index.html',
@@ -35,7 +35,7 @@ self.addEventListener('fetch', function(e) {
   var url = e.request.url;
 
   // Always go network for Supabase / Google auth calls
-  if (url.includes('supabase.co') || url.includes('google') || url.includes('googleapis') || url.includes('cdn.jsdelivr') || url.includes('cdnjs')) {
+  if (url.includes('supabase.co') || url.includes('google') || url.includes('googleapis') || url.includes('cdn.jsdelivr') || url.includes('cdnjs') || url.includes('simpleicons.org')) {
     e.respondWith(
       fetch(e.request).catch(function() {
         // If network fails and it's an API call, return a structured offline response
