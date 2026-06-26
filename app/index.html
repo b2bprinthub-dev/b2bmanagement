@@ -17154,8 +17154,8 @@ function loadPaymentMethods() {
   var el = document.getElementById('pay-methods-list');
   if (!el) return;
   // Load current values from settings
-  var keys = PAY_METHODS.map(function(m){ return 'pay_'+m.key+'_on'; }).concat(PAY_METHODS.map(function(m){ return 'pay_'+m.key+'_handle'; }));
-  dbSelect('settings', 'key,value').then(function(rows) {
+  sb.from('settings').select('key,value').then(function(res) {
+    var rows = res.data || [];
     var cfg = {};
     if (rows) rows.forEach(function(r){ cfg[r.key] = r.value; });
     el.innerHTML = PAY_METHODS.map(function(m) {
