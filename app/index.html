@@ -7198,27 +7198,27 @@ function renderFinancePage() {
   if (!tb) return;
   if (!rows.length) { tb.innerHTML = '<tr><td colspan="10"><div class="empty">'+t('fin.noTxns')+'</div></td></tr>'; return; }
 
-  tb.innerHTML = rows.map(function(t) {
-    var clientLabel = t.client_id ? cName(t.client_id) : t('fin.walkIn');
-    var icon  = typeIcons[t.type]  || '💳';
-    var color = typeColors[t.type] || 'var(--t2)';
-    var bc    = statusColors[t.status] || 'b-gray';
-    var dt    = t.created_at ? new Date(t.created_at).toLocaleString() : '—';
-    var isNeg = t.type==='refund'||t.type==='void'||t.type==='expense';
-    var canRefund = canEditPayment() && t.status==='completed' && (t.type==='sale'||t.type==='invoice_payment');
+  tb.innerHTML = rows.map(function(txn) {
+    var clientLabel = txn.client_id ? cName(txn.client_id) : t('fin.walkIn');
+    var icon  = typeIcons[txn.type]  || '💳';
+    var color = typeColors[txn.type] || 'var(--t2)';
+    var bc    = statusColors[txn.status] || 'b-gray';
+    var dt    = txn.created_at ? new Date(txn.created_at).toLocaleString() : '—';
+    var isNeg = txn.type==='refund'||txn.type==='void'||txn.type==='expense';
+    var canRefund = canEditPayment() && txn.status==='completed' && (txn.type==='sale'||txn.type==='invoice_payment');
     return '<tr>' +
-      '<td style="font-family:monospace;font-size:11px;color:var(--t3)">#' + String(t.id).padStart(6,'0') + '</td>' +
+      '<td style="font-family:monospace;font-size:11px;color:var(--t3)">#' + String(txn.id).padStart(6,'0') + '</td>' +
       '<td style="font-size:12px;color:var(--t3);white-space:nowrap">' + dt + '</td>' +
-      '<td><span style="font-size:12px;font-weight:600;color:'+color+'">' + icon + ' ' + (t.type||'').replace(/_/g,' ') + '</span></td>' +
+      '<td><span style="font-size:12px;font-weight:600;color:'+color+'">' + icon + ' ' + (txn.type||'').replace(/_/g,' ') + '</span></td>' +
       '<td style="font-size:13px">' + clientLabel + '</td>' +
-      '<td style="font-size:12px;color:var(--t3)">' + (t.reference||'—') + '</td>' +
-      '<td style="font-size:12px">' + (t.method||'—') + '</td>' +
-      '<td style="font-weight:700;color:' + (isNeg?'var(--err)':'var(--ok)') + '">' + (isNeg?'-':'') + fmt(t.amount) + '</td>' +
-      '<td><span class="badge ' + bc + '">' + (t.status||'—') + '</span></td>' +
-      '<td style="font-size:11px;color:var(--t3)">' + (t.created_by_name||'—') + '</td>' +
+      '<td style="font-size:12px;color:var(--t3)">' + (txn.reference||'—') + '</td>' +
+      '<td style="font-size:12px">' + (txn.method||'—') + '</td>' +
+      '<td style="font-weight:700;color:' + (isNeg?'var(--err)':'var(--ok)') + '">' + (isNeg?'-':'') + fmt(txn.amount) + '</td>' +
+      '<td><span class="badge ' + bc + '">' + (txn.status||'—') + '</span></td>' +
+      '<td style="font-size:11px;color:var(--t3)">' + (txn.created_by_name||'—') + '</td>' +
       '<td><div style="display:flex;gap:4px">' +
-        '<button class="btn btn-o btn-sm" onclick="openTxnDetail(' + t.id + ')">' + t('btn.view') + '</button>' +
-        (canRefund ? '<button class="btn btn-o btn-sm" style="color:var(--err);border-color:rgba(239,68,68,.4)" onclick="openRefundModal(' + t.id + ')">↩ ' + t('fin.refund') + '</button>' : '') +
+        '<button class="btn btn-o btn-sm" onclick="openTxnDetail(' + txn.id + ')">' + t('btn.view') + '</button>' +
+        (canRefund ? '<button class="btn btn-o btn-sm" style="color:var(--err);border-color:rgba(239,68,68,.4)" onclick="openRefundModal(' + txn.id + ')">↩ ' + t('fin.refund') + '</button>' : '') +
       '</div></td>' +
       '</tr>';
   }).join('');
