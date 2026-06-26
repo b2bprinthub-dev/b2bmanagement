@@ -6488,7 +6488,7 @@ function pollApprovalResponses() {
     var gotNew = false;
     rows.forEach(function(row) {
       var meta = {};
-      try { var m = JSON.parse(row.description); if (m && m._v) meta = m; } catch(ex) {}
+      try { var m = JSON.parse(row.description); if (m && typeof m === 'object') meta = m; } catch(ex) {}
       var resp = meta.approvalResponse;
       var prev = _lastApvPoll[row.id];
       // Update local estimates array
@@ -6510,8 +6510,8 @@ function pollApprovalResponses() {
     if (gotNew) {
       refreshApprovalBell();
       playNotifSound();
-      var msg = '🔔 A customer has responded to an estimate!';
-      toast(msg);
+      toast('🔔 A customer has responded to an estimate!');
+      if (typeof curPage !== 'undefined' && curPage === 'estimates') renderEstimates();
     } else {
       refreshApprovalBell();
     }
