@@ -7100,12 +7100,23 @@ function logTxn(type, amount, method, invoiceId, clientId, notes, refTxnId) {
     reference:         invoiceId ? 'INV-' + String(invoiceId).padStart(4,'0') : '',
     ref_transaction_id: refTxnId || null
   };
+  // Add optimistically to local array so Finance page shows it immediately
+  var tempRow = Object.assign({}, row, {id: 'tmp_' + localId, created_at: new Date().toISOString()});
+  transactions.unshift(tempRow);
+
   pendingTxnSave(localId, row);
   return dbInsert('transactions', row).then(function(created) {
     pendingTxnClear(localId);
-    if (created) transactions.unshift(created);
+    // Replace temp record with real DB record
+    var ti = transactions.findIndex(function(t){ return t.id === tempRow.id; });
+    if (created) {
+      if (ti > -1) transactions[ti] = created; else transactions.unshift(created);
+    }
     return created;
   }).catch(function(err) {
+    // Mark temp record as pending so it's visible but flagged
+    var ti = transactions.findIndex(function(t){ return t.id === tempRow.id; });
+    if (ti > -1) transactions[ti].status = 'pending';
     pendingTxnFail(localId, err);
     checkPendingTxns();
     console.error('[TXN FAILED]', type, amount, err);
@@ -7670,7 +7681,7 @@ function renderPOSItems() {
 function addCart(i) {
   var it = posItems[i];
   var ex = null;
-  for (var j = 0; j < cart.length; j++) { if (cart[j].name === it.name) { ex = cart[j]; break; } }
+  for (var j = 0; j < cart.length; j++) { if (cart[j].name === it.name && cart[j].price === parseFloat(it.price)) { ex = cart[j]; break; } }
   if (ex) { ex.qty++; }
   else { cart.push({name: it.name, price: parseFloat(it.price), category: it.category, qty: 1}); }
   renderCart();
@@ -7758,15 +7769,15 @@ function getOrderTotals() {
   for (var i = 0; i < cart.length; i++) sub += cart[i].price * cart[i].qty;
   var taxExempt = document.getElementById('pos-tax-exempt') && document.getElementById('pos-tax-exempt').checked;
   var taxRate = getPOSTaxRate();
-  var tax = taxExempt ? 0 : sub * taxRate;
   var discAmt = sub * (posDiscount / 100);
+  var tax = taxExempt ? 0 : (sub - discAmt) * taxRate;
   var tip = parseFloat((document.getElementById('pos-tip') || {}).value) || 0;
   var grand = sub + tax - discAmt + tip;
   return {sub: sub, tax: tax, taxRate: taxRate, discAmt: discAmt, tip: tip, grand: grand, taxExempt: taxExempt};
 }
 function setTipPct(pct) {
   var t = getOrderTotals();
-  var tipAmt = (t.sub * pct / 100).toFixed(2);
+  var tipAmt = ((t.sub - t.discAmt) * pct / 100).toFixed(2);
   var tipEl = document.getElementById('pos-tip');
   if (tipEl) { tipEl.value = tipAmt; updateCartTot(); }
 }
@@ -7837,7 +7848,7 @@ function completeSale(method, change) {
   var row = {cid: cid, date: today(), items: items, sub: t.sub, tax: t.tax, disc: t.discAmt, grand: t.grand, status: "paid", notes: noteStr};
   dbInsert("invoices", row).then(function (created) {
     if (created) {
-      invoices.push(created);
+      invoices.unshift(created);
       deductInventoryForItems(items, created.id, 'pos', null);
       // Log to transaction ledger with localStorage safety net
       logTxn('sale', t.grand, method, created.id, cid,
@@ -7904,8 +7915,13 @@ function openPOSHistory() {
 }
 function refundPOSSale(id) {
   if (!confirm('Mark this sale as refunded/voided?')) return;
-  dbUpdate('invoices', id, {status: 'voided', notes: (invoices.find(function(i){return i.id===id;})||{}).notes + ' [REFUNDED]'}).then(function(u) {
+  var inv = invoices.find(function(i){return i.id===id;});
+  dbUpdate('invoices', id, {status: 'voided', notes: (inv||{}).notes + ' [REFUNDED]'}).then(function(u) {
     if (u) { var idx = invoices.findIndex(function(i){return i.id===id;}); if (idx>-1) invoices[idx]=u; }
+    if (inv && inv.items && inv.items.length) {
+      var restoreItems = inv.items.map(function(it){ return Object.assign({}, it, {qty: -it.qty}); });
+      deductInventoryForItems(restoreItems, id, 'refund', null);
+    }
     toast('Sale refunded'); openPOSHistory(); renderPOSTodayBar();
   });
 }
@@ -7917,8 +7933,19 @@ function renderPOSTodayBar() {
     return inv.notes && inv.notes.indexOf('POS Sale') === 0 && inv.date === td && inv.status !== 'voided';
   });
   var todayTotal = todaySales.reduce(function(s,i){ return s+parseFloat(i.grand||0); },0);
-  var todayCash  = todaySales.filter(function(i){ return (i.notes||'').indexOf('cash')>-1; }).reduce(function(s,i){ return s+parseFloat(i.grand||0); },0);
-  var todayCard  = todaySales.filter(function(i){ return (i.notes||'').indexOf('card')>-1&&(i.notes||'').indexOf('cash')<0; }).reduce(function(s,i){ return s+parseFloat(i.grand||0); },0);
+  var todayCash  = 0, todayCard = 0;
+  todaySales.forEach(function(i) {
+    var notes = (i.notes||'').toLowerCase();
+    var splitMatch = notes.match(/split \(card \$([\d.]+) \+ cash \$([\d.]+)\)/);
+    if (splitMatch) {
+      todayCard += parseFloat(splitMatch[1]) || 0;
+      todayCash += parseFloat(splitMatch[2]) || 0;
+    } else if (/\bcash\b/.test(notes) && notes.indexOf('cashapp') === -1) {
+      todayCash += parseFloat(i.grand||0);
+    } else if (notes.indexOf('card') > -1) {
+      todayCard += parseFloat(i.grand||0);
+    }
+  });
   // Expenses / deposits / invoice payments today
   var todayExp  = expenses.filter(function(e){ return e.type==='expense'         && e.date===td; }).reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
   var todayDep  = expenses.filter(function(e){ return e.type==='deposit'         && e.date===td; }).reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
@@ -7973,7 +8000,7 @@ function expAddCustomOpt(cat, defaults, selId) {
 }
 function expBuildSelect(id, cat, defaults, style) {
   var opts = expGetOptions(cat, defaults);
-  return '<select class="fc" id="'+id+'" style="font-size:13px'+(style?';'+style:'')+'">' +
+  return '<select class="fc" id="'+id+'" data-cat="'+cat+'" style="font-size:13px'+(style?';'+style:'')+'" onchange="expSelChange(this)">' +
     opts.map(function(o){ return '<option>'+o+'</option>'; }).join('') +
     '<option value="__add__" style="color:var(--acc);font-weight:700">+ Add new…</option>' +
     '</select>';
@@ -7981,6 +8008,11 @@ function expBuildSelect(id, cat, defaults, style) {
 function expSelChange(sel, cat, defaults) {
   if (sel.value !== '__add__') return;
   sel.value = sel.options[0].value;
+  cat = cat || sel.dataset.cat || '';
+  if (!defaults) {
+    var _defMap = {deposit_cats: DEP_CATS, expense_cats: EXP_CATS, pay_methods: PAY_METHODS};
+    defaults = _defMap[cat] || [];
+  }
   expAddCustomOpt(cat, defaults, sel.id);
 }
 
@@ -8030,8 +8062,7 @@ function buildRegInvPanel() {
   } else {
     html += openInvs.slice(0,40).map(function(inv){
       var bal = parseFloat(inv.grand||0);
-      var alreadyPaid = expenses.filter(function(e){ return e.type==='invoice_payment'&&e.reference==='INV-'+String(inv.id).padStart(4,'0'); })
-        .reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
+      var alreadyPaid = getInvAmountPaid(inv.id);
       var due = Math.max(0, bal - alreadyPaid);
       var sc = {pending:'#38bdf8','in-progress':'#f59e0b',partial:'#a78bfa'};
       return '<div onclick="regSelectInvoice('+inv.id+')" id="reg-inv-row-'+inv.id+'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bor);cursor:pointer;transition:.1s" onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'">' +
@@ -8054,7 +8085,7 @@ function buildRegInvPanel() {
       '<div class="fg" style="margin:0"><label class="fl">Amount to Collect</label>' +
         '<input class="fc" type="number" id="reg-inv-amount" min="0.01" step="0.01" style="font-size:15px;font-weight:700" oninput="regCheckFull()"/>' +
       '</div>' +
-      '<div class="fg" style="margin:0"><label class="fl">Payment Method</label>' + payMethodSel('reg-inv-method') + '</div>' +
+      '<div class="fg" style="margin:0"><label class="fl">Payment Method</label>' + payMethodSel('reg-inv-method').replace('onchange="expSelChange(this)"', 'onchange="expSelChange(this);regCheckFull()"') + '</div>' +
     '</div>' +
     '<div class="fg" style="margin:0 0 12px">' +
       '<label class="fl">Notes (optional)</label>' +
@@ -8074,11 +8105,15 @@ var _regSelInvId = null;
 
 function regFilterInvoices() {
   var q = ((document.getElementById('reg-inv-search')||{}).value||'').toLowerCase();
-  document.querySelectorAll('[id^="reg-inv-row-"]').forEach(function(row){
+  document.querySelectorAll('#reg-inv-list [id^="reg-inv-row-"]').forEach(function(row){
     var id = parseInt(row.id.replace('reg-inv-row-',''));
     var inv = invoices.find(function(i){ return i.id===id; });
     if (!inv) return;
-    var match = !q || cName(inv.cid).toLowerCase().indexOf(q)>-1 || ('#inv-'+String(inv.id).padStart(4,'0')).indexOf(q)>-1;
+    var clientName = inv.cid ? cName(inv.cid) : 'Walk-in';
+    var match = !q ||
+      clientName.toLowerCase().indexOf(q) > -1 ||
+      ('inv-' + String(inv.id).padStart(4,'0')).indexOf(q) > -1 ||
+      (inv.notes||'').toLowerCase().indexOf(q) > -1;
     row.style.display = match ? '' : 'none';
   });
 }
@@ -8087,8 +8122,7 @@ function regSelectInvoice(id) {
   _regSelInvId = id;
   var inv = invoices.find(function(i){ return i.id===id; });
   if (!inv) return;
-  var alreadyPaid = expenses.filter(function(e){ return e.type==='invoice_payment'&&e.reference==='INV-'+String(inv.id).padStart(4,'0'); })
-    .reduce(function(s,e){ return s+parseFloat(e.amount||0); },0);
+  var alreadyPaid = getInvAmountPaid(inv.id);
   var due = Math.max(0, parseFloat(inv.grand||0) - alreadyPaid);
 
   var sum = document.getElementById('reg-inv-summary');
@@ -8187,7 +8221,7 @@ var DEP_CATS = ['Project Deposit','Retainer','Advance Payment','Material Deposit
 
 function buildRegDepPanel() {
   var openJobs = jobs.filter(function(j){ return j.status!=='done'&&j.status!=='voided'; });
-  var openEsts = estimates.filter(function(e){ return e.status!=='invoiced'&&e.status!=='declined'; });
+  var openEsts = estimates.filter(function(e){ return e.status!=='invoiced'&&e.status!=='declined'&&e.status!=='rejected'; });
 
   var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
     '<div class="fg" style="margin:0"><label class="fl">Client</label>' +
@@ -8196,7 +8230,6 @@ function buildRegDepPanel() {
     '</select></div>' +
     '<div class="fg" style="margin:0"><label class="fl">Deposit Type</label>' +
       expBuildSelect('reg-dep-cat','deposit_cats',DEP_CATS) +
-      '<script>document.getElementById("reg-dep-cat").onchange=function(){if(this.value==="__add__")expSelChange(this,"deposit_cats",'+JSON.stringify(DEP_CATS)+');}<\/script>' +
     '</div>' +
   '</div>' +
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
@@ -8264,7 +8297,6 @@ function buildRegExpPanel() {
   var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
     '<div class="fg" style="margin:0"><label class="fl">Category</label>' +
       expBuildSelect('reg-exp-cat','expense_cats',EXP_CATS) +
-      '<script>document.getElementById("reg-exp-cat").onchange=function(){if(this.value==="__add__")expSelChange(this,"expense_cats",'+JSON.stringify(EXP_CATS)+');}<\/script>' +
     '</div>' +
     '<div class="fg" style="margin:0"><label class="fl">Payee / Vendor</label>' +
       '<input class="fc" id="reg-exp-vendor" placeholder="Vendor or recipient name" style="font-size:13px"/>' +
@@ -8374,7 +8406,8 @@ function printReceipt() {
 }
 function holdOrder() {
   if (!cart.length) { toast("Nothing to hold", true); return; }
-  heldOrders.push({cart: cart.slice(), discount: posDiscount, time: new Date().toLocaleTimeString()});
+  var tipVal = parseFloat((document.getElementById('pos-tip')||{}).value) || 0;
+  heldOrders.push({cart: cart.slice(), discount: posDiscount, tip: tipVal, time: new Date().toLocaleTimeString()});
   clearCart();
   toast("Order held");
 }
@@ -8388,10 +8421,12 @@ function openHeldOrders() {
       var o = heldOrders[i];
       var sub = 0;
       for (var j = 0; j < o.cart.length; j++) sub += o.cart[j].price * o.cart[j].qty;
+      var discAmt = sub * ((o.discount || 0) / 100);
+      var displayTotal = sub - discAmt + (o.tip || 0);
       html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--bor)">' +
-        "<div><div style=\"font-weight:500;font-size:13px\">Order #" + (i + 1) + " - " + o.cart.length + " item(s)</div>" +
+        "<div><div style=\"font-weight:500;font-size:13px\">Order #" + (i + 1) + " - " + o.cart.length + " item(s)" + (o.discount ? ' · ' + o.discount + '% off' : '') + "</div>" +
         "<div style=\"font-size:11px;color:var(--t3)\">Held at " + o.time + "</div></div>" +
-        '<div style="display:flex;gap:6px"><span style="font-weight:600;color:var(--acc)">' + fmt(sub) + "</span>" +
+        '<div style="display:flex;gap:6px"><span style="font-weight:600;color:var(--acc)">' + fmt(displayTotal) + "</span>" +
         '<button class="btn btn-p btn-sm" onclick="resumeOrder(' + i + ')">Resume</button>' +
         '<button class="btn btn-o btn-sm" onclick="deleteHeld(' + i + ')">Delete</button></div></div>';
     }
@@ -8404,6 +8439,8 @@ function resumeOrder(i) {
   cart = o.cart;
   posDiscount = o.discount;
   applyDisc(posDiscount);
+  var tipEl = document.getElementById('pos-tip');
+  if (tipEl) tipEl.value = o.tip || '';
   renderCart();
   closeM("heldModal");
   toast("Order resumed");
@@ -8481,6 +8518,8 @@ function openItemForm(id) {
     document.getElementById("im-price").value = "";
     document.getElementById("im-sku").value = "";
     document.getElementById("im-desc").value = "";
+    var imCat = document.getElementById("im-cat");
+    if (imCat && imCat.options.length) imCat.selectedIndex = 0;
   }
 }
 function closeItemForm() { _editItemId = null; document.getElementById("item-form-wrap").style.display = "none"; }
@@ -13964,6 +14003,7 @@ function renderCRM() {
       '<td style="font-weight:600;color:var(--ok)">' + fmt(spent) + "</td>" +
       "<td>" + (c.archived ? '<span class="badge b-gray">'+t('crm.archived')+'</span>' : '<span class="badge b-ok">'+t('crm.active')+'</span>') + "</td>" +
       '<td><div style="display:flex;gap:5px;flex-wrap:wrap">' +
+      '<button class="btn btn-o btn-sm" onclick="openClientHistory(' + c.id + ')">📋 History</button>' +
       '<button class="btn btn-o btn-sm" onclick="editCliById(' + c.id + ')">' + t('btn.edit') + '</button>' +
       (c.archived
         ? '<button class="btn btn-o btn-sm" style="color:var(--ok)" onclick="unarchiveClient(' + c.id + ')">' + t('crm.restore') + '</button>'
@@ -13972,6 +14012,57 @@ function renderCRM() {
       "</div></td></tr>";
   }
   tb.innerHTML = html;
+}
+
+function openClientHistory(cid) {
+  var c = findClient(cid);
+  if (!c) return;
+  var cInvs = invoices.filter(function(inv){ return inv.cid === cid; }).sort(function(a,b){ return b.id - a.id; });
+  var cTxns = transactions.filter(function(tx){ return tx.client_id === cid; }).sort(function(a,b){ return (b.id||0) - (a.id||0); }).slice(0, 30);
+  var statusBadge = {paid:'b-ok', partial:'b-warn', pending:'b-info', 'in-progress':'b-warn', voided:'b-gray', draft:'b-gray'};
+  var typeColor = {sale:'var(--ok)', invoice_payment:'var(--acc)', deposit:'var(--inf)', expense:'var(--warn)'};
+
+  var invHtml = cInvs.length ? cInvs.map(function(inv){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bor)">' +
+      '<div style="flex:1"><div style="font-size:13px;font-weight:600">#INV-' + String(inv.id).padStart(4,'0') + ' · ' + (inv.date||'') + '</div>' +
+      '<div style="font-size:11px;color:var(--t3)">' + ((inv.notes||'').split('|')[0].trim()) + '</div></div>' +
+      '<span class="badge ' + (statusBadge[inv.status]||'b-gray') + '" style="margin-right:8px">' + (inv.status||'') + '</span>' +
+      '<span style="font-weight:700;color:var(--ok)">' + fmt(inv.grand) + '</span></div>';
+  }).join('') : '<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No invoices found</div>';
+
+  var txnHtml = cTxns.length ? cTxns.map(function(tx){
+    var dt = tx.created_at ? new Date(tx.created_at).toLocaleDateString() : '—';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--bor)">' +
+      '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:' + (typeColor[tx.type]||'var(--t2)') + '">' + (tx.type||'').replace(/_/g,' ') + '</div>' +
+      '<div style="font-size:11px;color:var(--t3)">' + dt + (tx.method ? ' · ' + tx.method : '') + (tx.notes ? ' · ' + tx.notes : '') + '</div></div>' +
+      '<span style="font-weight:700;color:var(--ok)">' + fmt(tx.amount) + '</span></div>';
+  }).join('') : '<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No transactions found</div>';
+
+  var totalSpent = cInvs.filter(function(i){ return i.status === 'paid'; }).reduce(function(s,i){ return s + parseFloat(i.grand||0); }, 0);
+
+  var old = document.getElementById('clientHistModal');
+  if (old) old.remove();
+  var div = document.createElement('div');
+  div.className = 'overlay';
+  div.id = 'clientHistModal';
+  div.onclick = function(e){ if (e.target === div) div.classList.remove('open'); };
+  div.innerHTML =
+    '<div class="modal" style="max-width:620px;width:95%;max-height:85vh;overflow-y:auto">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+    '<div><div style="font-size:17px;font-weight:700">' + c.name + '</div>' +
+    (c.company ? '<div style="font-size:12px;color:var(--t3)">' + c.company + '</div>' : '') + '</div>' +
+    '<button class="xbtn" onclick="document.getElementById(\'clientHistModal\').classList.remove(\'open\')">&times;</button></div>' +
+    '<div style="display:flex;gap:12px;margin-bottom:16px">' +
+    '<div class="card" style="flex:1;padding:10px 14px;text-align:center"><div style="font-size:10px;color:var(--t3);text-transform:uppercase">Invoices</div><div style="font-size:20px;font-weight:700;color:var(--acc)">' + cInvs.length + '</div></div>' +
+    '<div class="card" style="flex:1;padding:10px 14px;text-align:center"><div style="font-size:10px;color:var(--t3);text-transform:uppercase">Total Spent</div><div style="font-size:20px;font-weight:700;color:var(--ok)">' + fmt(totalSpent) + '</div></div>' +
+    '</div>' +
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:6px">Invoices</div>' +
+    '<div style="border:1px solid var(--bor);border-radius:10px;overflow:hidden;margin-bottom:14px;max-height:240px;overflow-y:auto">' + invHtml + '</div>' +
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:6px">Recent Transactions</div>' +
+    '<div style="border:1px solid var(--bor);border-radius:10px;overflow:hidden;max-height:200px;overflow-y:auto">' + txnHtml + '</div>' +
+    '</div>';
+  document.body.appendChild(div);
+  requestAnimationFrame(function(){ div.classList.add('open'); });
 }
 
 function archiveClient(id) {
