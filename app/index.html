@@ -9486,8 +9486,8 @@ function openItemsManager() {
   document.getElementById("itemsManagerModal").classList.add("open");
 }
 function fillItemCatFilter() {
-  var _synth = ["All","Services","Products"];
-  var cats = getPosCats().filter(function (c) { return _synth.indexOf(c) === -1; });
+  var cats = [];
+  posItems.forEach(function(it){ if (cats.indexOf(it.category) === -1) cats.push(it.category); });
   var sel = document.getElementById("im-filter-cat");
   var opts = '<option value="">All Categories</option>';
   for (var i = 0; i < cats.length; i++) opts += "<option>" + cats[i] + "</option>";
