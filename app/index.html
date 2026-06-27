@@ -2848,6 +2848,7 @@ var jobNotes = [];
 var appMessages = [];
 var _currentThreadId = null;
 var posItems = [];
+var _posCombined = [];
 var expenses   = [];
 var pos_shifts = [];
 var currentShift = null;
@@ -7691,11 +7692,22 @@ function exportFinanceCSV() {
   downloadDataUrl('data:text/csv;charset=utf-8,' + encodeURIComponent(csv), 'transactions-' + today() + '.csv');
 }
 
+function buildPosCombined() {
+  _posCombined = [];
+  posItems.forEach(function(it) {
+    _posCombined.push({name:it.name, price:parseFloat(it.price||0), category:it.category||'Service', sku:it.sku||'', _type:'service', _src:it});
+  });
+  invItems.forEach(function(inv) {
+    if (inv.active === false) return;
+    if (!inv.sell_price || parseFloat(inv.sell_price) <= 0) return;
+    var dup = _posCombined.find(function(x){ return x.name.toLowerCase()===inv.name.toLowerCase(); });
+    if (dup) return;
+    _posCombined.push({name:inv.name, price:parseFloat(inv.sell_price||0), category:inv.category||'Product', sku:inv.sku||'', _type:'product', _src:inv});
+  });
+}
 function getPosCats() {
-  var cats = ["All"];
-  for (var i = 0; i < posItems.length; i++) {
-    if (cats.indexOf(posItems[i].category) === -1) cats.push(posItems[i].category);
-  }
+  var cats = ["All","Services","Products"];
+  _posCombined.forEach(function(it){ if (cats.indexOf(it.category) === -1) cats.push(it.category); });
   return cats;
 }
 // ── POS Customer Searchable Lookup ───────────────────────────────
@@ -7862,6 +7874,7 @@ function renderPOS() {
   renderShiftBanner();
 }
 function buildPosCatTabs() {
+  buildPosCombined();
   var cats = getPosCats();
   var tabs = document.getElementById("pos-cat-tabs");
   if (!tabs) return;
@@ -7882,10 +7895,14 @@ function setPOSCat(cat, el) {
   renderPOSItems();
 }
 function renderPOSItems() {
+  buildPosCombined();
+  buildPosCatTabs();
   var searchEl = document.getElementById("pos-search");
   var search = (searchEl ? searchEl.value : "").toLowerCase();
-  var items = posItems.filter(function (it) {
-    if (_posActiveCat !== "All" && it.category !== _posActiveCat) return false;
+  var items = _posCombined.filter(function (it) {
+    if (_posActiveCat === 'Services' && it._type !== 'service') return false;
+    if (_posActiveCat === 'Products' && it._type !== 'product') return false;
+    if (_posActiveCat !== 'All' && _posActiveCat !== 'Services' && _posActiveCat !== 'Products' && it.category !== _posActiveCat) return false;
     if (search && it.name.toLowerCase().indexOf(search) < 0) return false;
     return true;
   });
@@ -7894,10 +7911,9 @@ function renderPOSItems() {
   var html = "";
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
-    var idx = posItems.indexOf(it);
+    var idx = _posCombined.indexOf(it);
     var cc = CAT_COLORS[it.category] || "#9ea3c0";
-    // Stock badge from inventory
-    var invMatch = invItems.find(function(inv){ return inv.active!==false && (inv.name.toLowerCase()===it.name.toLowerCase()||(inv.sku&&it.sku&&inv.sku===it.sku)); });
+    var invMatch = it._type === 'product' ? it._src : invItems.find(function(inv){ return inv.active!==false && (inv.name.toLowerCase()===it.name.toLowerCase()||(inv.sku&&it.sku&&inv.sku===it.sku)); });
     var stockBadge = '';
     if (invMatch && invMatch.track_inventory) {
       var sq = parseFloat(invMatch.qty_on_hand||0);
@@ -7905,20 +7921,25 @@ function renderPOSItems() {
       stockBadge = '<div style="font-size:10px;font-weight:700;color:'+sc2+';margin-top:4px">'+(sq<=0?'⛔ Out of Stock':'📦 '+sq+' left')+'</div>';
     }
     var isOut = invMatch && invMatch.track_inventory && parseFloat(invMatch.qty_on_hand||0)<=0;
+    var typePill = it._type==='product'
+      ? '<div style="font-size:9px;color:#38bdf8;font-weight:700;letter-spacing:.4px;margin-bottom:3px">📦 PRODUCT</div>'
+      : '<div style="font-size:9px;color:#a78bfa;font-weight:700;letter-spacing:.4px;margin-bottom:3px">🔧 SERVICE</div>';
     html += '<div onclick="'+(isOut?'toast(\'Out of stock\',true)':'addCart('+idx+')')+'" style="background:var(--sur);border:1px solid '+(isOut?'#ef4444':'var(--bor)')+';border-radius:10px;padding:14px 12px;cursor:'+(isOut?'not-allowed':'pointer')+';text-align:center;position:relative;overflow:hidden;opacity:'+(isOut?'.6':'1')+'">' +
       '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:' + cc + '"></div>' +
-      '<div style="font-size:11px;color:' + cc + ';font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;margin-top:4px">' + it.category + "</div>" +
+      typePill +
+      '<div style="font-size:11px;color:' + cc + ';font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;margin-top:2px">' + it.category + "</div>" +
       '<div style="font-weight:600;font-size:13px;line-height:1.3;margin-bottom:8px">' + it.name + "</div>" +
       '<div style="font-weight:700;font-size:16px;color:' + cc + '">' + fmt(it.price) + "</div>"+stockBadge+"</div>";
   }
   grid.innerHTML = items.length ? html : '<div class="empty" style="grid-column:1/-1">No items found</div>';
 }
 function addCart(i) {
-  var it = posItems[i];
+  var it = _posCombined[i];
+  if (!it) return;
   var ex = null;
-  for (var j = 0; j < cart.length; j++) { if (cart[j].name === it.name && cart[j].price === parseFloat(it.price)) { ex = cart[j]; break; } }
+  for (var j = 0; j < cart.length; j++) { if (cart[j].name === it.name && cart[j].price === it.price) { ex = cart[j]; break; } }
   if (ex) { ex.qty++; }
-  else { cart.push({name: it.name, price: parseFloat(it.price), category: it.category, qty: 1}); }
+  else { cart.push({name: it.name, price: it.price, category: it.category, sku: it.sku||'', qty: 1}); }
   renderCart();
 }
 function addCustomItem() {
@@ -9465,7 +9486,8 @@ function openItemsManager() {
   document.getElementById("itemsManagerModal").classList.add("open");
 }
 function fillItemCatFilter() {
-  var cats = getPosCats().filter(function (c) { return c !== "All"; });
+  var _synth = ["All","Services","Products"];
+  var cats = getPosCats().filter(function (c) { return _synth.indexOf(c) === -1; });
   var sel = document.getElementById("im-filter-cat");
   var opts = '<option value="">All Categories</option>';
   for (var i = 0; i < cats.length; i++) opts += "<option>" + cats[i] + "</option>";
