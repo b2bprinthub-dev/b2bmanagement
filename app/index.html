@@ -1738,6 +1738,7 @@ textarea.fc{resize:vertical;min-height:72px}
         <button class="settings-tab" onclick="switchSettingsTab('payments',this)">💳 Payment Methods</button>
         <button class="settings-tab" onclick="switchSettingsTab('notifications',this)">🔔 Notifications</button>
         <button class="settings-tab" onclick="switchSettingsTab('expense_cats',this)">💸 Expense Categories</button>
+        <button class="settings-tab" onclick="switchSettingsTab('services',this)">🛠 Services</button>
         <button class="settings-tab" id="danger-zone-tab" style="color:var(--err);display:none" onclick="switchSettingsTab('danger',this)" data-i18n="set.tab.danger">⚠️ Danger Zone</button>
       </div>
       <div id="settings-tab-users">
@@ -1935,6 +1936,15 @@ textarea.fc{resize:vertical;min-height:72px}
         </div>
         <div class="card" style="padding:0;overflow:hidden" id="exp-cats-list"></div>
         <div style="margin-top:14px;font-size:12px;color:var(--t3)">* Default categories cannot be deleted but can be renamed. Custom categories can be fully removed.</div>
+      </div>
+
+      <div id="settings-tab-services" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div><div style="font-weight:600;font-size:16px">Service Types</div><div style="font-size:13px;color:var(--t3);margin-top:2px">These appear in the Service dropdown on every invoice and estimate line item</div></div>
+          <button class="btn btn-p btn-sm" onclick="addServiceType()">+ Add Service</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden" id="services-list"></div>
+        <div style="margin-top:14px;font-size:12px;color:var(--t3)">* Built-in services cannot be deleted. Custom services can be renamed or removed. Changes apply to all users immediately.</div>
       </div>
 
       <div id="settings-tab-danger" style="display:none">
@@ -4124,6 +4134,7 @@ function loadSettings() {
     for (var i = 0; i < rows.length; i++) {
       if (rows[i].key === "pdf") pdfSettings = Object.assign({}, pdfSettings, rows[i].value);
       if (rows[i].key === "business") bizSettings = Object.assign({}, bizSettings, rows[i].value);
+      if (rows[i].key === "custom_services" && Array.isArray(rows[i].value)) _customServices = rows[i].value;
     }
   });
 }
@@ -5360,21 +5371,52 @@ function voidInv(id) {
 }
 function addLI(it) {
   var tr = document.createElement("tr");
-  var opts = "";
-  for (var i = 0; i < SVCS.length; i++) {
-    opts += "<option" + (it && it.svc === SVCS[i] ? " selected" : "") + ">" + SVCS[i] + "</option>";
-  }
+  var allSvcs = getServiceTypes();
+  var curSvc = it ? it.svc : allSvcs[0];
+  var opts = allSvcs.map(function(s){
+    return '<option' + (s === curSvc ? ' selected' : '') + '>' + esc(s) + '</option>';
+  }).join('');
+  opts += '<option value="__add_svc__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
   // Inventory quick-pick dropdown
-  var invOpts = '<option value="">+ From Inventory</option>' + invItems.filter(function(inv){return inv.active!==false;}).map(function(inv){ return '<option value="'+inv.id+'">'+inv.name+(inv.sku?' ['+inv.sku+']':'')+'</option>'; }).join('');
+  var invOpts = '<option value="">📦</option>' + invItems.filter(function(inv){return inv.active!==false;}).map(function(inv){ return '<option value="'+inv.id+'">'+esc(inv.name)+(inv.sku?' ['+inv.sku+']':'')+'</option>'; }).join('');
   tr.innerHTML =
-    '<td><select oninput="recalcInv()">' + opts + "</select></td>" +
-    '<td><div style="display:flex;gap:4px;align-items:center"><input type="text" value="' + (it ? it.desc : "") + '" placeholder="Description" oninput="recalcInv()" style="flex:1"/>' +
-    '<select style="font-size:10px;padding:2px;border:1px solid var(--bor);border-radius:4px;background:var(--bg2);color:var(--t3);cursor:pointer" onchange="fillLIFromInv(this)" title="Pick from inventory"><option value="">📦</option>'+invOpts+'</select></div></td>' +
+    '<td><select onchange="liSvcChange(this)" oninput="recalcInv()">' + opts + '</select></td>' +
+    '<td><div style="display:flex;gap:4px;align-items:center"><input type="text" value="' + esc(it ? it.desc : '') + '" placeholder="Description" oninput="recalcInv()" style="flex:1"/>' +
+    '<select style="font-size:10px;padding:2px;border:1px solid var(--bor);border-radius:4px;background:var(--bg2);color:var(--t3);cursor:pointer" onchange="fillLIFromInv(this)" title="Pick from inventory">' + invOpts + '</select></div></td>' +
     '<td><input type="number" value="' + (it ? it.qty : 1) + '" min="1" style="width:52px" oninput="recalcInv()"/></td>' +
     '<td><input type="number" value="' + (it ? it.price : 0) + '" min="0" step="0.01" style="width:78px" oninput="recalcInv()"/></td>' +
-    '<td style="font-weight:600;color:var(--acc)" class="li-tot">$' + (it ? (it.qty * it.price).toFixed(2) : "0.00") + "</td>" +
-    '<td><button onclick="this.closest(\'tr\').remove();recalcInv()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:18px">x</button></td>';
+    '<td style="font-weight:600;color:var(--acc)" class="li-tot">$' + (it ? (it.qty * it.price).toFixed(2) : '0.00') + '</td>' +
+    '<td><button onclick="this.closest(\'tr\').remove();recalcInv()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:18px">×</button></td>';
   document.getElementById("li-body").appendChild(tr);
+}
+function liSvcChange(sel) {
+  if (sel.value !== '__add_svc__') return;
+  var prev = sel.options[sel.selectedIndex - 1] ? sel.options[sel.selectedIndex - 1].value : getServiceTypes()[0];
+  sel.value = prev;
+  var v = prompt('New service name:');
+  if (!v || !v.trim()) return;
+  v = v.trim();
+  if (getServiceTypes().indexOf(v) === -1) {
+    var custom = _customServices.slice();
+    custom.push(v);
+    saveServiceTypes(custom);
+    toast('Service "' + v + '" added!');
+  }
+  // Refresh all service selects in this invoice modal
+  var trs = document.querySelectorAll('#li-body tr');
+  trs.forEach(function(row) {
+    var s = row.querySelector('select');
+    if (!s || s === sel) return;
+    var curVal = s.value;
+    var allSvcs = getServiceTypes();
+    s.innerHTML = allSvcs.map(function(opt){ return '<option'+(opt===curVal?' selected':'')+'>'+esc(opt)+'</option>'; }).join('') +
+      '<option value="__add_svc__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
+  });
+  // Update the changed select
+  var allSvcs2 = getServiceTypes();
+  sel.innerHTML = allSvcs2.map(function(opt){ return '<option'+(opt===v?' selected':'')+'>'+esc(opt)+'</option>'; }).join('') +
+    '<option value="__add_svc__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
+  sel.value = v;
 }
 function fillLIFromInv(sel) {
   var id = sel.value; if (!id) return;
@@ -9024,6 +9066,72 @@ function getExpCats() {
   return stored ? JSON.parse(stored) : EXP_CATS.slice();
 }
 function saveExpCats(arr) { localStorage.setItem('b2b_exp_cats', JSON.stringify(arr)); }
+
+// ── Service Types (stored in Supabase settings so all users share the list) ──
+var _customServices = []; // extra services beyond SVCS defaults
+function getServiceTypes() {
+  var out = SVCS.slice();
+  _customServices.forEach(function(s){ if (out.indexOf(s) === -1) out.push(s); });
+  return out;
+}
+function saveServiceTypes(customArr) {
+  _customServices = customArr;
+  saveSetting('custom_services', customArr);
+}
+function renderServiceSettings() {
+  var el = document.getElementById('services-list');
+  if (!el) return;
+  var allSvcs = getServiceTypes();
+  el.innerHTML = allSvcs.map(function(s, i){
+    var isDefault = SVCS.indexOf(s) >= 0;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--bor)">' +
+      '<span style="font-size:13px">' + esc(s) + (isDefault ? ' <span style="font-size:10px;color:var(--t3)">(built-in)</span>' : '') + '</span>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button class="btn btn-o btn-sm" onclick="renameServiceType(' + i + ')">Rename</button>' +
+        (!isDefault ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="removeServiceType(' + i + ')">Remove</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+function addServiceType() {
+  var v = prompt('New service name:');
+  if (!v || !v.trim()) return;
+  v = v.trim();
+  if (getServiceTypes().indexOf(v) >= 0) { toast('Service already exists', true); return; }
+  var custom = _customServices.slice();
+  custom.push(v);
+  saveServiceTypes(custom);
+  renderServiceSettings();
+  toast('Service added!');
+}
+function renameServiceType(idx) {
+  var all = getServiceTypes();
+  var v = prompt('Rename to:', all[idx]);
+  if (!v || !v.trim()) return;
+  v = v.trim();
+  var isDefault = SVCS.indexOf(all[idx]) >= 0;
+  if (isDefault) {
+    // Add renamed version as custom, can't remove default
+    var custom = _customServices.slice();
+    if (custom.indexOf(v) === -1) custom.push(v);
+    saveServiceTypes(custom);
+  } else {
+    var ci = _customServices.indexOf(all[idx]);
+    if (ci >= 0) { var custom2 = _customServices.slice(); custom2[ci] = v; saveServiceTypes(custom2); }
+  }
+  renderServiceSettings();
+  toast('Service renamed!');
+}
+function removeServiceType(idx) {
+  var all = getServiceTypes();
+  var svc = all[idx];
+  if (SVCS.indexOf(svc) >= 0) { toast('Cannot remove built-in service', true); return; }
+  if (!confirm('Remove "' + svc + '"?')) return;
+  var custom = _customServices.filter(function(s){ return s !== svc; });
+  saveServiceTypes(custom);
+  renderServiceSettings();
+  toast('Service removed');
+}
 
 function getRecurringExps() { return JSON.parse(localStorage.getItem('b2b_recurring_exps')||'[]'); }
 function saveRecurringExps(arr) { localStorage.setItem('b2b_recurring_exps', JSON.stringify(arr)); }
@@ -18583,7 +18691,7 @@ function upsertSetting(key, value) {
 }
 
 function switchSettingsTab(tab, el) {
-  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf", "payments", "notifications", "expense_cats", "danger"];
+  var tabs = ["users", "requests", "roles", "activity", "security", "business", "pdf", "payments", "notifications", "expense_cats", "services", "danger"];
   for (var i = 0; i < tabs.length; i++) {
     var panel = document.getElementById("settings-tab-" + tabs[i]);
     if (panel) panel.style.display = tabs[i] === tab ? "block" : "none";
@@ -18601,6 +18709,7 @@ function switchSettingsTab(tab, el) {
   else if (tab === "payments") loadPaymentMethods();
   else if (tab === "notifications") initNotifSoundToggle();
   else if (tab === "expense_cats") renderExpCatSettings();
+  else if (tab === "services") renderServiceSettings();
 }
 
 function checkPendingRequestsBadge() {
