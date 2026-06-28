@@ -6907,33 +6907,75 @@ var NOTIF_SOUND_KEY = 'b2b_notif_sound';
 function isNotifSoundOn() {
   return localStorage.getItem(NOTIF_SOUND_KEY) !== 'off';
 }
+var _notifAudioCtx = null;
+function getAudioCtx() {
+  if (!_notifAudioCtx || _notifAudioCtx.state === 'closed') {
+    _notifAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return _notifAudioCtx;
+}
+// Warm up AudioContext on first user interaction so autoplay policy doesn't block later sounds
+document.addEventListener('click', function _warmup() {
+  try { var c = getAudioCtx(); if (c.state === 'suspended') c.resume(); } catch(e) {}
+  document.removeEventListener('click', _warmup);
+}, { once: true });
 function playNotifSound() {
   if (!isNotifSoundOn()) return;
   try {
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // Two-tone chime
-    [523, 659].forEach(function(freq, i) {
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sine'; osc.frequency.value = freq;
-      var t = ctx.currentTime + i * 0.18;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-      osc.start(t); osc.stop(t + 0.4);
-    });
+    var ctx = getAudioCtx();
+    function doChime() {
+      [523, 659].forEach(function(freq, i) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine'; osc.frequency.value = freq;
+        var t = ctx.currentTime + i * 0.18;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        osc.start(t); osc.stop(t + 0.4);
+      });
+    }
+    if (ctx.state === 'suspended') { ctx.resume().then(doChime); } else { doChime(); }
   } catch(e) {}
 }
 
 // ── Seen-response tracking ────────────────────────────────────────
-var APV_SEEN_KEY = 'b2b_apv_seen';
+var APV_SEEN_KEY      = 'b2b_apv_seen';
+var APV_CLEARED_KEY   = 'b2b_apv_cleared';
 function getSeenIds() {
   try { return JSON.parse(localStorage.getItem(APV_SEEN_KEY) || '[]'); } catch(e) { return []; }
 }
 function markSeenId(id) {
   var seen = getSeenIds();
   if (seen.indexOf(id) === -1) { seen.push(id); localStorage.setItem(APV_SEEN_KEY, JSON.stringify(seen)); }
+}
+function getClearedIds() {
+  try { return JSON.parse(localStorage.getItem(APV_CLEARED_KEY) || '[]'); } catch(e) { return []; }
+}
+function markAllRead() {
+  var seen = getSeenIds();
+  estimates.forEach(function(e) {
+    var meta = getEstMeta(e);
+    if (meta.approvalResponse && seen.indexOf(e.id) === -1) seen.push(e.id);
+  });
+  localStorage.setItem(APV_SEEN_KEY, JSON.stringify(seen));
+  refreshApprovalBell();
+  toggleApprovalNotifs(); toggleApprovalNotifs(); // re-render dropdown
+  toast('All notifications marked as read');
+}
+function clearAllNotifs() {
+  var cleared = getClearedIds();
+  estimates.forEach(function(e) {
+    var meta = getEstMeta(e);
+    if (meta.approvalToken && cleared.indexOf(e.id) === -1) cleared.push(e.id);
+  });
+  localStorage.setItem(APV_CLEARED_KEY, JSON.stringify(cleared));
+  markAllRead();
+  var drop = document.getElementById('approvalNotifDrop');
+  if (drop) drop.style.display = 'none';
+  refreshApprovalBell();
+  toast('All notifications cleared');
 }
 
 // ── Notification Bell ────────────────────────────────────────────
@@ -7057,12 +7099,13 @@ function toggleApprovalNotifs() {
   var tokenIds = estimates.filter(function(e){ var m=getEstMeta(e); return m.approvalToken; }).map(function(e){ return e.id; });
 
   function renderBell() {
-    var seen = getSeenIds();
+    var seen    = getSeenIds();
+    var cleared = getClearedIds();
 
-    // All estimates that have been sent for approval (have a token)
+    // All estimates that have been sent for approval (have a token), excluding cleared
     var allSent = estimates.filter(function(e) {
       var meta = getEstMeta(e);
-      return meta.approvalToken;
+      return meta.approvalToken && cleared.indexOf(e.id) === -1;
     });
     var newResponses = allSent.filter(function(e) {
       var meta = getEstMeta(e);
@@ -7113,7 +7156,13 @@ function toggleApprovalNotifs() {
         html += '<div style="padding:8px 14px;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bor)">✔ Seen</div>';
         oldResponses.slice().reverse().slice(0,5).forEach(function(e) { html += buildRow(e, false); });
       }
-      html += '<div style="padding:8px 14px;text-align:right"><button class="btn btn-o btn-sm" onclick="drop.style.display=\'none\';toggleApprovalNotifs()">🔄 Refresh</button></div>';
+      var hasUnread = newResponses.length > 0;
+      html += '<div style="padding:8px 14px;display:flex;gap:6px;justify-content:space-between;align-items:center;border-top:1px solid var(--bor);background:var(--bg3)">' +
+        (hasUnread ? '<button class="btn btn-o btn-sm" onclick="markAllRead()">✓ Mark all read</button>' : '<span></span>') +
+        '<div style="display:flex;gap:6px">' +
+        '<button class="btn btn-o btn-sm" onclick="drop.style.display=\'none\';toggleApprovalNotifs()">🔄 Refresh</button>' +
+        '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="clearAllNotifs()">🗑 Clear all</button>' +
+        '</div></div>';
     }
 
     drop.innerHTML = html;
