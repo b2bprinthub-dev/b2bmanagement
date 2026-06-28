@@ -1941,7 +1941,7 @@ textarea.fc{resize:vertical;min-height:72px}
       <div id="settings-tab-services" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <div><div style="font-weight:600;font-size:16px">Service Types</div><div style="font-size:13px;color:var(--t3);margin-top:2px">These appear in the Service dropdown on every invoice and estimate line item</div></div>
-          <button class="btn btn-p btn-sm" onclick="addServiceType()">+ Add Service</button>
+          <button class="btn btn-p btn-sm" onclick="openAddServiceModal()">+ Add Service</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden" id="services-list"></div>
         <div style="margin-top:14px;font-size:12px;color:var(--t3)">* Built-in services cannot be deleted. Custom services can be renamed or removed. Changes apply to all users immediately.</div>
@@ -4135,6 +4135,7 @@ function loadSettings() {
       if (rows[i].key === "pdf") pdfSettings = Object.assign({}, pdfSettings, rows[i].value);
       if (rows[i].key === "business") bizSettings = Object.assign({}, bizSettings, rows[i].value);
       if (rows[i].key === "custom_services" && Array.isArray(rows[i].value)) _customServices = rows[i].value;
+      if (rows[i].key === "service_templates" && rows[i].value && typeof rows[i].value === 'object') _svcTemplates = rows[i].value;
     }
   });
 }
@@ -5377,46 +5378,109 @@ function addLI(it) {
     return '<option' + (s === curSvc ? ' selected' : '') + '>' + esc(s) + '</option>';
   }).join('');
   opts += '<option value="__add_svc__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
-  // Inventory quick-pick dropdown
-  var invOpts = '<option value="">📦</option>' + invItems.filter(function(inv){return inv.active!==false;}).map(function(inv){ return '<option value="'+inv.id+'">'+esc(inv.name)+(inv.sku?' ['+inv.sku+']':'')+'</option>'; }).join('');
+  // Use saved desc/price if editing existing; otherwise use template defaults
+  var tpl = getSvcTemplate(curSvc);
+  var descVal = it ? (it.desc || '') : tpl.desc;
+  var priceVal = it ? (it.price || 0) : (tpl.price || 0);
   tr.innerHTML =
-    '<td><select onchange="liSvcChange(this)" oninput="recalcInv()">' + opts + '</select></td>' +
-    '<td><div style="display:flex;gap:4px;align-items:center"><input type="text" value="' + esc(it ? it.desc : '') + '" placeholder="Description" oninput="recalcInv()" style="flex:1"/>' +
-    '<select style="font-size:10px;padding:2px;border:1px solid var(--bor);border-radius:4px;background:var(--bg2);color:var(--t3);cursor:pointer" onchange="fillLIFromInv(this)" title="Pick from inventory">' + invOpts + '</select></div></td>' +
+    '<td><select onchange="liSvcChange(this)">' + opts + '</select></td>' +
+    '<td><input type="text" value="' + esc(descVal) + '" placeholder="Describe the work…" oninput="recalcInv()" style="width:100%;box-sizing:border-box"/></td>' +
     '<td><input type="number" value="' + (it ? it.qty : 1) + '" min="1" style="width:52px" oninput="recalcInv()"/></td>' +
-    '<td><input type="number" value="' + (it ? it.price : 0) + '" min="0" step="0.01" style="width:78px" oninput="recalcInv()"/></td>' +
-    '<td style="font-weight:600;color:var(--acc)" class="li-tot">$' + (it ? (it.qty * it.price).toFixed(2) : '0.00') + '</td>' +
-    '<td><button onclick="this.closest(\'tr\').remove();recalcInv()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:18px">×</button></td>';
+    '<td><input type="number" value="' + priceVal + '" min="0" step="0.01" style="width:78px" oninput="recalcInv()"/></td>' +
+    '<td style="font-weight:600;color:var(--acc)" class="li-tot">$' + (it ? (it.qty * it.price).toFixed(2) : (1 * priceVal).toFixed(2)) + '</td>' +
+    '<td style="display:flex;align-items:center;gap:4px">' +
+    '<button onclick="openInvPicker(this)" title="Pick from inventory" style="background:var(--bg2);border:1px solid var(--bor);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:11px;color:var(--t2);white-space:nowrap">📦 Inv</button>' +
+    '<button onclick="this.closest(\'tr\').remove();recalcInv()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:18px;line-height:1">×</button>' +
+    '</td>';
   document.getElementById("li-body").appendChild(tr);
+  recalcInv();
 }
+
 function liSvcChange(sel) {
-  if (sel.value !== '__add_svc__') return;
-  var prev = sel.options[sel.selectedIndex - 1] ? sel.options[sel.selectedIndex - 1].value : getServiceTypes()[0];
-  sel.value = prev;
-  var v = prompt('New service name:');
-  if (!v || !v.trim()) return;
-  v = v.trim();
-  if (getServiceTypes().indexOf(v) === -1) {
-    var custom = _customServices.slice();
-    custom.push(v);
-    saveServiceTypes(custom);
-    toast('Service "' + v + '" added!');
+  if (sel.value === '__add_svc__') {
+    var prevVal = sel.dataset.prev || getServiceTypes()[0];
+    sel.value = prevVal;
+    openAddServiceModal(function(newName) {
+      // refresh all svc selects and pick the new service on this row
+      _refreshAllSvcSelects(sel, newName);
+    });
+    return;
   }
-  // Refresh all service selects in this invoice modal
-  var trs = document.querySelectorAll('#li-body tr');
-  trs.forEach(function(row) {
+  sel.dataset.prev = sel.value;
+  // Auto-fill description and price from template if fields are still at defaults/empty
+  var row = sel.closest('tr');
+  var descInput = row ? row.querySelector('input[type=text]') : null;
+  var priceInput = row ? row.querySelectorAll('input[type=number]')[1] : null;
+  var tpl = getSvcTemplate(sel.value);
+  if (descInput && (!descInput.value || descInput.dataset.autoFilled === '1') && tpl.desc) {
+    descInput.value = tpl.desc;
+    descInput.dataset.autoFilled = '1';
+  }
+  if (priceInput && (!parseFloat(priceInput.value)) && tpl.price) {
+    priceInput.value = tpl.price;
+  }
+  recalcInv();
+}
+
+function _refreshAllSvcSelects(changedSel, selectVal) {
+  var allSvcs = getServiceTypes();
+  var newOpts = allSvcs.map(function(s){ return '<option'+(s===selectVal?' selected':'')+'>'+esc(s)+'</option>'; }).join('') +
+    '<option value="__add_svc__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
+  document.querySelectorAll('#li-body tr').forEach(function(row) {
     var s = row.querySelector('select');
-    if (!s || s === sel) return;
-    var curVal = s.value;
-    var allSvcs = getServiceTypes();
+    if (!s) return;
+    var curVal = s === changedSel ? selectVal : s.value;
     s.innerHTML = allSvcs.map(function(opt){ return '<option'+(opt===curVal?' selected':'')+'>'+esc(opt)+'</option>'; }).join('') +
       '<option value="__add_svc__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
+    s.value = curVal;
+    s.dataset.prev = curVal;
   });
-  // Update the changed select
-  var allSvcs2 = getServiceTypes();
-  sel.innerHTML = allSvcs2.map(function(opt){ return '<option'+(opt===v?' selected':'')+'>'+esc(opt)+'</option>'; }).join('') +
-    '<option value="__add_svc__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
-  sel.value = v;
+}
+
+function openInvPicker(btn) {
+  var existing = document.getElementById('invPickerPop');
+  if (existing) { existing.remove(); return; }
+  var items = invItems.filter(function(i){ return i.active !== false; });
+  if (!items.length) { toast('No inventory items found', true); return; }
+  var pop = document.createElement('div');
+  pop.id = 'invPickerPop';
+  pop.style.cssText = 'position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bor);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);width:320px;max-height:280px;overflow-y:auto;padding:6px 0';
+  var rect = btn.getBoundingClientRect();
+  pop.style.top = (rect.bottom + 6) + 'px';
+  pop.style.left = Math.min(rect.left, window.innerWidth - 330) + 'px';
+  pop.innerHTML = '<div style="padding:8px 12px;font-size:11px;color:var(--t3);font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--bor)">Pick from Inventory</div>' +
+    items.map(function(inv){
+      var stock = inv.track_inventory ? ' <span style="color:'+(parseFloat(inv.qty_on_hand||0)<=0?'var(--err)':'var(--ok)')+'">('+(inv.qty_on_hand||0)+' left)</span>' : '';
+      return '<div style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--bor)" ' +
+        'onmouseenter="this.style.background=\'var(--bg3,rgba(99,102,241,.1))\'" onmouseleave="this.style.background=\'\'" ' +
+        'onclick="pickInvItem('+inv.id+',this)">' +
+        '<div style="font-weight:500">' + esc(inv.name) + (inv.sku ? ' <span style="font-size:10px;color:var(--t3)">['+esc(inv.sku)+']</span>' : '') + stock + '</div>' +
+        '<div style="font-size:11px;color:var(--t3)">' + (inv.sell_price ? '$'+parseFloat(inv.sell_price).toFixed(2) : 'No price set') + '</div>' +
+        '</div>';
+    }).join('');
+  pop._triggerBtn = btn;
+  document.body.appendChild(pop);
+  setTimeout(function(){ document.addEventListener('click', function h(e){ if (!pop.contains(e.target) && e.target !== btn){ pop.remove(); document.removeEventListener('click',h); } }); }, 50);
+}
+
+function pickInvItem(id, el) {
+  var inv = invItems.find(function(i){ return i.id == id; });
+  if (!inv) return;
+  var pop = document.getElementById('invPickerPop');
+  var btn = pop && pop._triggerBtn;
+  var row = btn ? btn.closest('tr') : null;
+  if (row) {
+    var descInput = row.querySelector('input[type=text]');
+    var priceInput = row.querySelectorAll('input[type=number]')[1];
+    if (descInput) { descInput.value = inv.name + (inv.sku ? ' ['+inv.sku+']' : ''); }
+    if (priceInput) priceInput.value = inv.sell_price || 0;
+    if (inv.track_inventory) {
+      var sq = parseFloat(inv.qty_on_hand||0);
+      toast((sq<=0?'⛔ Out of stock: ':'📦 In stock: ')+sq+' '+inv.unit, sq<=0);
+    }
+    recalcInv();
+  }
+  if (pop) pop.remove();
 }
 function fillLIFromInv(sel) {
   var id = sel.value; if (!id) return;
@@ -9067,8 +9131,10 @@ function getExpCats() {
 }
 function saveExpCats(arr) { localStorage.setItem('b2b_exp_cats', JSON.stringify(arr)); }
 
-// ── Service Types (stored in Supabase settings so all users share the list) ──
-var _customServices = []; // extra services beyond SVCS defaults
+// ── Service Types + Templates (stored in Supabase settings, shared across all users) ──
+var _customServices = []; // extra service names beyond SVCS defaults
+var _svcTemplates   = {}; // {serviceName: {desc, price}} — default desc/price per service
+
 function getServiceTypes() {
   var out = SVCS.slice();
   _customServices.forEach(function(s){ if (out.indexOf(s) === -1) out.push(s); });
@@ -9078,32 +9144,94 @@ function saveServiceTypes(customArr) {
   _customServices = customArr;
   saveSetting('custom_services', customArr);
 }
+function saveSvcTemplates() {
+  saveSetting('service_templates', _svcTemplates);
+}
+function getSvcTemplate(name) {
+  return _svcTemplates[name] || {desc: '', price: ''};
+}
+
 function renderServiceSettings() {
   var el = document.getElementById('services-list');
   if (!el) return;
   var allSvcs = getServiceTypes();
-  el.innerHTML = allSvcs.map(function(s, i){
-    var isDefault = SVCS.indexOf(s) >= 0;
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--bor)">' +
-      '<span style="font-size:13px">' + esc(s) + (isDefault ? ' <span style="font-size:10px;color:var(--t3)">(built-in)</span>' : '') + '</span>' +
-      '<div style="display:flex;gap:6px">' +
-        '<button class="btn btn-o btn-sm" onclick="renameServiceType(' + i + ')">Rename</button>' +
-        (!isDefault ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="removeServiceType(' + i + ')">Remove</button>' : '') +
-      '</div>' +
-    '</div>';
-  }).join('');
+  el.innerHTML = '<div style="display:grid;grid-template-columns:1fr;gap:0">' +
+    allSvcs.map(function(s, i){
+      var isDefault = SVCS.indexOf(s) >= 0;
+      var tpl = getSvcTemplate(s);
+      return '<div style="padding:14px 16px;border-bottom:1px solid var(--bor)">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+        '<span style="font-size:13px;font-weight:600">' + esc(s) + (isDefault ? ' <span style="font-size:10px;color:var(--t3);font-weight:400">(built-in)</span>' : '') + '</span>' +
+        '<div style="display:flex;gap:6px">' +
+          (!isDefault ? '<button class="btn btn-o btn-sm" onclick="renameServiceType(' + i + ')">Rename</button>' : '') +
+          (!isDefault ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="removeServiceType(' + i + ')">Remove</button>' : '') +
+        '</div></div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<input class="fc" placeholder="Default description (auto-fills on invoice)" style="flex:2;min-width:180px;font-size:12px;padding:6px 10px" ' +
+            'value="' + esc(tpl.desc) + '" ' +
+            'onblur="saveSvcTpl(\'' + i + '\',this.value,null)" ' +
+            'data-svc-idx="' + i + '" data-svc-field="desc"/>' +
+          '<input class="fc" placeholder="Default price" type="number" min="0" step="0.01" style="width:110px;font-size:12px;padding:6px 10px" ' +
+            'value="' + (tpl.price || '') + '" ' +
+            'onblur="saveSvcTpl(\'' + i + '\',null,this.value)" ' +
+            'data-svc-idx="' + i + '" data-svc-field="price"/>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
 }
-function addServiceType() {
-  var v = prompt('New service name:');
-  if (!v || !v.trim()) return;
-  v = v.trim();
-  if (getServiceTypes().indexOf(v) >= 0) { toast('Service already exists', true); return; }
+
+function saveSvcTpl(idx, descVal, priceVal) {
+  var allSvcs = getServiceTypes();
+  var svcName = allSvcs[parseInt(idx)];
+  if (!svcName) return;
+  var tpl = getSvcTemplate(svcName);
+  if (descVal !== null) tpl.desc = descVal;
+  if (priceVal !== null && priceVal !== '') tpl.price = parseFloat(priceVal) || 0;
+  _svcTemplates[svcName] = tpl;
+  saveSvcTemplates();
+}
+
+var _addSvcCallback = null;
+function openAddServiceModal(cb) {
+  _addSvcCallback = cb || null;
+  var old = document.getElementById('addSvcModal');
+  if (old) old.remove();
+  var div = document.createElement('div');
+  div.className = 'overlay';
+  div.id = 'addSvcModal';
+  div.onclick = function(e){ if (e.target === div) { div.remove(); _addSvcCallback = null; } };
+  div.innerHTML =
+    '<div class="modal" style="max-width:420px">' +
+    '<div class="modal-t"><span>Add New Service</span><button class="xbtn" onclick="document.getElementById(\'addSvcModal\').remove();_addSvcCallback=null">&times;</button></div>' +
+    '<div class="fg"><label class="fl">Service Name *</label><input class="fc" id="new-svc-name" placeholder="e.g. Vehicle Wrap"/></div>' +
+    '<div class="fg"><label class="fl">Default Description <span style="font-size:11px;color:var(--t3)">(auto-fills on invoices)</span></label><input class="fc" id="new-svc-desc" placeholder="e.g. Professional design and print services"/></div>' +
+    '<div class="fg"><label class="fl">Default Price <span style="font-size:11px;color:var(--t3)">(auto-fills on invoices)</span></label><input class="fc" type="number" min="0" step="0.01" id="new-svc-price" placeholder="0.00"/></div>' +
+    '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">' +
+    '<button class="btn btn-o" onclick="document.getElementById(\'addSvcModal\').remove();_addSvcCallback=null">Cancel</button>' +
+    '<button class="btn btn-p" onclick="confirmAddService()">Add Service</button>' +
+    '</div></div>';
+  document.body.appendChild(div);
+  requestAnimationFrame(function(){ div.classList.add('open'); document.getElementById('new-svc-name').focus(); });
+}
+
+function confirmAddService() {
+  var name = (document.getElementById('new-svc-name').value || '').trim();
+  var desc = (document.getElementById('new-svc-desc').value || '').trim();
+  var price = parseFloat(document.getElementById('new-svc-price').value) || 0;
+  if (!name) { toast('Enter a service name', true); return; }
+  if (getServiceTypes().indexOf(name) >= 0) { toast('Service already exists', true); return; }
   var custom = _customServices.slice();
-  custom.push(v);
+  custom.push(name);
   saveServiceTypes(custom);
+  if (desc || price) { _svcTemplates[name] = {desc: desc, price: price}; saveSvcTemplates(); }
+  document.getElementById('addSvcModal').remove();
   renderServiceSettings();
-  toast('Service added!');
+  toast('Service "' + name + '" added!');
+  if (_addSvcCallback) { _addSvcCallback(name); _addSvcCallback = null; }
 }
+
+function addServiceType() { openAddServiceModal(); }
+
 function renameServiceType(idx) {
   var all = getServiceTypes();
   var v = prompt('Rename to:', all[idx]);
@@ -9111,7 +9239,6 @@ function renameServiceType(idx) {
   v = v.trim();
   var isDefault = SVCS.indexOf(all[idx]) >= 0;
   if (isDefault) {
-    // Add renamed version as custom, can't remove default
     var custom = _customServices.slice();
     if (custom.indexOf(v) === -1) custom.push(v);
     saveServiceTypes(custom);
@@ -9129,6 +9256,8 @@ function removeServiceType(idx) {
   if (!confirm('Remove "' + svc + '"?')) return;
   var custom = _customServices.filter(function(s){ return s !== svc; });
   saveServiceTypes(custom);
+  delete _svcTemplates[svc];
+  saveSvcTemplates();
   renderServiceSettings();
   toast('Service removed');
 }
