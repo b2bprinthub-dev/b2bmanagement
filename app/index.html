@@ -5519,14 +5519,23 @@ function liSvcChange(sel) {
 
 function _refreshAllSvcSelects(changedSel, selectVal) {
   var allSvcs = getServiceTypes();
-  var newOpts = allSvcs.map(function(s){ return '<option'+(s===selectVal?' selected':'')+'>'+esc(s)+'</option>'; }).join('') +
-    '<option value="__add_svc__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
+  // Invoice line items
   document.querySelectorAll('#li-body tr').forEach(function(row) {
     var s = row.querySelector('select');
     if (!s) return;
-    var curVal = s === changedSel ? selectVal : s.value;
+    var curVal = s === changedSel ? selectVal : (s.value || allSvcs[0]);
     s.innerHTML = allSvcs.map(function(opt){ return '<option'+(opt===curVal?' selected':'')+'>'+esc(opt)+'</option>'; }).join('') +
       '<option value="__add_svc__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
+    s.value = curVal;
+    s.dataset.prev = curVal;
+  });
+  // Estimate line items
+  document.querySelectorAll('#est-li-body tr').forEach(function(row) {
+    var s = row.querySelector('select');
+    if (!s) return;
+    var curVal = s === changedSel ? selectVal : (s.value || allSvcs[0]);
+    s.innerHTML = allSvcs.map(function(opt){ return '<option'+(opt===curVal?' selected':'')+'>'+esc(opt)+'</option>'; }).join('') +
+      '<option value="__add__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
     s.value = curVal;
     s.dataset.prev = curVal;
   });
@@ -6311,12 +6320,13 @@ function openEstModal(est) {
 // ── Line Item Row ────────────────────────────────────────────────
 function addEstLI(it) {
   var tr = document.createElement('tr');
-  var allSvcs = estGetOptions('custom_services', SVCS);
+  var allSvcs = getServiceTypes();
+  var curSvc = it ? it.svc : allSvcs[0];
   var svcOpts = allSvcs.map(function(s){
-    return '<option'+(it&&it.svc===s?' selected':'')+'>'+s+'</option>';
+    return '<option'+(s===curSvc?' selected':'')+'>'+esc(s)+'</option>';
   }).join('') + '<option value="__add__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
   tr.innerHTML =
-    '<td><select data-cat="custom_services" data-prev="'+(it?it.svc:SVCS[0])+'" onchange="estLiSvcChange(this)" style="font-size:12px">'+svcOpts+'</select></td>' +
+    '<td><select data-prev="'+(curSvc)+'" onchange="estLiSvcChange(this)" style="font-size:12px">'+svcOpts+'</select></td>' +
     '<td><input type="text" value="'+(it?it.desc.replace(/"/g,'&quot;'):'')+'" placeholder="Description" oninput="recalcEst()" style="font-size:12px"/></td>' +
     '<td><input type="number" value="'+(it?it.qty:1)+'" min="0.01" step="0.01" style="width:58px;font-size:12px" oninput="recalcEst()"/></td>' +
     '<td><input type="number" value="'+(it?it.price:0)+'" min="0" step="0.01" style="width:82px;font-size:12px" oninput="recalcEst()"/></td>' +
@@ -6325,19 +6335,32 @@ function addEstLI(it) {
   document.getElementById('est-li-body').appendChild(tr);
 }
 function estLiSvcChange(sel) {
-  if (sel.value !== '__add__') { sel.dataset.prev = sel.value; return; }
-  sel.value = sel.dataset.prev || SVCS[0];
-  estAddCustomOpt('custom_services', SVCS, function(newVal) {
-    SVCS.push(newVal);
-    // Rebuild this select
-    var allSvcs = estGetOptions('custom_services', SVCS);
-    var html = allSvcs.map(function(s){
-      return '<option'+(s===newVal?' selected':'')+'>'+s+'</option>';
-    }).join('') + '<option value="__add__" style="color:var(--acc);font-weight:700">+ Add service…</option>';
-    sel.innerHTML = html;
-    sel.value = newVal;
-    sel.dataset.prev = newVal;
-  });
+  if (sel.value === '__add__') {
+    var prevVal = sel.dataset.prev || getServiceTypes()[0];
+    sel.value = prevVal;
+    openAddServiceModal(function(newName) {
+      _refreshAllSvcSelects(sel, newName);
+      // auto-fill desc/price from template
+      var row = sel.closest('tr');
+      var descInput = row ? row.querySelector('input[type=text]') : null;
+      var priceInput = row ? row.querySelectorAll('input[type=number]')[1] : null;
+      var tpl = getSvcTemplate(newName);
+      if (descInput && !descInput.value && tpl.desc) descInput.value = tpl.desc;
+      if (priceInput && !parseFloat(priceInput.value) && tpl.price) priceInput.value = tpl.price;
+      recalcEst();
+    });
+    return;
+  }
+  sel.dataset.prev = sel.value;
+  var row = sel.closest('tr');
+  var descInput = row ? row.querySelector('input[type=text]') : null;
+  var priceInput = row ? row.querySelectorAll('input[type=number]')[1] : null;
+  var tpl = getSvcTemplate(sel.value);
+  if (descInput && (!descInput.value || descInput.dataset.autoFilled === '1') && tpl.desc) {
+    descInput.value = tpl.desc; descInput.dataset.autoFilled = '1';
+  }
+  if (priceInput && !parseFloat(priceInput.value) && tpl.price) priceInput.value = tpl.price;
+  recalcEst();
 }
 
 // ── Recalc Totals ────────────────────────────────────────────────
@@ -9429,6 +9452,7 @@ function confirmAddService() {
   document.getElementById('addSvcModal').remove();
   renderServiceSettings();
   renderServicesPage();
+  _refreshAllSvcSelects(null, name);
   toast('Service "' + name + '" added!');
   if (_addSvcCallback) { _addSvcCallback(name); _addSvcCallback = null; }
 }
