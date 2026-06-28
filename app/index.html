@@ -1035,13 +1035,14 @@ textarea.fc{resize:vertical;min-height:72px}
     </div>
 
     <div class="page" id="page-crm">
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
         <button class="chip active" onclick="filterCli('active',this)" data-i18n="crm.active">Active</button>
         <button class="chip" onclick="filterCli('archived',this)" data-i18n="crm.archived">Archived</button>
         <button class="chip" onclick="filterCli('all',this)" data-i18n="status.all">All</button>
+        <input id="crm-search" class="fc" placeholder="🔍 Search by name, company, email, phone…" oninput="renderCRM()" style="flex:1;min-width:200px;max-width:340px;padding:7px 12px;font-size:13px"/>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
-        <table><thead><tr><th data-i18n="inv.col.client">Client</th><th data-i18n="field.email">Email</th><th data-i18n="field.phone">Phone</th><th data-i18n="crm.col.jobs">Jobs</th><th data-i18n="crm.col.spent">Total Spent</th><th data-i18n="inv.col.status">Status</th><th data-i18n="inv.col.actions">Actions</th></tr></thead>
+        <table><thead><tr><th data-i18n="inv.col.client">Client</th><th data-i18n="field.email">Email</th><th data-i18n="field.phone">Phone</th><th data-i18n="crm.col.jobs">Jobs</th><th data-i18n="crm.col.spent">Total Spent</th><th>Last Invoice</th><th data-i18n="inv.col.status">Status</th><th data-i18n="inv.col.actions">Actions</th></tr></thead>
         <tbody id="crm-tbody"></tbody></table>
       </div>
     </div>
@@ -2170,11 +2171,12 @@ textarea.fc{resize:vertical;min-height:72px}
 <div class="overlay" id="cliModal">
 <div class="modal" style="max-width:460px">
   <div class="modal-t"><span id="cliModalT">New Client</span><button class="xbtn" onclick="closeM('cliModal')">&times;</button></div>
-  <div class="fg"><label class="fl">Full Name / Company</label><input class="fc" id="cli-name"/></div>
+  <div class="fg"><label class="fl">Full Name *</label><input class="fc" id="cli-name" placeholder="Contact person's name"/></div>
+  <div class="fg"><label class="fl">Company / Business</label><input class="fc" id="cli-company" placeholder="Business or organization name (optional)"/></div>
   <div class="fg"><label class="fl">Email</label><input type="email" class="fc" id="cli-email"/></div>
   <div class="fg"><label class="fl">Phone</label><input class="fc" id="cli-phone"/></div>
   <div class="fg"><label class="fl">Address</label><textarea class="fc" id="cli-addr"></textarea></div>
-  <div class="fg"><label class="fl">Notes</label><textarea class="fc" id="cli-notes"></textarea></div>
+  <div class="fg"><label class="fl">Notes</label><textarea class="fc" id="cli-notes" placeholder="Internal notes about this client…"></textarea></div>
   <div style="display:flex;gap:10px;justify-content:flex-end">
     <button class="btn btn-o" onclick="closeM('cliModal')">Cancel</button>
     <button class="btn btn-p" onclick="saveCli()">Save</button>
@@ -2906,6 +2908,9 @@ var CC = null;
 function fmt(n) {
   var v = parseFloat(n || 0).toFixed(2);
   return "$" + v.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+function esc(s) {
+  return (s || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function today() {
   return new Date().toISOString().split("T")[0];
@@ -7852,11 +7857,12 @@ function estCustAddNew() {
   // Open the new client modal, pre-fill name if typed
   _editCli = null;
   document.getElementById('cliModalT').textContent = t('crm.newTitle');
-  document.getElementById('cli-name').value  = typed;
-  document.getElementById('cli-email').value = '';
-  document.getElementById('cli-phone').value = '';
-  document.getElementById('cli-addr').value  = '';
-  document.getElementById('cli-notes').value = '';
+  document.getElementById('cli-name').value    = typed;
+  document.getElementById('cli-company').value = '';
+  document.getElementById('cli-email').value   = '';
+  document.getElementById('cli-phone').value   = '';
+  document.getElementById('cli-addr').value    = '';
+  document.getElementById('cli-notes').value   = '';
 
   // After saving, auto-select the new client in the estimate lookup
   _estCliCallback = true;
@@ -15012,14 +15018,19 @@ function filterCli(f, el) {
 
 function renderCRM() {
   var tb = document.getElementById("crm-tbody");
+  var q = ((document.getElementById('crm-search') || {}).value || '').toLowerCase().trim();
   var list = clients.filter(function (c) {
-    if (cliFilter === "active") return !c.archived;
-    if (cliFilter === "archived") return !!c.archived;
+    if (cliFilter === "active" && c.archived) return false;
+    if (cliFilter === "archived" && !c.archived) return false;
+    if (q) {
+      var hay = ((c.name||'') + ' ' + (c.company||'') + ' ' + (c.email||'') + ' ' + (c.phone||'')).toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
     return true;
   });
   if (!list.length) {
-    var msg = cliFilter === "archived" ? t('crm.noArchived') : cliFilter === "active" ? t('crm.noActive') : t('crm.noClients');
-    tb.innerHTML = '<tr><td colspan="7"><div class="empty">' + msg + "</div></td></tr>";
+    var msg = q ? 'No clients match "' + q + '"' : (cliFilter === "archived" ? t('crm.noArchived') : cliFilter === "active" ? t('crm.noActive') : t('crm.noClients'));
+    tb.innerHTML = '<tr><td colspan="8"><div class="empty">' + msg + "</div></td></tr>";
     return;
   }
   var html = "";
@@ -15028,24 +15039,35 @@ function renderCRM() {
     var cJobs = 0;
     for (var j = 0; j < jobs.length; j++) { if (jobs[j].cid === c.id) cJobs++; }
     var spent = 0;
+    var lastInvDate = null;
     for (var k = 0; k < invoices.length; k++) {
-      if (invoices[k].cid === c.id && invoices[k].status === "paid") spent += parseFloat(invoices[k].grand || 0);
+      var inv = invoices[k];
+      if (inv.cid === c.id) {
+        if (inv.status === "paid") spent += parseFloat(inv.grand || 0);
+        if (inv.date && (!lastInvDate || inv.date > lastInvDate)) lastInvDate = inv.date;
+      }
     }
     var rowOpacity = c.archived ? "opacity:0.55" : "";
-    html += '<tr style="' + rowOpacity + '"><td><div style="display:flex;align-items:center;gap:10px"><div class="avatar">' + inits(c.name) + '</div><div><div style="font-weight:500">' + c.name + '</div><div style="font-size:11px;color:var(--t3)">' + (c.address || "") + "</div></div></div></td>" +
-      '<td><a href="mailto:' + c.email + '" style="color:var(--inf);text-decoration:none">' + (c.email || "-") + "</a></td>" +
-      '<td style="color:var(--t2)">' + (c.phone || "-") + "</td>" +
-      "<td>" + cJobs + "</td>" +
-      '<td style="font-weight:600;color:var(--ok)">' + fmt(spent) + "</td>" +
-      "<td>" + (c.archived ? '<span class="badge b-gray">'+t('crm.archived')+'</span>' : '<span class="badge b-ok">'+t('crm.active')+'</span>') + "</td>" +
+    var lastInvLabel = lastInvDate ? lastInvDate : '<span style="color:var(--t3)">—</span>';
+    html += '<tr style="' + rowOpacity + '">' +
+      '<td><div style="display:flex;align-items:center;gap:10px"><div class="avatar">' + inits(c.name) + '</div><div><div style="font-weight:500">' + esc(c.name) + '</div>' +
+      (c.company ? '<div style="font-size:11px;color:var(--t3)">🏢 ' + esc(c.company) + '</div>' : '<div style="font-size:11px;color:var(--t3)">' + esc(c.address || '') + '</div>') +
+      '</div></div></td>' +
+      '<td><a href="mailto:' + esc(c.email) + '" style="color:var(--inf);text-decoration:none">' + esc(c.email || '-') + '</a></td>' +
+      '<td style="color:var(--t2)">' + esc(c.phone || '-') + '</td>' +
+      '<td>' + cJobs + '</td>' +
+      '<td style="font-weight:600;color:var(--ok)">' + fmt(spent) + '</td>' +
+      '<td style="font-size:12px;color:var(--t2)">' + lastInvLabel + '</td>' +
+      '<td>' + (c.archived ? '<span class="badge b-gray">'+t('crm.archived')+'</span>' : '<span class="badge b-ok">'+t('crm.active')+'</span>') + '</td>' +
       '<td><div style="display:flex;gap:5px;flex-wrap:wrap">' +
       '<button class="btn btn-o btn-sm" onclick="openClientHistory(' + c.id + ')">📋 History</button>' +
+      '<button class="btn btn-sm btn-p" style="font-size:11px" onclick="newInvoiceForClient(' + c.id + ')">+ Invoice</button>' +
       '<button class="btn btn-o btn-sm" onclick="editCliById(' + c.id + ')">' + t('btn.edit') + '</button>' +
       (c.archived
         ? '<button class="btn btn-o btn-sm" style="color:var(--ok)" onclick="unarchiveClient(' + c.id + ')">' + t('crm.restore') + '</button>'
         : '<button class="btn btn-o btn-sm" style="color:var(--warn)" onclick="archiveClient(' + c.id + ')">' + t('crm.archive') + '</button>') +
       '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="deleteClient(' + c.id + ',' + cJobs + ',' + (spent > 0 ? "1" : "0") + ')">' + t('btn.delete') + '</button>' +
-      "</div></td></tr>";
+      '</div></td></tr>';
   }
   tb.innerHTML = html;
 }
@@ -15055,13 +15077,14 @@ function openClientHistory(cid) {
   if (!c) return;
   var cInvs = invoices.filter(function(inv){ return inv.cid === cid; }).sort(function(a,b){ return b.id - a.id; });
   var cTxns = transactions.filter(function(tx){ return tx.client_id === cid; }).sort(function(a,b){ return (b.id||0) - (a.id||0); }).slice(0, 30);
-  var statusBadge = {paid:'b-ok', partial:'b-warn', pending:'b-info', 'in-progress':'b-warn', voided:'b-gray', draft:'b-gray'};
+  var cJobs = jobs.filter(function(j){ return j.cid === cid; }).sort(function(a,b){ return (b.id||0) - (a.id||0); });
+  var statusBadge = {paid:'b-ok', partial:'b-warn', pending:'b-info', 'in-progress':'b-warn', voided:'b-gray', draft:'b-gray', completed:'b-ok', cancelled:'b-gray'};
   var typeColor = {sale:'var(--ok)', invoice_payment:'var(--acc)', deposit:'var(--inf)', expense:'var(--warn)'};
 
   var invHtml = cInvs.length ? cInvs.map(function(inv){
     return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bor)">' +
       '<div style="flex:1"><div style="font-size:13px;font-weight:600">#INV-' + String(inv.id).padStart(4,'0') + ' · ' + (inv.date||'') + '</div>' +
-      '<div style="font-size:11px;color:var(--t3)">' + ((inv.notes||'').split('|')[0].trim()) + '</div></div>' +
+      '<div style="font-size:11px;color:var(--t3)">' + esc((inv.notes||'').split('|')[0].trim()) + '</div></div>' +
       '<span class="badge ' + (statusBadge[inv.status]||'b-gray') + '" style="margin-right:8px">' + (inv.status||'') + '</span>' +
       '<span style="font-weight:700;color:var(--ok)">' + fmt(inv.grand) + '</span></div>';
   }).join('') : '<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No invoices found</div>';
@@ -15070,9 +15093,16 @@ function openClientHistory(cid) {
     var dt = tx.created_at ? new Date(tx.created_at).toLocaleDateString() : '—';
     return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--bor)">' +
       '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:' + (typeColor[tx.type]||'var(--t2)') + '">' + (tx.type||'').replace(/_/g,' ') + '</div>' +
-      '<div style="font-size:11px;color:var(--t3)">' + dt + (tx.method ? ' · ' + tx.method : '') + (tx.notes ? ' · ' + tx.notes : '') + '</div></div>' +
+      '<div style="font-size:11px;color:var(--t3)">' + dt + (tx.method ? ' · ' + tx.method : '') + (tx.notes ? ' · ' + esc(tx.notes) : '') + '</div></div>' +
       '<span style="font-weight:700;color:var(--ok)">' + fmt(tx.amount) + '</span></div>';
   }).join('') : '<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No transactions found</div>';
+
+  var jobsHtml = cJobs.length ? cJobs.map(function(j){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--bor)">' +
+      '<div style="flex:1"><div style="font-size:13px;font-weight:600">' + esc(j.title||'Untitled Job') + '</div>' +
+      '<div style="font-size:11px;color:var(--t3)">' + (j.due ? '📅 Due ' + j.due : '') + (j.assignee ? ' · ' + esc(j.assignee) : '') + '</div></div>' +
+      '<span class="badge ' + (statusBadge[j.status]||'b-gray') + '">' + (j.status||'') + '</span></div>';
+  }).join('') : '<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No jobs found</div>';
 
   var totalSpent = cInvs.filter(function(i){ return i.status === 'paid'; }).reduce(function(s,i){ return s + parseFloat(i.grand||0); }, 0);
 
@@ -15083,19 +15113,25 @@ function openClientHistory(cid) {
   div.id = 'clientHistModal';
   div.onclick = function(e){ if (e.target === div) div.classList.remove('open'); };
   div.innerHTML =
-    '<div class="modal" style="max-width:620px;width:95%;max-height:85vh;overflow-y:auto">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-    '<div><div style="font-size:17px;font-weight:700">' + c.name + '</div>' +
-    (c.company ? '<div style="font-size:12px;color:var(--t3)">' + c.company + '</div>' : '') + '</div>' +
+    '<div class="modal" style="max-width:640px;width:95%;max-height:88vh;overflow-y:auto">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">' +
+    '<div><div style="font-size:17px;font-weight:700">' + esc(c.name) + '</div>' +
+    (c.company ? '<div style="font-size:12px;color:var(--t3)">🏢 ' + esc(c.company) + '</div>' : '') +
+    (c.email ? '<div style="font-size:12px;color:var(--t3)">✉️ ' + esc(c.email) + '</div>' : '') +
+    (c.phone ? '<div style="font-size:12px;color:var(--t3)">📞 ' + esc(c.phone) + '</div>' : '') + '</div>' +
     '<button class="xbtn" onclick="document.getElementById(\'clientHistModal\').classList.remove(\'open\')">&times;</button></div>' +
-    '<div style="display:flex;gap:12px;margin-bottom:16px">' +
+    (c.notes ? '<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--t2);margin-bottom:14px">📝 ' + esc(c.notes) + '</div>' : '') +
+    '<div style="display:flex;gap:10px;margin-bottom:16px">' +
     '<div class="card" style="flex:1;padding:10px 14px;text-align:center"><div style="font-size:10px;color:var(--t3);text-transform:uppercase">Invoices</div><div style="font-size:20px;font-weight:700;color:var(--acc)">' + cInvs.length + '</div></div>' +
     '<div class="card" style="flex:1;padding:10px 14px;text-align:center"><div style="font-size:10px;color:var(--t3);text-transform:uppercase">Total Spent</div><div style="font-size:20px;font-weight:700;color:var(--ok)">' + fmt(totalSpent) + '</div></div>' +
+    '<div class="card" style="flex:1;padding:10px 14px;text-align:center"><div style="font-size:10px;color:var(--t3);text-transform:uppercase">Jobs</div><div style="font-size:20px;font-weight:700;color:var(--inf)">' + cJobs.length + '</div></div>' +
     '</div>' +
     '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:6px">Invoices</div>' +
-    '<div style="border:1px solid var(--bor);border-radius:10px;overflow:hidden;margin-bottom:14px;max-height:240px;overflow-y:auto">' + invHtml + '</div>' +
+    '<div style="border:1px solid var(--bor);border-radius:10px;overflow:hidden;margin-bottom:14px;max-height:200px;overflow-y:auto">' + invHtml + '</div>' +
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:6px">Jobs</div>' +
+    '<div style="border:1px solid var(--bor);border-radius:10px;overflow:hidden;margin-bottom:14px;max-height:180px;overflow-y:auto">' + jobsHtml + '</div>' +
     '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--t3);margin-bottom:6px">Recent Transactions</div>' +
-    '<div style="border:1px solid var(--bor);border-radius:10px;overflow:hidden;max-height:200px;overflow-y:auto">' + txnHtml + '</div>' +
+    '<div style="border:1px solid var(--bor);border-radius:10px;overflow:hidden;max-height:180px;overflow-y:auto">' + txnHtml + '</div>' +
     '</div>';
   document.body.appendChild(div);
   requestAnimationFrame(function(){ div.classList.add('open'); });
@@ -15152,16 +15188,27 @@ function openCliModal(cli) {
   _editCli = cli || null;
   document.getElementById("cliModalT").textContent = cli ? t('crm.editTitle') : t('crm.newTitle');
   document.getElementById("cli-name").value = cli ? cli.name : "";
+  document.getElementById("cli-company").value = cli ? (cli.company || "") : "";
   document.getElementById("cli-email").value = cli ? cli.email : "";
   document.getElementById("cli-phone").value = cli ? cli.phone : "";
   document.getElementById("cli-addr").value = cli ? cli.address : "";
   document.getElementById("cli-notes").value = cli ? cli.notes : "";
   document.getElementById("cliModal").classList.add("open");
 }
+function newInvoiceForClient(cid) {
+  gotoPage('invoices');
+  setTimeout(function() {
+    openInvModal(null);
+    setTimeout(function() {
+      var sel = document.getElementById('inv-cli');
+      if (sel) { sel.value = cid; recalcInv && recalcInv(); }
+    }, 100);
+  }, 150);
+}
 function saveCli() {
   var name = document.getElementById("cli-name").value.trim();
   if (!name) { toast("Enter a name", true); return; }
-  var row = {name: name, email: document.getElementById("cli-email").value, phone: document.getElementById("cli-phone").value, address: document.getElementById("cli-addr").value, notes: document.getElementById("cli-notes").value};
+  var row = {name: name, company: document.getElementById("cli-company").value.trim(), email: document.getElementById("cli-email").value, phone: document.getElementById("cli-phone").value, address: document.getElementById("cli-addr").value, notes: document.getElementById("cli-notes").value};
   if (_editCli) {
     dbUpdate("clients", _editCli.id, row).then(function (updated) {
       if (updated) {
