@@ -5208,29 +5208,59 @@ function openInvModal(inv) {
   var addItemBtn = document.querySelector('#invModal .btn-o[onclick="addLI(null)"]');
   var discInput = document.getElementById('inv-disc');
   var invCli = document.getElementById('inv-cli');
-  var invDate = document.getElementById('inv-date');
-  var invNotes = document.getElementById('inv-notes');
 
-  // Disable/enable line item editing
-  document.querySelectorAll('#li-body select, #li-body input').forEach(function(el) { el.disabled = hasPayments; });
-  document.querySelectorAll('#li-body button').forEach(function(el) { el.disabled = hasPayments; el.style.opacity = hasPayments ? '.3' : ''; });
-  if (addItemBtn) { addItemBtn.disabled = hasPayments; addItemBtn.style.display = hasPayments ? 'none' : ''; }
   if (discInput) discInput.disabled = hasPayments;
   if (invCli) invCli.disabled = hasPayments;
 
   // Show or remove lock notice
   var existingNotice = document.getElementById('inv-lock-notice');
   if (hasPayments) {
+    // Replace editable table with clean read-only view
+    if (liTable) liTable.style.display = 'none';
+    if (addItemBtn) addItemBtn.style.display = 'none';
+    var existingRO = document.getElementById('inv-li-readonly');
+    if (existingRO) existingRO.remove();
+    var roDiv = document.createElement('div');
+    roDiv.id = 'inv-li-readonly';
+    roDiv.style.cssText = 'border:1px solid var(--bor);border-radius:10px;overflow:hidden;margin-bottom:12px';
+    var roHtml = '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--bg2)">' +
+      '<th style="padding:8px 12px;font-size:11px;color:var(--t3);text-align:left;font-weight:600;text-transform:uppercase">Service</th>' +
+      '<th style="padding:8px 12px;font-size:11px;color:var(--t3);text-align:left;font-weight:600;text-transform:uppercase">Description</th>' +
+      '<th style="padding:8px 12px;font-size:11px;color:var(--t3);text-align:center;font-weight:600;text-transform:uppercase">Qty</th>' +
+      '<th style="padding:8px 12px;font-size:11px;color:var(--t3);text-align:right;font-weight:600;text-transform:uppercase">Unit Price</th>' +
+      '<th style="padding:8px 12px;font-size:11px;color:var(--t3);text-align:right;font-weight:600;text-transform:uppercase">Total</th>' +
+      '</tr></thead><tbody>';
+    if (inv && inv.items) {
+      for (var ri = 0; ri < inv.items.length; ri++) {
+        var it = inv.items[ri];
+        var rowBg = ri % 2 === 1 ? 'background:var(--bg2)' : '';
+        roHtml += '<tr style="border-top:1px solid var(--bor);' + rowBg + '">' +
+          '<td style="padding:10px 12px;font-size:13px;color:var(--t3);white-space:nowrap">' + esc(it.svc||'') + '</td>' +
+          '<td style="padding:10px 12px;font-size:13px;font-weight:500">' + esc(it.desc||'') + '</td>' +
+          '<td style="padding:10px 12px;font-size:13px;text-align:center">' + (it.qty||1) + '</td>' +
+          '<td style="padding:10px 12px;font-size:13px;text-align:right">' + fmt(it.price||0) + '</td>' +
+          '<td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;color:var(--acc)">' + fmt((it.qty||1)*(it.price||0)) + '</td>' +
+          '</tr>';
+      }
+    }
+    roHtml += '</tbody></table>';
+    roDiv.innerHTML = roHtml;
+    if (liTable) liTable.parentNode.insertBefore(roDiv, liTable);
     if (!existingNotice) {
       var notice = document.createElement('div');
       notice.id = 'inv-lock-notice';
       notice.style.cssText = 'background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--warn);margin-bottom:8px;display:flex;align-items:center;gap:6px';
       notice.innerHTML = '🔒 Line items are locked — this invoice has recorded payments. Void and reissue to make changes.';
-      var liLabel = document.querySelector('#invModal .fl[style*="margin-bottom:8px"]');
-      if (liLabel && liLabel.textContent.trim() === 'Line Items') liLabel.parentNode.insertBefore(notice, liLabel);
+      if (roDiv.parentNode) roDiv.parentNode.insertBefore(notice, roDiv);
     }
   } else {
+    if (liTable) liTable.style.display = '';
+    if (addItemBtn) addItemBtn.style.display = '';
+    var roClean = document.getElementById('inv-li-readonly');
+    if (roClean) roClean.remove();
     if (existingNotice) existingNotice.remove();
+    document.querySelectorAll('#li-body select, #li-body input').forEach(function(el) { el.disabled = false; });
+    document.querySelectorAll('#li-body button').forEach(function(el) { el.disabled = false; el.style.opacity = ''; });
   }
 
   // Payment history panel — only for existing invoices
