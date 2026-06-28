@@ -15081,27 +15081,41 @@ function openClientHistory(cid) {
   var statusBadge = {paid:'b-ok', partial:'b-warn', pending:'b-info', 'in-progress':'b-warn', voided:'b-gray', draft:'b-gray', completed:'b-ok', cancelled:'b-gray'};
   var typeColor = {sale:'var(--ok)', invoice_payment:'var(--acc)', deposit:'var(--inf)', expense:'var(--warn)'};
 
+  var rowHover = 'cursor:pointer;transition:background .15s' ;
   var invHtml = cInvs.length ? cInvs.map(function(inv){
-    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bor)">' +
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bor);' + rowHover + '" ' +
+      'onclick="document.getElementById(\'clientHistModal\').classList.remove(\'open\');openInvModal(findInv(' + inv.id + '))" ' +
+      'onmouseenter="this.style.background=\'rgba(99,102,241,.07)\'" onmouseleave="this.style.background=\'\'">' +
       '<div style="flex:1"><div style="font-size:13px;font-weight:600">#INV-' + String(inv.id).padStart(4,'0') + ' · ' + (inv.date||'') + '</div>' +
       '<div style="font-size:11px;color:var(--t3)">' + esc((inv.notes||'').split('|')[0].trim()) + '</div></div>' +
       '<span class="badge ' + (statusBadge[inv.status]||'b-gray') + '" style="margin-right:8px">' + (inv.status||'') + '</span>' +
-      '<span style="font-weight:700;color:var(--ok)">' + fmt(inv.grand) + '</span></div>';
+      '<span style="font-weight:700;color:var(--ok)">' + fmt(inv.grand) + '</span>' +
+      '<span style="font-size:11px;color:var(--t3);margin-left:6px">›</span></div>';
   }).join('') : '<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No invoices found</div>';
 
   var txnHtml = cTxns.length ? cTxns.map(function(tx){
     var dt = tx.created_at ? new Date(tx.created_at).toLocaleDateString() : '—';
-    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--bor)">' +
-      '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:' + (typeColor[tx.type]||'var(--t2)') + '">' + (tx.type||'').replace(/_/g,' ') + '</div>' +
+    var hasInv = tx.invoice_id && invoices.find(function(i){ return i.id === tx.invoice_id; });
+    var clickAttr = hasInv
+      ? 'onclick="document.getElementById(\'clientHistModal\').classList.remove(\'open\');openInvModal(findInv(' + tx.invoice_id + '))" onmouseenter="this.style.background=\'rgba(99,102,241,.07)\'" onmouseleave="this.style.background=\'\'" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--bor);cursor:pointer;transition:background .15s"'
+      : 'style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--bor)"';
+    var invTag = hasInv ? '<span style="font-size:10px;color:var(--inf);font-weight:600;margin-left:4px">#INV-' + String(tx.invoice_id).padStart(4,'0') + '</span>' : '';
+    return '<div ' + clickAttr + '>' +
+      '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:' + (typeColor[tx.type]||'var(--t2)') + '">' + (tx.type||'').replace(/_/g,' ') + invTag + '</div>' +
       '<div style="font-size:11px;color:var(--t3)">' + dt + (tx.method ? ' · ' + tx.method : '') + (tx.notes ? ' · ' + esc(tx.notes) : '') + '</div></div>' +
-      '<span style="font-weight:700;color:var(--ok)">' + fmt(tx.amount) + '</span></div>';
+      '<span style="font-weight:700;color:var(--ok)">' + fmt(tx.amount) + '</span>' +
+      (hasInv ? '<span style="font-size:11px;color:var(--t3);margin-left:6px">›</span>' : '') +
+      '</div>';
   }).join('') : '<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No transactions found</div>';
 
   var jobsHtml = cJobs.length ? cJobs.map(function(j){
-    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--bor)">' +
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--bor);' + rowHover + '" ' +
+      'onclick="document.getElementById(\'clientHistModal\').classList.remove(\'open\');openJobDetail(' + j.id + ')" ' +
+      'onmouseenter="this.style.background=\'rgba(99,102,241,.07)\'" onmouseleave="this.style.background=\'\'">' +
       '<div style="flex:1"><div style="font-size:13px;font-weight:600">' + esc(j.title||'Untitled Job') + '</div>' +
       '<div style="font-size:11px;color:var(--t3)">' + (j.due ? '📅 Due ' + j.due : '') + (j.assignee ? ' · ' + esc(j.assignee) : '') + '</div></div>' +
-      '<span class="badge ' + (statusBadge[j.status]||'b-gray') + '">' + (j.status||'') + '</span></div>';
+      '<span class="badge ' + (statusBadge[j.status]||'b-gray') + '" style="margin-right:6px">' + (j.status||'') + '</span>' +
+      '<span style="font-size:11px;color:var(--t3)">›</span></div>';
   }).join('') : '<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No jobs found</div>';
 
   var totalSpent = cInvs.filter(function(i){ return i.status === 'paid'; }).reduce(function(s,i){ return s + parseFloat(i.grand||0); }, 0);
