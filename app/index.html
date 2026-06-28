@@ -54,16 +54,29 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 
 /* ── Layout ── */
 .app-layout{display:flex;min-height:100vh}
-.sb{width:224px;min-height:100vh;background:var(--bg2);border-right:1px solid var(--bor);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100}
-.sb-logo{padding:20px 18px 16px;border-bottom:1px solid var(--bor)}
-.sb-logo-t{font-size:15px;font-weight:700;color:var(--t1);letter-spacing:-.3px}
-.sb-logo-s{font-size:11px;color:var(--t3);margin-top:2px;font-weight:400}
-.sb-nav{flex:1;padding:14px 10px;overflow-y:auto}
-.nav-grp{margin-bottom:20px}
-.nav-lbl{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:1px;padding:0 10px;margin-bottom:4px}
 
-/* Nav items — Studio: icon + label, Clarity: text only with left indicator */
-.nav-i{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--t2);font-size:13px;border:none;background:none;width:100%;text-align:left;font-weight:500;transition:all .15s;margin-bottom:1px;position:relative;letter-spacing:-.1px}
+/* Sidebar — expanded (224px) and collapsed (56px) */
+.sb{width:224px;min-height:100vh;background:var(--bg2);border-right:1px solid var(--bor);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100;transition:width .22s cubic-bezier(.4,0,.2,1)}
+.sb.collapsed{width:56px}
+
+.sb-logo{padding:18px 14px 14px;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:10px;overflow:hidden;white-space:nowrap}
+.sb-logo-icon{font-size:20px;flex-shrink:0}
+.sb-logo-text{transition:opacity .18s, width .18s;overflow:hidden}
+.sb.collapsed .sb-logo-text{opacity:0;width:0;pointer-events:none}
+.sb-logo-t{font-size:15px;font-weight:700;color:var(--t1);letter-spacing:-.3px}
+.sb-logo-s{font-size:11px;color:var(--t3);margin-top:1px;font-weight:400}
+
+.sb-nav{flex:1;padding:10px 6px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--bor) transparent}
+.sb-nav::-webkit-scrollbar{width:4px}
+.sb-nav::-webkit-scrollbar-track{background:transparent}
+.sb-nav::-webkit-scrollbar-thumb{background:var(--bor);border-radius:4px}
+
+.nav-grp{margin-bottom:16px}
+.nav-lbl{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:1px;padding:0 10px;margin-bottom:4px;white-space:nowrap;overflow:hidden;transition:opacity .18s}
+.sb.collapsed .nav-lbl{opacity:0;height:0;margin:0;padding:0}
+
+/* Nav items */
+.nav-i{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--t2);font-size:13px;border:none;background:none;width:100%;text-align:left;font-weight:500;transition:all .15s;margin-bottom:1px;position:relative;letter-spacing:-.1px;white-space:nowrap;overflow:hidden}
 .nav-i:hover{background:var(--bg3);color:var(--t1)}
 .nav-i.active{background:rgba(99,91,255,.15);color:var(--acc);font-weight:600}
 .nav-i.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:var(--acc)}
@@ -71,13 +84,38 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 :root.light .nav-i.active{background:rgba(79,70,229,.08);color:#4f46e5}
 :root.light .nav-i.active::before{background:#4f46e5}
 
+/* Nav item icon — always visible */
+.nav-i > .ni-icon{flex-shrink:0;width:20px;text-align:center;font-size:16px}
+/* Nav item label — hides when collapsed */
+.nav-i > .ni-label{transition:opacity .15s, width .15s;overflow:hidden;flex:1}
+.sb.collapsed .nav-i > .ni-label{opacity:0;width:0;pointer-events:none}
+/* Badge stays visible */
+.nav-i > .ni-badge{flex-shrink:0;transition:opacity .15s}
+.sb.collapsed .nav-i > .ni-badge{opacity:0;width:0;overflow:hidden}
+
+/* Tooltip on hover when collapsed */
+.sb.collapsed .nav-i{position:relative}
+.sb.collapsed .nav-i::after{content:attr(data-tooltip);position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);background:var(--bg3,#2a2f4e);color:var(--t1);font-size:12px;font-weight:500;padding:5px 10px;border-radius:7px;border:1px solid var(--bor);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:200}
+.sb.collapsed .nav-i:hover::after{opacity:1}
+
 /* Hide emoji icons in Clarity mode */
-:root.light .nav-i > span:first-child:not([style]){display:none}
+:root.light .nav-i > .ni-icon{display:none}
 
-.sb-user{padding:12px 14px;border-top:1px solid var(--bor);display:flex;align-items:center;gap:10px}
+/* Sidebar user footer */
+.sb-user{padding:10px 10px;border-top:1px solid var(--bor);display:flex;align-items:center;gap:10px;overflow:hidden}
 .sb-user-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.sb-user-info{flex:1;min-width:0;transition:opacity .18s, width .18s;overflow:hidden}
+.sb.collapsed .sb-user-info{opacity:0;width:0;pointer-events:none}
+.sb-user-logout{flex-shrink:0;transition:opacity .15s}
 
-.main{margin-left:224px;flex:1;display:flex;flex-direction:column;min-height:100vh;overflow:hidden}
+/* Sidebar collapse toggle button */
+.sb-toggle{display:flex;align-items:center;justify-content:center;padding:8px;border-top:1px solid var(--bor);cursor:pointer;background:none;border-left:none;border-right:none;border-bottom:none;width:100%;color:var(--t3);font-size:13px;transition:color .15s, background .15s}
+.sb-toggle:hover{background:var(--bg3);color:var(--t1)}
+.sb-toggle-icon{transition:transform .22s cubic-bezier(.4,0,.2,1);display:inline-block;font-style:normal}
+.sb.collapsed .sb-toggle-icon{transform:rotate(180deg)}
+
+.main{margin-left:224px;flex:1;display:flex;flex-direction:column;min-height:100vh;overflow:hidden;transition:margin-left .22s cubic-bezier(.4,0,.2,1)}
+.main.sb-collapsed{margin-left:56px}
 .topbar{background:var(--bg2);border-bottom:1px solid var(--bor);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 :root.light .topbar{box-shadow:0 1px 0 var(--bor)}
 .page-ttl{font-size:17px;font-weight:600;letter-spacing:-.3px}
@@ -376,56 +414,63 @@ textarea.fc{resize:vertical;min-height:72px}
 
 <div id="appRoot" style="display:none">
 <div class="app-layout">
-<div class="sb">
+<div class="sb" id="appSidebar">
   <div class="sb-logo">
-    <div class="sb-logo-t">🖨 B2B Print Hub</div>
-    <div class="sb-logo-s">Business Management Suite</div>
+    <span class="sb-logo-icon">🖨</span>
+    <div class="sb-logo-text">
+      <div class="sb-logo-t">B2B Print Hub</div>
+      <div class="sb-logo-s">Business Suite</div>
+    </div>
   </div>
   <nav class="sb-nav">
     <div class="nav-grp">
       <div class="nav-lbl" data-i18n="nav.grp.overview">Overview</div>
-      <button class="nav-i active" onclick="gotoPage('dashboard',this)" data-perm="dashboard"><span>🏠</span><span data-i18n="nav.dashboard">Dashboard</span></button>
+      <button class="nav-i active" onclick="gotoPage('dashboard',this)" data-perm="dashboard" data-tooltip="Dashboard"><span class="ni-icon">🏠</span><span class="ni-label" data-i18n="nav.dashboard">Dashboard</span></button>
     </div>
     <div class="nav-grp" id="nav-grp-sales">
       <div class="nav-lbl" data-i18n="nav.grp.sales">Sales</div>
-      <button class="nav-i" onclick="gotoPage('invoices',this)" data-perm="invoices"><span>🧾</span><span data-i18n="nav.invoices">Invoices</span></button>
-      <button class="nav-i" onclick="gotoPage('estimates',this)" data-perm="estimates"><span>📋</span><span data-i18n="nav.estimates">Estimates</span></button>
-      <button class="nav-i" onclick="gotoPage('pos',this)" data-perm="pos"><span>🛒</span><span data-i18n="nav.pos">Point of Sale</span></button>
+      <button class="nav-i" onclick="gotoPage('invoices',this)" data-perm="invoices" data-tooltip="Invoices"><span class="ni-icon">🧾</span><span class="ni-label" data-i18n="nav.invoices">Invoices</span></button>
+      <button class="nav-i" onclick="gotoPage('estimates',this)" data-perm="estimates" data-tooltip="Estimates"><span class="ni-icon">📋</span><span class="ni-label" data-i18n="nav.estimates">Estimates</span></button>
+      <button class="nav-i" onclick="gotoPage('pos',this)" data-perm="pos" data-tooltip="Point of Sale"><span class="ni-icon">🛒</span><span class="ni-label" data-i18n="nav.pos">Point of Sale</span></button>
     </div>
     <div class="nav-grp">
       <div class="nav-lbl" data-i18n="nav.grp.operations">Operations</div>
-      <button class="nav-i" onclick="gotoPage('jobs',this)" data-perm="jobs"><span>🔧</span><span data-i18n="nav.jobs">Jobs Board</span></button>
-      <button class="nav-i" onclick="gotoPage('myportal',this)" data-perm="installer_portal"><span>👷</span><span data-i18n="nav.myportal">My Work</span></button>
-      <button class="nav-i" onclick="gotoPage('designer',this)" data-perm="designer_portal"><span>🎨</span><span data-i18n="nav.designer">My Studio</span></button>
-      <button class="nav-i" onclick="gotoPage('inventory',this)" data-perm="inventory"><span>📦</span><span data-i18n="nav.inventory">Inventory</span><span id="inv-alert-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto"></span></button>
-      <button class="nav-i" onclick="gotoPage('crm',this)" data-perm="crm"><span>👥</span><span data-i18n="nav.crm">CRM</span></button>
+      <button class="nav-i" onclick="gotoPage('jobs',this)" data-perm="jobs" data-tooltip="Jobs Board"><span class="ni-icon">🔧</span><span class="ni-label" data-i18n="nav.jobs">Jobs Board</span></button>
+      <button class="nav-i" onclick="gotoPage('myportal',this)" data-perm="installer_portal" data-tooltip="My Work"><span class="ni-icon">👷</span><span class="ni-label" data-i18n="nav.myportal">My Work</span></button>
+      <button class="nav-i" onclick="gotoPage('designer',this)" data-perm="designer_portal" data-tooltip="My Studio"><span class="ni-icon">🎨</span><span class="ni-label" data-i18n="nav.designer">My Studio</span></button>
+      <button class="nav-i" onclick="gotoPage('inventory',this)" data-perm="inventory" data-tooltip="Inventory"><span class="ni-icon">📦</span><span class="ni-label" data-i18n="nav.inventory">Inventory</span><span class="ni-badge" id="inv-alert-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px"></span></button>
+      <button class="nav-i" onclick="gotoPage('crm',this)" data-perm="crm" data-tooltip="CRM"><span class="ni-icon">👥</span><span class="ni-label" data-i18n="nav.crm">CRM</span></button>
+      <button class="nav-i" onclick="gotoPage('services',this)" data-perm="settings" data-tooltip="Services"><span class="ni-icon">🛠</span><span class="ni-label">Services</span></button>
     </div>
     <div class="nav-grp" id="nav-grp-finance">
       <div class="nav-lbl" data-i18n="nav.grp.finance">Finance</div>
-      <button class="nav-i" onclick="gotoPage('pos',this)" data-perm="pos" id="nav-pos-shift-btn" style="display:none"><span>🖥️</span><span>POS Shifts</span><span id="shift-approval-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto"></span></button>
-      <button class="nav-i" onclick="gotoPage('finance',this)" data-perm="invoices"><span>💳</span><span data-i18n="nav.finance">Transaction Ledger</span><span id="pending-txn-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto">!</span></button>
-      <button class="nav-i" onclick="gotoPage('expenses',this)" data-perm="invoices"><span>💸</span><span>Expenses</span></button>
+      <button class="nav-i" onclick="gotoPage('pos',this)" data-perm="pos" id="nav-pos-shift-btn" style="display:none" data-tooltip="POS Shifts"><span class="ni-icon">🖥️</span><span class="ni-label">POS Shifts</span><span class="ni-badge" id="shift-approval-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px"></span></button>
+      <button class="nav-i" onclick="gotoPage('finance',this)" data-perm="invoices" data-tooltip="Transaction Ledger"><span class="ni-icon">💳</span><span class="ni-label" data-i18n="nav.finance">Transaction Ledger</span><span class="ni-badge" id="pending-txn-badge" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px">!</span></button>
+      <button class="nav-i" onclick="gotoPage('expenses',this)" data-perm="invoices" data-tooltip="Expenses"><span class="ni-icon">💸</span><span class="ni-label">Expenses</span></button>
     </div>
     <div class="nav-grp">
       <div class="nav-lbl" data-i18n="nav.grp.communication">Communication</div>
-      <button class="nav-i" onclick="gotoPage('messages',this)" data-perm="messages" id="msg-nav-btn"><span>💬</span><span data-i18n="nav.messages">Messages</span><span id="msg-badge-nav" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto"></span></button>
+      <button class="nav-i" onclick="gotoPage('messages',this)" data-perm="messages" id="msg-nav-btn" data-tooltip="Messages"><span class="ni-icon">💬</span><span class="ni-label" data-i18n="nav.messages">Messages</span><span class="ni-badge" id="msg-badge-nav" style="display:none;background:var(--err);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px"></span></button>
     </div>
     <div class="nav-grp">
-      <div class="nav-lbl" data-i18n="nav.grp.reports">Reports</div>
-      <button class="nav-i" onclick="gotoPage('analytics',this)" data-perm="analytics"><span>📊</span><span data-i18n="nav.analytics">Analytics</span></button>
-      <button class="nav-i" onclick="gotoPage('myreports',this)" data-perm="installer_portal" id="nav-myreports-btn"><span>📋</span><span data-i18n="nav.myreports">My Reports</span></button>
-      <button class="nav-i" onclick="gotoPage('settings',this)" data-perm="settings"><span>⚙️</span><span data-i18n="nav.settings">Settings</span></button>
-      <button class="nav-i" id="nav-kb-btn" style="display:none" onclick="gotoPage('knowledgebase',this)" data-perm="settings"><span>📚</span><span data-i18n="nav.knowledgebase">Knowledge Base</span></button>
+      <div class="nav-lbl" data-i18n="nav.grp.reports">Reports &amp; Config</div>
+      <button class="nav-i" onclick="gotoPage('analytics',this)" data-perm="analytics" data-tooltip="Analytics"><span class="ni-icon">📊</span><span class="ni-label" data-i18n="nav.analytics">Analytics</span></button>
+      <button class="nav-i" onclick="gotoPage('myreports',this)" data-perm="installer_portal" id="nav-myreports-btn" data-tooltip="My Reports"><span class="ni-icon">📋</span><span class="ni-label" data-i18n="nav.myreports">My Reports</span></button>
+      <button class="nav-i" onclick="gotoPage('settings',this)" data-perm="settings" data-tooltip="Settings"><span class="ni-icon">⚙️</span><span class="ni-label" data-i18n="nav.settings">Settings</span></button>
+      <button class="nav-i" id="nav-kb-btn" style="display:none" onclick="gotoPage('knowledgebase',this)" data-perm="settings" data-tooltip="Knowledge Base"><span class="ni-icon">📚</span><span class="ni-label" data-i18n="nav.knowledgebase">Knowledge Base</span></button>
     </div>
   </nav>
   <div class="sb-user">
     <div class="sb-user-av" id="sb-av"></div>
-    <div style="flex:1;min-width:0">
+    <div class="sb-user-info">
       <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="sb-name">User</div>
       <div style="font-size:10px;color:var(--t3)" id="sb-role">Role</div>
     </div>
-    <button onclick="doLogout()" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px" title="Logout">🚪</button>
+    <button onclick="doLogout()" class="sb-user-logout" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;flex-shrink:0" title="Logout">🚪</button>
   </div>
+  <button class="sb-toggle" onclick="toggleSidebar()" title="Collapse sidebar">
+    <i class="sb-toggle-icon">‹</i>
+  </button>
 </div>
 
 <div class="main">
@@ -1032,6 +1077,18 @@ textarea.fc{resize:vertical;min-height:72px}
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="page" id="page-services">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:20px;font-weight:700">🛠 Services</div>
+          <div style="font-size:13px;color:var(--t3);margin-top:3px">Manage the service types available on invoices and estimates. Set default descriptions and prices to speed up billing.</div>
+        </div>
+        <button class="btn btn-p" onclick="openAddServiceModal()">+ Add Service</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden" id="services-list-page"></div>
+      <div style="margin-top:14px;font-size:12px;color:var(--t3)">* Built-in services cannot be deleted. Default descriptions and prices auto-fill when the service is selected on a new invoice or estimate line item.</div>
     </div>
 
     <div class="page" id="page-crm">
@@ -4004,6 +4061,7 @@ function applyLang() {
     else if (pid === 'estimates') renderEstimates();
     else if (pid === 'settings')  renderSettings();
     else if (pid === 'crm')       renderCRM();
+    else if (pid === 'services')  renderServicesPage();
     else if (pid === 'inventory') renderInventory();
     else if (pid === 'finance')   renderFinance();
   }
@@ -4070,10 +4128,28 @@ function showLoading(msg) {
   document.getElementById("loadingMsg").textContent = msg || "Loading...";
   requestAnimationFrame(function () { el.classList.add("visible"); });
 }
+// ── Sidebar collapse ──────────────────────────────────────────
+function toggleSidebar() {
+  var sb   = document.getElementById('appSidebar');
+  var main = document.querySelector('.main');
+  var isCollapsed = sb.classList.toggle('collapsed');
+  if (main) main.classList.toggle('sb-collapsed', isCollapsed);
+  localStorage.setItem('sb_collapsed', isCollapsed ? '1' : '0');
+}
+function initSidebar() {
+  if (localStorage.getItem('sb_collapsed') === '1') {
+    var sb   = document.getElementById('appSidebar');
+    var main = document.querySelector('.main');
+    if (sb)   sb.classList.add('collapsed');
+    if (main) main.classList.add('sb-collapsed');
+  }
+}
+
 function hideLoading() {
   var el = document.getElementById("loadingScreen");
   el.classList.remove("visible");
   setTimeout(function () { el.style.display = "none"; }, 250);
+  initSidebar();
 }
 
 // Ensures a screen transition never feels like an instant flash --
@@ -4482,7 +4558,7 @@ function gotoPage(p, el) {
   document.getElementById("page-" + p).classList.add("active");
   if (el) el.classList.add("active");
   curPage = p;
-  var titles = {dashboard:t('page.dashboard'),invoices:t('page.invoices'),estimates:t('page.estimates'),pos:t('page.pos'),jobs:t('page.jobs'),crm:t('page.crm'),analytics:t('page.analytics'),settings:t('page.settings'),messages:t('page.messages'),myportal:t('page.myportal'),designer:t('page.designer'),knowledgebase:t('page.knowledgebase'),myreports:t('page.myreports'),inventory:t('page.inventory'),finance:t('page.finance'),expenses:'Expenses'};
+  var titles = {dashboard:t('page.dashboard'),invoices:t('page.invoices'),estimates:t('page.estimates'),pos:t('page.pos'),jobs:t('page.jobs'),crm:t('page.crm'),analytics:t('page.analytics'),settings:t('page.settings'),messages:t('page.messages'),myportal:t('page.myportal'),designer:t('page.designer'),knowledgebase:t('page.knowledgebase'),myreports:t('page.myreports'),inventory:t('page.inventory'),finance:t('page.finance'),expenses:'Expenses',services:'🛠 Services'};
   var btns = {invoices:t('topbtn.newInvoice'),estimates:t('topbtn.newEstimate'),jobs: canEditPayment() ? t('topbtn.newJob') : null,crm:t('topbtn.newClient')};
   if (!btns.jobs) delete btns.jobs;
   document.getElementById("pageTitle").textContent = titles[p] || p;
@@ -4502,6 +4578,7 @@ function gotoPage(p, el) {
   else if (p === "designer") renderDesignerStudio();
   else if (p === "messages") renderMessagesPage();
   else if (p === "crm") renderCRM();
+  else if (p === "services") renderServicesPage();
   else if (p === "finance") renderFinancePage();
   else if (p === "expenses") renderExpensesPage();
   else if (p === "analytics") renderAnalytics();
@@ -9149,6 +9226,42 @@ function saveSvcTemplates() {
 }
 function getSvcTemplate(name) {
   return _svcTemplates[name] || {desc: '', price: ''};
+}
+
+function renderServicesPage() {
+  var el = document.getElementById('services-list-page');
+  if (!el) return;
+  var allSvcs = getServiceTypes();
+  el.innerHTML = '<div style="display:grid;grid-template-columns:1fr;gap:0">' +
+    allSvcs.map(function(s, i){
+      var isDefault = SVCS.indexOf(s) >= 0;
+      var tpl = getSvcTemplate(s);
+      return '<div style="padding:14px 16px;border-bottom:1px solid var(--bor)">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:20px">🛠</span>' +
+        '<span style="font-size:14px;font-weight:600">' + esc(s) + '</span>' +
+        (isDefault ? '<span style="font-size:10px;color:var(--t3);background:var(--bg3);border-radius:6px;padding:2px 7px">Built-in</span>' : '<span style="font-size:10px;color:var(--acc);background:rgba(99,102,241,.1);border-radius:6px;padding:2px 7px">Custom</span>') +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          (!isDefault ? '<button class="btn btn-o btn-sm" onclick="renameServiceType(' + i + ')">Rename</button>' : '') +
+          (!isDefault ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="removeServiceType(' + i + ');renderServicesPage()">Remove</button>' : '') +
+        '</div></div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<div style="flex:2;min-width:180px"><label style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Default Description</label>' +
+          '<input class="fc" placeholder="Auto-fills when selected on invoices & estimates" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box" ' +
+            'value="' + esc(tpl.desc) + '" ' +
+            'onblur="saveSvcTpl(\'' + i + '\',this.value,null);renderServicesPage()" ' +
+            'onfocus="this._orig=this.value" ' +
+            'onkeydown="if(event.key===\'Enter\'){saveSvcTpl(\'' + i + '\',this.value,null);this.blur();}" /></div>' +
+          '<div style="width:120px"><label style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Default Price</label>' +
+          '<input class="fc" type="number" min="0" step="0.01" placeholder="0.00" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box" ' +
+            'value="' + (tpl.price || '') + '" ' +
+            'onblur="saveSvcTpl(\'' + i + '\',null,this.value)" ' +
+            'onkeydown="if(event.key===\'Enter\')this.blur()" /></div>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
 }
 
 function renderServiceSettings() {
