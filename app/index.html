@@ -59,7 +59,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .sb{width:224px;height:100vh;background:var(--bg2);border-right:1px solid var(--bor);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100;transition:width .22s cubic-bezier(.4,0,.2,1);overflow:hidden}
 .sb.collapsed{width:56px}
 
-.sb-logo{padding:18px 14px 14px;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:10px;overflow:hidden;white-space:nowrap}
+.sb-logo{padding:14px 10px 12px;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:8px;overflow:hidden;white-space:nowrap}
 .sb-logo-icon{font-size:20px;flex-shrink:0}
 .sb-logo-text{transition:opacity .18s, width .18s;overflow:hidden}
 .sb.collapsed .sb-logo-text{opacity:0;width:0;pointer-events:none}
@@ -109,9 +109,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .sb-user-logout{flex-shrink:0;transition:opacity .15s}
 
 /* Sidebar collapse toggle button */
-.sb-toggle{display:flex;align-items:center;justify-content:center;padding:8px;border-top:1px solid var(--bor);cursor:pointer;background:none;border-left:none;border-right:none;border-bottom:none;width:100%;color:var(--t3);font-size:13px;transition:color .15s, background .15s}
-.sb-toggle:hover{background:var(--bg3);color:var(--t1)}
-.sb-toggle-icon{transition:transform .22s cubic-bezier(.4,0,.2,1);display:inline-block;font-style:normal}
+.sb-toggle{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;cursor:pointer;background:none;border:1px solid var(--bor);color:var(--t3);font-size:14px;transition:all .15s;flex-shrink:0;margin-left:auto}
+.sb-toggle:hover{background:var(--bg3);color:var(--t1);border-color:var(--acc)}
+.sb-toggle-icon{transition:transform .22s cubic-bezier(.4,0,.2,1);display:inline-block;font-style:normal;line-height:1}
 .sb.collapsed .sb-toggle-icon{transform:rotate(180deg)}
 
 .main{margin-left:224px;flex:1;display:flex;flex-direction:column;min-height:100vh;overflow:hidden;transition:margin-left .22s cubic-bezier(.4,0,.2,1)}
@@ -421,6 +421,7 @@ textarea.fc{resize:vertical;min-height:72px}
       <div class="sb-logo-t">B2B Print Hub</div>
       <div class="sb-logo-s">Business Suite</div>
     </div>
+    <button class="sb-toggle" onclick="toggleSidebar()" title="Collapse sidebar"><i class="sb-toggle-icon">‹</i></button>
   </div>
   <nav class="sb-nav">
     <div class="nav-grp">
@@ -468,9 +469,6 @@ textarea.fc{resize:vertical;min-height:72px}
     </div>
     <button onclick="doLogout()" class="sb-user-logout" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;flex-shrink:0" title="Logout">🚪</button>
   </div>
-  <button class="sb-toggle" onclick="toggleSidebar()" title="Collapse sidebar">
-    <i class="sb-toggle-icon">‹</i>
-  </button>
 </div>
 
 <div class="main">
@@ -599,12 +597,13 @@ textarea.fc{resize:vertical;min-height:72px}
     </div>
 
     <div class="page" id="page-invoices">
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
         <button class="chip active" onclick="filterInv('all',this)" data-i18n="status.all">All</button>
         <button class="chip" onclick="filterInv('draft',this)" data-i18n="status.draft">Draft</button>
         <button class="chip" onclick="filterInv('sent',this)" data-i18n="status.sent">Sent</button>
         <button class="chip" onclick="filterInv('paid',this)" data-i18n="status.paid">Paid</button>
         <button class="chip" onclick="filterInv('voided',this)" data-i18n="status.voided">Voided</button>
+        <input id="inv-page-search" class="fc" placeholder="🔍 Search invoice #, client, service, notes…" oninput="renderInvoices()" style="flex:1;min-width:200px;max-width:340px;padding:7px 12px;font-size:13px"/>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
         <table><thead><tr>
@@ -621,6 +620,15 @@ textarea.fc{resize:vertical;min-height:72px}
     </div>
 
     <div class="page" id="page-estimates">
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <button class="chip active" onclick="filterEst('all',this)">All</button>
+        <button class="chip" onclick="filterEst('draft',this)" data-i18n="status.draft">Draft</button>
+        <button class="chip" onclick="filterEst('sent',this)" data-i18n="status.sent">Sent</button>
+        <button class="chip" onclick="filterEst('approved',this)" data-i18n="status.approved">Approved</button>
+        <button class="chip" onclick="filterEst('invoiced',this)">Invoiced</button>
+        <button class="chip" onclick="filterEst('declined',this)" data-i18n="status.voided">Declined</button>
+        <input id="est-page-search" class="fc" placeholder="🔍 Search estimate #, client, service, description…" oninput="renderEstimates()" style="flex:1;min-width:200px;max-width:340px;padding:7px 12px;font-size:13px"/>
+      </div>
       <div class="card" style="padding:0;overflow:hidden">
         <table><thead><tr>
           <th data-i18n="inv.col.num">#</th>
@@ -5238,9 +5246,19 @@ function filterInv(f, el) {
 }
 
 function renderInvoices() {
-  var list = invFilter === "all" ? invoices : invoices.filter(function (i) { return i.status === invFilter; });
+  var q = ((document.getElementById('inv-page-search')||{}).value||'').toLowerCase().trim();
+  var list = invoices.filter(function(i) {
+    if (invFilter !== 'all' && i.status !== invFilter) return false;
+    if (q) {
+      var invNum = '#INV-' + String(i.id).padStart(4,'0');
+      var svcs = (i.items||[]).map(function(x){return x.svc+' '+x.desc;}).join(' ');
+      var hay = (invNum + ' ' + cName(i.cid) + ' ' + (i.notes||'') + ' ' + svcs + ' ' + fmt(i.grand)).toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
   var tb = document.getElementById("inv-tbody");
-  if (!list.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty">'+t('inv.noFound')+'</div></td></tr>'; return; }
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty">'+(q?'No invoices match "'+q+'"':t('inv.noFound'))+'</div></td></tr>'; return; }
   var rows = list.slice().reverse();
   var html = "";
   for (var i = 0; i < rows.length; i++) {
@@ -6451,10 +6469,30 @@ function convEst() {
   });
 }
 
+var estFilter = 'all';
+function filterEst(f, el) {
+  estFilter = f;
+  var chips = document.querySelectorAll('#page-estimates .chip');
+  for (var i = 0; i < chips.length; i++) chips[i].classList.remove('active');
+  if (el) el.classList.add('active');
+  renderEstimates();
+}
 function renderEstimates() {
+  var q = ((document.getElementById('est-page-search')||{}).value||'').toLowerCase().trim();
   var tb = document.getElementById("est-tbody");
-  if (!estimates.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty">'+t('est.noFound')+'</div></td></tr>'; return; }
-  var rows = estimates.slice().reverse();
+  var filtered = estimates.filter(function(e) {
+    if (estFilter !== 'all' && e.status !== estFilter) return false;
+    if (q) {
+      var estNum = '#EST-' + String(e.id).padStart(4,'0');
+      var meta = {}; try { var pm=JSON.parse(e.description); if(pm&&pm._v) meta=pm; } catch(ex){}
+      var scope = meta.scope || (e.description&&!meta._v?e.description:'');
+      var hay = (estNum + ' ' + cName(e.cid) + ' ' + (scope||'') + ' ' + (meta.serviceType||'') + ' ' + fmt(e.total||e.grand||0)).toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+  if (!filtered.length) { tb.innerHTML = '<tr><td colspan="7"><div class="empty">'+(q?'No estimates match "'+q+'"':t('est.noFound'))+'</div></td></tr>'; return; }
+  var rows = filtered.slice().reverse();
   var html = "";
   var svcColors = {'print':'#6c63ff','vehicle-wrap':'#38bdf8','large-format':'#f59e0b','window-wrap':'#a78bfa','signs':'#f59e0b','web':'#4caf7d','install':'#ef4444','design-only':'#ec4899','other':'#9ea3c0'};
   var svcIcons  = {'print':'🖨️','vehicle-wrap':'🚗','large-format':'🪧','window-wrap':'🪟','signs':'🏪','web':'💻','install':'🔧','design-only':'🎨','other':'📦'};
