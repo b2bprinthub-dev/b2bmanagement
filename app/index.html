@@ -4218,7 +4218,7 @@ function loadSettings() {
     for (var i = 0; i < rows.length; i++) {
       if (rows[i].key === "pdf") pdfSettings = Object.assign({}, pdfSettings, rows[i].value);
       if (rows[i].key === "business") bizSettings = Object.assign({}, bizSettings, rows[i].value);
-      if (rows[i].key === "custom_services" && Array.isArray(rows[i].value)) _customServices = rows[i].value;
+      if (rows[i].key === "all_services" && Array.isArray(rows[i].value) && rows[i].value.length) _allServices = rows[i].value;
       if (rows[i].key === "service_templates" && rows[i].value && typeof rows[i].value === 'object') _svcTemplates = rows[i].value;
     }
   });
@@ -9247,17 +9247,14 @@ function getExpCats() {
 function saveExpCats(arr) { localStorage.setItem('b2b_exp_cats', JSON.stringify(arr)); }
 
 // ── Service Types + Templates (stored in Supabase settings, shared across all users) ──
-var _customServices = []; // extra service names beyond SVCS defaults
+var _allServices    = []; // full ordered list of service names (replaces SVCS + _customServices)
 var _svcTemplates   = {}; // {serviceName: {desc, price}} — default desc/price per service
 
 function getServiceTypes() {
-  var out = SVCS.slice();
-  _customServices.forEach(function(s){ if (out.indexOf(s) === -1) out.push(s); });
-  return out;
+  return _allServices.length ? _allServices : SVCS.slice();
 }
-function saveServiceTypes(customArr) {
-  _customServices = customArr;
-  saveSetting('custom_services', customArr);
+function saveServiceTypes() {
+  saveSetting('all_services', _allServices);
 }
 function saveSvcTemplates() {
   saveSetting('service_templates', _svcTemplates);
@@ -9272,18 +9269,16 @@ function renderServicesPage() {
   var allSvcs = getServiceTypes();
   el.innerHTML = '<div style="display:grid;grid-template-columns:1fr;gap:0">' +
     allSvcs.map(function(s, i){
-      var isDefault = SVCS.indexOf(s) >= 0;
       var tpl = getSvcTemplate(s);
       return '<div style="padding:14px 16px;border-bottom:1px solid var(--bor)">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
         '<div style="display:flex;align-items:center;gap:8px">' +
         '<span style="font-size:20px">🛠</span>' +
         '<span style="font-size:14px;font-weight:600">' + esc(s) + '</span>' +
-        (isDefault ? '<span style="font-size:10px;color:var(--t3);background:var(--bg3);border-radius:6px;padding:2px 7px">Built-in</span>' : '<span style="font-size:10px;color:var(--acc);background:rgba(99,102,241,.1);border-radius:6px;padding:2px 7px">Custom</span>') +
         '</div>' +
         '<div style="display:flex;gap:6px">' +
-          (!isDefault ? '<button class="btn btn-o btn-sm" onclick="renameServiceType(' + i + ')">Rename</button>' : '') +
-          (!isDefault ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="removeServiceType(' + i + ');renderServicesPage()">Remove</button>' : '') +
+          '<button class="btn btn-o btn-sm" onclick="renameServiceType(' + i + ')">Rename</button>' +
+          '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="removeServiceType(' + i + ')">Remove</button>' +
         '</div></div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
           '<div style="flex:2;min-width:180px"><label style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Default Description</label>' +
@@ -9308,14 +9303,13 @@ function renderServiceSettings() {
   var allSvcs = getServiceTypes();
   el.innerHTML = '<div style="display:grid;grid-template-columns:1fr;gap:0">' +
     allSvcs.map(function(s, i){
-      var isDefault = SVCS.indexOf(s) >= 0;
       var tpl = getSvcTemplate(s);
       return '<div style="padding:14px 16px;border-bottom:1px solid var(--bor)">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
-        '<span style="font-size:13px;font-weight:600">' + esc(s) + (isDefault ? ' <span style="font-size:10px;color:var(--t3);font-weight:400">(built-in)</span>' : '') + '</span>' +
+        '<span style="font-size:13px;font-weight:600">' + esc(s) + '</span>' +
         '<div style="display:flex;gap:6px">' +
-          (!isDefault ? '<button class="btn btn-o btn-sm" onclick="renameServiceType(' + i + ')">Rename</button>' : '') +
-          (!isDefault ? '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="removeServiceType(' + i + ')">Remove</button>' : '') +
+          '<button class="btn btn-o btn-sm" onclick="renameServiceType(' + i + ')">Rename</button>' +
+          '<button class="btn btn-o btn-sm" style="color:var(--err)" onclick="removeServiceType(' + i + ')">Remove</button>' +
         '</div></div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
           '<input class="fc" placeholder="Default description (auto-fills on invoice)" style="flex:2;min-width:180px;font-size:12px;padding:6px 10px" ' +
@@ -9371,12 +9365,13 @@ function confirmAddService() {
   var price = parseFloat(document.getElementById('new-svc-price').value) || 0;
   if (!name) { toast('Enter a service name', true); return; }
   if (getServiceTypes().indexOf(name) >= 0) { toast('Service already exists', true); return; }
-  var custom = _customServices.slice();
-  custom.push(name);
-  saveServiceTypes(custom);
+  if (!_allServices.length) _allServices = SVCS.slice();
+  _allServices.push(name);
+  saveServiceTypes();
   if (desc || price) { _svcTemplates[name] = {desc: desc, price: price}; saveSvcTemplates(); }
   document.getElementById('addSvcModal').remove();
   renderServiceSettings();
+  renderServicesPage();
   toast('Service "' + name + '" added!');
   if (_addSvcCallback) { _addSvcCallback(name); _addSvcCallback = null; }
 }
@@ -9384,31 +9379,29 @@ function confirmAddService() {
 function addServiceType() { openAddServiceModal(); }
 
 function renameServiceType(idx) {
-  var all = getServiceTypes();
-  var v = prompt('Rename to:', all[idx]);
+  if (!_allServices.length) _allServices = SVCS.slice();
+  var v = prompt('Rename to:', _allServices[idx]);
   if (!v || !v.trim()) return;
   v = v.trim();
-  var isDefault = SVCS.indexOf(all[idx]) >= 0;
-  if (isDefault) {
-    var custom = _customServices.slice();
-    if (custom.indexOf(v) === -1) custom.push(v);
-    saveServiceTypes(custom);
-  } else {
-    var ci = _customServices.indexOf(all[idx]);
-    if (ci >= 0) { var custom2 = _customServices.slice(); custom2[ci] = v; saveServiceTypes(custom2); }
-  }
+  if (_allServices.indexOf(v) >= 0 && _allServices.indexOf(v) !== idx) { toast('Service already exists', true); return; }
+  var oldName = _allServices[idx];
+  if (_svcTemplates[oldName]) { _svcTemplates[v] = _svcTemplates[oldName]; delete _svcTemplates[oldName]; saveSvcTemplates(); }
+  _allServices[idx] = v;
+  saveServiceTypes();
+  renderServicesPage();
   renderServiceSettings();
   toast('Service renamed!');
 }
 function removeServiceType(idx) {
-  var all = getServiceTypes();
-  var svc = all[idx];
-  if (SVCS.indexOf(svc) >= 0) { toast('Cannot remove built-in service', true); return; }
+  if (!_allServices.length) _allServices = SVCS.slice();
+  if (_allServices.length <= 1) { toast('Must keep at least one service', true); return; }
+  var svc = _allServices[idx];
   if (!confirm('Remove "' + svc + '"?')) return;
-  var custom = _customServices.filter(function(s){ return s !== svc; });
-  saveServiceTypes(custom);
+  _allServices.splice(idx, 1);
+  saveServiceTypes();
   delete _svcTemplates[svc];
   saveSvcTemplates();
+  renderServicesPage();
   renderServiceSettings();
   toast('Service removed');
 }
